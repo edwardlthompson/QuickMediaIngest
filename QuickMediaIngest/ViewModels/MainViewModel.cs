@@ -439,4 +439,3 @@ namespace QuickMediaIngest.ViewModels
         public double ThumbnailSize { get; set; } = 120;
     }
 }
-}
