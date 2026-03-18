@@ -19,6 +19,7 @@ namespace QuickMediaIngest.ViewModels
         private int _progressPercent = 0;
         private string? _selectedSource;
         private string _destinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+        private bool _deleteAfterImport = false;
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -58,6 +59,12 @@ namespace QuickMediaIngest.ViewModels
         {
             get => _destinationRoot;
             set { _destinationRoot = value; OnPropertyChanged(); }
+        }
+
+        public bool DeleteAfterImport
+        {
+            get => _deleteAfterImport;
+            set { _deleteAfterImport = value; OnPropertyChanged(); }
         }
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
@@ -109,9 +116,32 @@ namespace QuickMediaIngest.ViewModels
                 foreach (var g in groups)
                 {
                     g.AlbumName = AlbumName;
+                    if (g.Items.Count > 0)
+                    {
+                        g.FolderPath = Path.GetDirectoryName(g.Items[0].SourcePath) ?? string.Empty;
+                    }
                     Groups.Add(g);
                 }
-                StatusMessage = $"Found {groups.Count} Group(s) from {drive}.";
+
+                StatusMessage = $"Found {groups.Count} Group(s) from {drive}. Core parsing images...";
+
+                // Background load thumbnails
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    var thumbService = new ThumbnailService();
+                    foreach (var g in groups)
+                    {
+                        foreach (var item in g.Items)
+                        {
+                            var thumb = thumbService.GetThumbnail(item.SourcePath);
+                            if (thumb != null)
+                            {
+                                item.Thumbnail = thumb; // item.Thumbnail implements INotifyPropertyChanged
+                            }
+                        }
+                    }
+                    Application.Current.Dispatcher.Invoke(() => StatusMessage = $"Scanning {drive} Complete. Loaded thumbs.");
+                });
             }
             catch (Exception ex)
             {
@@ -155,6 +185,20 @@ namespace QuickMediaIngest.ViewModels
                 foreach (var group in Groups.ToList())
                 {
                     await engine.IngestGroupAsync(group, DestinationRoot, cts.Token);
+                    
+                    if (DeleteAfterImport)
+                    {
+                        foreach (var item in group.Items.Where(i => i.IsSelected))
+                        {
+                            try 
+                            {
+                                if (File.Exists(item.SourcePath))
+                                {
+                                    File.Delete(item.SourcePath);
+                                }
+                            } catch { /* Suppress IO issues for locked files */ }
+                        }
+                    }
                 }
             });
 

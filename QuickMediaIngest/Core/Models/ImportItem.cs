@@ -1,8 +1,10 @@
 using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace QuickMediaIngest.Core.Models
 {
-    public class ImportItem
+    public class ImportItem : INotifyPropertyChanged
     {
         public string SourcePath { get; set; } = string.Empty; // Local "E:\DCIM\Image.jpg" OR FTP "/DCIM/Image.jpg"
         public string FileName { get; set; } = string.Empty;
@@ -10,9 +12,25 @@ namespace QuickMediaIngest.Core.Models
         public DateTime DateTaken { get; set; }
         public bool IsVideo { get; set; }
         public string FileType { get; set; } = string.Empty; // "JPG", "CR2", "MP4"
-        public bool IsSelected { get; set; } = true; // For UI checkboxes
         
-        // Placeholder for thumbnail (will bind to UI)
-        public object? Thumbnail { get; set; } 
+        private bool _isSelected = true;
+        public bool IsSelected 
+        { 
+            get => _isSelected; 
+            set { _isSelected = value; OnPropertyChanged(); } 
+        }
+
+        private object? _thumbnail;
+        public object? Thumbnail 
+        { 
+            get => _thumbnail; 
+            set { _thumbnail = value; OnPropertyChanged(); } 
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
 }

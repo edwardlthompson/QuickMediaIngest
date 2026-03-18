@@ -8,6 +8,9 @@
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
         Background="{DynamicResource MaterialDesignPaper}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
@@ -53,41 +56,61 @@
             <!-- Top Controls -->
             <StackPanel Orientation="Horizontal" Margin="16">
                 <TextBox materialDesign:HintAssist.Hint="Album Name" Width="300" Style="{StaticResource MaterialDesignFloatingHintTextBox}" Text="{Binding AlbumName, UpdateSourceTrigger=PropertyChanged}"/>
+                <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Yellow"/>
                 <Button Content="Import" Margin="16,0,0,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
             </StackPanel>
             
             <!-- Thumbnail Grid -->
             <ScrollViewer Grid.Row="1" Margin="8">
                 <ItemsControl ItemsSource="{Binding Groups}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <materialDesign:Card Width="200" Height="150" Margin="8" Padding="12" materialDesign:ElevationAssist.Elevation="Dp2">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    
-                                    <TextBlock Text="{Binding Title}" Style="{StaticResource MaterialDesignHeadline6TextBlock}" FontSize="16" FontWeight="Bold"/>
-                                    
-                                    <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding StartDate, StringFormat='{}Start: {0:yyyy-MM-dd HH:mm}'}" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
-                                        <TextBlock Text="{Binding EndDate, StringFormat='{}End: {0:yyyy-MM-dd HH:mm}'}" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <materialDesign:PackIcon Kind="ImageMultiple" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                        <TextBlock Text="{Binding Items.Count}" FontWeight="Bold"/>
-                                        <TextBlock Text=" items" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Grid>
-                            </materialDesign:Card>
+                            <Expander Margin="8" BorderThickness="1" BorderBrush="{DynamicResource MaterialDesignDivider}" IsExpanded="False">
+                                <Expander.Header>
+                                    <Grid Width="Auto">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource MaterialDesignHeadline6TextBlock}" FontSize="18" FontWeight="Bold" Background="Yellow" Foreground="Black" Padding="4"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0">
+                                            <TextBlock Text="📁 " VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding FolderPath}" VerticalAlignment="Center" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
+                                            <materialDesign:PackIcon Kind="ImageMultiple" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{Binding Items.Count}" FontWeight="Bold"/>
+                                            <TextBlock Text=" items" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Expander.Header>
+                                <Expander.Content>
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <materialDesign:Card Margin="8" Width="100" Height="120" Padding="4">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                                        <!-- Video Icon Overlay -->
+                                                        <materialDesign:PackIcon Kind="Video" Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#AA000000" Foreground="White" Width="20" Height="20" Margin="4"/>
+                                                        <TextBlock Grid.Row="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center" Margin="2,4"/>
+                                                    </Grid>
+                                                </materialDesign:Card>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Expander.Content>
+                            </Expander>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
