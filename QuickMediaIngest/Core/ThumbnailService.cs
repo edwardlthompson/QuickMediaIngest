@@ -36,18 +36,36 @@ namespace QuickMediaIngest.Core
                 
                 if (thumbDir != null)
                 {
-                    var thumbBytes = thumbDir.GetThumbnailData();
-                    if (thumbBytes != null && thumbBytes.Length > 0)
+                    const int TagThumbnailOffset = 513; // 0x0201
+                    const int TagThumbnailLength = 514; // 0x0202
+
+                    if (thumbDir.ContainsTag(TagThumbnailOffset) && thumbDir.ContainsTag(TagThumbnailLength))
                     {
-                        using (var ms = new MemoryStream(thumbBytes))
+                        int offset = thumbDir.GetInt32(TagThumbnailOffset);
+                        int length = thumbDir.GetInt32(TagThumbnailLength);
+
+                        if (length > 0)
                         {
-                            var bitmap = new BitmapImage();
-                            bitmap.BeginInit();
-                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmap.StreamSource = ms;
-                            bitmap.EndInit();
-                            bitmap.Freeze(); // Cross-thread safe
-                            return bitmap;
+                            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                fs.Seek(offset, SeekOrigin.Begin);
+                                byte[] thumbBytes = new byte[length];
+                                int read = fs.Read(thumbBytes, 0, length);
+
+                                if (read > 4 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8) // Safe JPEG Header check
+                                {
+                                    using (var ms = new MemoryStream(thumbBytes))
+                                    {
+                                        var bitmap = new BitmapImage();
+                                        bitmap.BeginInit();
+                                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                                        bitmap.StreamSource = ms;
+                                        bitmap.EndInit();
+                                        bitmap.Freeze(); 
+                                        return bitmap;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
