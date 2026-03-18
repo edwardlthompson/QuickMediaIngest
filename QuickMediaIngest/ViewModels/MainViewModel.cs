@@ -27,6 +27,7 @@ namespace QuickMediaIngest.ViewModels
         private string _updateUrl = string.Empty;
         private bool _showAboutDialog = false;
         private int _updateIntervalHours = 24; // Default
+        private string _namingTemplate = "[Date]_[Time]_[Original]";
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -112,6 +113,12 @@ namespace QuickMediaIngest.ViewModels
             set { _updateIntervalHours = value; OnPropertyChanged(); SaveConfig(); CheckUpdates(); }
         }
 
+        public string NamingTemplate
+        {
+            get => _namingTemplate;
+            set { _namingTemplate = value; OnPropertyChanged(); SaveConfig(); }
+        }
+
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
@@ -129,6 +136,7 @@ namespace QuickMediaIngest.ViewModels
         public ICommand ToggleAboutCommand { get; }
         public ICommand OpenGitHubCommand { get; }
         public ICommand RefreshUpdateCommand { get; }
+        public ICommand BrowseDestinationCommand { get; }
 
         public MainViewModel()
         {
@@ -140,6 +148,7 @@ namespace QuickMediaIngest.ViewModels
             ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
             OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
             RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
+            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
 
             LoadConfig();
 
@@ -315,7 +324,7 @@ namespace QuickMediaIngest.ViewModels
             {
                 foreach (var group in Groups.ToList())
                 {
-                    await engine.IngestGroupAsync(group, DestinationRoot, cts.Token);
+                    await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, cts.Token);
                     
                     if (DeleteAfterImport)
                     {
@@ -337,12 +346,38 @@ namespace QuickMediaIngest.ViewModels
             ProgressPercent = 100;
         }
 
+        private void ExecuteBrowseDestination()
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Select Destination Folder",
+                InitialDirectory = DestinationRoot
+            };
+            
+            if (dialog.ShowDialog() == true)
+            {
+                DestinationRoot = dialog.FolderName;
+                SaveConfig();
+            }
+        }
+
         private void SaveConfig()
         {
             try
             {
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config_interval.txt");
-                File.WriteAllText(path, UpdateIntervalHours.ToString());
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
+                Directory.CreateDirectory(folder);
+                string path = Path.Combine(folder, "config.json");
+                
+                var config = new AppConfig
+                {
+                    UpdateIntervalHours = UpdateIntervalHours,
+                    DestinationRoot = DestinationRoot,
+                    NamingTemplate = NamingTemplate
+                };
+                
+                string json = System.Text.Json.JsonSerializer.Serialize(config);
+                File.WriteAllText(path, json);
             } catch { }
         }
 
@@ -350,13 +385,16 @@ namespace QuickMediaIngest.ViewModels
         {
             try
             {
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config_interval.txt");
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
                 if (File.Exists(path))
                 {
-                    string text = File.ReadAllText(path).Trim();
-                    if (int.TryParse(text, out var val))
+                    string json = File.ReadAllText(path);
+                    var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(json);
+                    if (config != null)
                     {
-                        _updateIntervalHours = val;
+                        _updateIntervalHours = config.UpdateIntervalHours;
+                        if (!string.IsNullOrEmpty(config.DestinationRoot)) _destinationRoot = config.DestinationRoot;
+                        if (!string.IsNullOrEmpty(config.NamingTemplate)) _namingTemplate = config.NamingTemplate;
                     }
                 }
             } catch { }
@@ -382,5 +420,12 @@ namespace QuickMediaIngest.ViewModels
     {
         public string Display { get; set; } = string.Empty;
         public int Hours { get; set; }
+    }
+
+    public class AppConfig
+    {
+        public int UpdateIntervalHours { get; set; } = 24;
+        public string DestinationRoot { get; set; } = string.Empty;
+        public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
     }
 }

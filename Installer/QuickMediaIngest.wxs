@@ -4,18 +4,39 @@
     
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- Standard Directories -->
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="INSTALLFOLDER" Name="QuickMediaIngest" />
     </StandardDirectory>
 
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Quick Media Ingest"/>
+    </StandardDirectory>
+
+    <!-- Components -->
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutable">
-        <File Source="publish/portable/QuickMediaIngest.exe" />
+        <File Id="MainExe" Source="publish/portable/QuickMediaIngest.exe" />
       </Component>
     </ComponentGroup>
 
+    <!-- Start Menu Shortcut -->
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="a63e2646-302a-4389-8097-7bc9dc8b1220">
+         <Shortcut Id="ApplicationStartMenuShortcut" 
+                   Name="Quick Media Ingest" 
+                   Description="Speedy Media Ingestion Tool" 
+                   Target="[INSTALLFOLDER]QuickMediaIngest.exe" 
+                   WorkingDirectory="INSTALLFOLDER"/>
+         <RemoveFolder Id="CleanUpShortCut" On="uninstall"/>
+         <RegistryValue Root="HKCU" Key="Software\EdwardThompson\QuickMediaIngest" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+
+    <!-- Trigger feature sets -->
     <Feature Id="MainFeature" Title="Quick Media Ingest" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
     </Feature>
   </Package>
 </Wix>

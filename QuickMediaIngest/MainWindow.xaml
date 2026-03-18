@@ -43,7 +43,7 @@
                 
                 <StackPanel Grid.Row="2" Margin="16">
                     <Button Content="Add FTP Source" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,8"/>
-                    <Button Content="About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="2" FontSize="11"/>
+                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="2" FontSize="11"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -148,9 +148,9 @@
             </StatusBar>
         </Grid>
 
-        <!-- About Dialog Overlay -->
+        <!-- Options Dialog Overlay -->
         <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <materialDesign:Card Width="350" Height="340" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
+            <materialDesign:Card Width="420" Height="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -158,28 +158,55 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Text="Quick Media Ingest" Style="{StaticResource MaterialDesignHeadline5TextBlock}" FontWeight="Bold" TextAlignment="Center" Foreground="Yellow"/>
+                    <TextBlock Text="Settings &amp; Options" Style="{StaticResource MaterialDesignHeadline5TextBlock}" FontWeight="Bold" TextAlignment="Center" Foreground="Yellow" Margin="0,0,0,12"/>
                     
-                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,4"/>
-                        <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center" FontSize="12"/>
+                    <TabControl Grid.Row="1" Style="{StaticResource MaterialDesignTabControl}">
                         
-                        <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="12,2" Height="28" Margin="0,8,0,12"/>
+                        <!-- Tab 1: Import Settings -->
+                        <TabItem Header="Import">
+                            <StackPanel Margin="8">
+                                <TextBlock Text="Import Location" FontWeight="Bold" Margin="0,0,0,4" FontSize="13" Foreground="Yellow"/>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding DestinationRoot}" IsEnabled="False" Style="{StaticResource MaterialDesignOutlinedTextBox}" Padding="8" materialDesign:HintAssist.Hint="Select Folder"/>
+                                    <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseDestinationCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="8,0,0,0"/>
+                                </Grid>
 
-                        <Separator Background="{DynamicResource MaterialDesignDivider}" Margin="0,0,0,8"/>
+                                <TextBlock Text="File Naming Template" FontWeight="Bold" Margin="0,0,0,4" FontSize="13" Foreground="Yellow"/>
+                                <TextBox Text="{Binding NamingTemplate}" Style="{StaticResource MaterialDesignOutlinedTextBox}" Padding="8" materialDesign:HintAssist.Hint="[Date]_[Time]_[Original]"/>
+                                <TextBlock Text="Tokens: [Date] (yyyy-MM-dd), [Time] (HH-mm-ss), [Original] (File Name), [Ext] (Extension)" FontSize="10" Foreground="Gray" TextWrapping="Wrap" Margin="4,2,0,0"/>
+                            </StackPanel>
+                        </TabItem>
 
-                        <!-- Update Settings -->
-                        <TextBlock Text="Update Settings" FontWeight="Bold" Margin="0,0,0,4" FontSize="12" Foreground="Yellow"/>
-                        
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <TextBlock Text="Check Frequency:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
-                            <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedValue="{Binding UpdateIntervalHours}" SelectedValuePath="Hours" DisplayMemberPath="Display" Width="100" Style="{StaticResource MaterialDesignComboBox}"/>
-                        </StackPanel>
+                        <!-- Tab 2: Updates -->
+                        <TabItem Header="Updates">
+                            <StackPanel Margin="8" VerticalAlignment="Center">
+                                <TextBlock Text="Update Checking Frequency" FontWeight="Bold" Margin="0,0,0,8" FontSize="13" Foreground="Yellow"/>
+                                
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="Interval:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                                    <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedValue="{Binding UpdateIntervalHours}" SelectedValuePath="Hours" DisplayMemberPath="Display" Width="120" Style="{StaticResource MaterialDesignComboBox}"/>
+                                </StackPanel>
 
-                        <Button Content="Check for Updates Now" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="8,2" Height="24" FontSize="11"/>
-                    </StackPanel>
+                                <Button Content="Check for Updates Now" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="12,2" Height="30" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </TabItem>
 
-                    <Button Grid.Row="2" Content="Close" Command="{Binding ToggleAboutCommand}" HorizontalAlignment="Center" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <!-- Tab 3: About -->
+                        <TabItem Header="About">
+                            <StackPanel Margin="8" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="Quick Media Ingest" FontWeight="Bold" FontSize="14" Foreground="Yellow" TextAlignment="Center" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center" FontSize="12" Margin="0,0,0,12"/>
+                                <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="12,2" Height="30" Width="120"/>
+                            </StackPanel>
+                        </TabItem>
+                    </TabControl>
+
+                    <Button Grid.Row="2" Content="Close" Command="{Binding ToggleAboutCommand}" HorizontalAlignment="Center" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,12,0,0"/>
                 </Grid>
             </materialDesign:Card>
         </Grid>

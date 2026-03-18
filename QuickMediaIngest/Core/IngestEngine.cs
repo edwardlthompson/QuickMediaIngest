@@ -19,7 +19,7 @@ namespace QuickMediaIngest.Core
             _provider = provider;
         }
 
-        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, CancellationToken cancellationToken)
+        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken)
         {
             if (group == null || group.Items.Count == 0) return;
 
@@ -43,7 +43,7 @@ namespace QuickMediaIngest.Core
                 string status = $"Copying {item.FileName} ({current}/{total})";
                 ProgressChanged?.Invoke((current * 100) / total, status);
 
-                string destFileName = ResolveFileName(item, targetDir);
+                string destFileName = ResolveFileName(item, targetDir, namingTemplate);
                 string destPath = Path.Combine(targetDir, destFileName);
 
                 try
@@ -72,17 +72,29 @@ namespace QuickMediaIngest.Core
             return $"{start} to {end}+{name}";
         }
 
-        private string ResolveFileName(ImportItem item, string targetDir)
+        private string ResolveFileName(ImportItem item, string targetDir, string template)
         {
             string ext = Path.GetExtension(item.FileName);
-            string baseName = item.DateTaken.ToString("yyyy-MM-dd-HH-mm-ss");
-            string destFileName = $"{baseName}{ext}";
+            string outputName = template;
+
+            if (string.IsNullOrEmpty(outputName))
+            {
+                outputName = "[Date]_[Time]_[Original]"; // Default fallback
+            }
+
+            // Replace Tokens
+            outputName = outputName.Replace("[Date]", item.DateTaken.ToString("yyyy-MM-dd"));
+            outputName = outputName.Replace("[Time]", item.DateTaken.ToString("HH-mm-ss"));
+            outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
+            outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
+
+            string destFileName = $"{outputName}{ext}";
             string fullPath = Path.Combine(targetDir, destFileName);
 
             int counter = 1;
             while (File.Exists(fullPath))
             {
-                destFileName = $"{baseName}_{counter:D2}{ext}";
+                destFileName = $"{outputName}_{counter:D2}{ext}";
                 fullPath = Path.Combine(targetDir, destFileName);
                 counter++;
             }
