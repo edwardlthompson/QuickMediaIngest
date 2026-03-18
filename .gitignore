@@ -1,0 +1,17 @@
+## Ignore Visual Studio & .NET build artifacts
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.useroscc
+*.sln.docstates
+
+## Ignore JetBrains / VS Code
+.vscode/
+.idea/
+
+## OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
