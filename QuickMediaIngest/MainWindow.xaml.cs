@@ -7,6 +7,7 @@ namespace QuickMediaIngest
         public MainWindow()
         {
             InitializeComponent();
+            this.DataContext = new QuickMediaIngest.ViewModels.MainViewModel();
         }
     }
 }
