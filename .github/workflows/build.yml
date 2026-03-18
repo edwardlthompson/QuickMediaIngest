@@ -45,10 +45,10 @@ jobs:
         Compress-Archive -Path ./publish/portable/* -DestinationPath ./publish/QuickMediaIngest-Portable.zip
 
     - name: Install WiX Toolset
-      run: dotnet tool install --global wix
+      run: dotnet tool install --global wix --version 4.0.4
 
     - name: Add WiX UI Extension
-      run: wix extension add WixToolset.UI.wixext --global
+      run: wix extension add --global WixToolset.UI.wixext/4.0.4
 
     - name: Build MSI Installer
       run: |
