@@ -45,7 +45,7 @@ namespace QuickMediaIngest
             e.Handled = true;
         }
 
-        private void Token_Drop(object sender, System.Windows.DragEventArgs e)
+                private void Token_Drop(object sender, System.Windows.DragEventArgs e)
         {
             if (e.Data.GetDataPresent(typeof(string)) && DataContext is MainViewModel vm)
             {
@@ -54,11 +54,16 @@ namespace QuickMediaIngest
                 {
                     vm.SelectedTokens.Add(new TokenItem { Value = token });
                     vm.UpdateNamingFromTokens();
+
+                    if (token.StartsWith("[") && token.EndsWith("]"))
+                    {
+                        vm.AvailableTokens.Remove(token);
+                    }
                 }
             }
         }
 
-        private void Token_DeleteClick(object sender, System.Windows.RoutedEventArgs e)
+                private void Token_DeleteClick(object sender, System.Windows.RoutedEventArgs e)
         {
             var element = sender as FrameworkElement;
             var item = element?.DataContext as TokenItem;
@@ -66,6 +71,11 @@ namespace QuickMediaIngest
             {
                 vm.SelectedTokens.Remove(item);
                 vm.UpdateNamingFromTokens();
+
+                if (item.Value.StartsWith("[") && item.Value.EndsWith("]") && !vm.AvailableTokens.Contains(item.Value))
+                {
+                    vm.AvailableTokens.Add(item.Value);
+                }
             }
         }
     }

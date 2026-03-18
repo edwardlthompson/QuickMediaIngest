@@ -179,7 +179,7 @@
 
         <!-- Options Dialog Overlay -->
         <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <materialDesign:Card Width="420" Height="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
+            <materialDesign:Card Width="460" Height="520" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
