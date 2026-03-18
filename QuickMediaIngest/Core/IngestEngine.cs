@@ -71,9 +71,7 @@ namespace QuickMediaIngest.Core
             }
 
             return start == end ? $"{start}+{name}" : $"{start} to {end}+{name}";
-        }+{name}";
-            }
-            return $"{start} to {end}+{name}";
+        } to {end}+{name}";
         }
 
         private string ResolveFileName(ImportItem item, string targetDir, string template)
