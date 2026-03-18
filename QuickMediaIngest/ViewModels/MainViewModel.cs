@@ -440,9 +440,9 @@ namespace QuickMediaIngest.ViewModels
                             if (!string.IsNullOrEmpty(_namingTemplate))
                             {
                                 var matches = System.Text.RegularExpressions.Regex.Matches(_namingTemplate, @"\[[^\]]+\]|[^\[\]]+");
-                                foreach (System.Text.RegularExpressions.Match m in matches)
+                                                                foreach (System.Text.RegularExpressions.Match m in matches)
                                 {
-                                    SelectedTokens.Add(m.Value);
+                                    if (!string.IsNullOrEmpty(m.Value)) SelectedTokens.Add(new TokenItem { Value = m.Value });
                                 }
                             }
                         });
