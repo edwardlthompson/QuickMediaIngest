@@ -60,10 +60,10 @@ jobs:
           ./publish/QuickMediaIngest.msi
 
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/v')
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: v${{ env.VERSION }}
         files: |
           ./publish/QuickMediaIngest-Portable.zip
           ./publish/QuickMediaIngest.msi
