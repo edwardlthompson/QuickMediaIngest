@@ -63,12 +63,13 @@ namespace QuickMediaIngest.Core
         {
             string start = group.StartDate.ToString("yyyy-MM-dd");
             string end = group.EndDate.ToString("yyyy-MM-dd");
+            string name = string.IsNullOrEmpty(group.Title) ? "Shoot" : group.Title;
 
             if (start == end)
             {
-                return $"{start}+{group.AlbumName}";
+                return $"{start}+{name}";
             }
-            return $"{start} to {end}+{group.AlbumName}";
+            return $"{start} to {end}+{name}";
         }
 
         private string ResolveFileName(ImportItem item, string targetDir)

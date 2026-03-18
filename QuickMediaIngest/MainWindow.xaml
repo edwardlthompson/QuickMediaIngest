@@ -55,9 +55,9 @@
             
             <!-- Top Controls -->
             <StackPanel Orientation="Horizontal" Margin="16">
-                <TextBox materialDesign:HintAssist.Hint="Album Name" Width="300" Style="{StaticResource MaterialDesignFloatingHintTextBox}" Text="{Binding AlbumName, UpdateSourceTrigger=PropertyChanged}"/>
+                <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,16,0"/>
                 <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Yellow"/>
-                <Button Content="Import" Margin="16,0,0,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
+                <Button Content="Import" Margin="16,0,0,2" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
             </StackPanel>
             
             <!-- Thumbnail Grid -->
@@ -70,15 +70,22 @@
                                     <Grid Width="Auto">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Title}" Style="{StaticResource MaterialDesignHeadline6TextBlock}" FontSize="18" FontWeight="Bold" Background="Yellow" Foreground="Black" Padding="4"/>
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0">
-                                            <TextBlock Text="📁 " VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding FolderPath}" VerticalAlignment="Center" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
+                                        
+                                        <!-- Bulk Checkbox -->
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Yellow"/>
+                                        
+                                        <!-- Editable Title -->
+                                        <TextBox Grid.Column="1" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" FontSize="18" FontWeight="Bold" Background="Yellow" Foreground="Black" Padding="4,2" BorderThickness="0" MinWidth="120" VerticalAlignment="Center"/>
+                                        
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0" VerticalAlignment="Center">
+                                            <TextBlock Text="📁 " />
+                                            <TextBlock Text="{Binding FolderPath}" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
                                         </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
                                             <materialDesign:PackIcon Kind="ImageMultiple" Margin="0,0,4,0"/>
                                             <TextBlock Text="{Binding Items.Count}" FontWeight="Bold"/>
                                             <TextBlock Text=" items" />
@@ -101,6 +108,7 @@
                                                             <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
                                                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                                        <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4" Foreground="Yellow"/>
                                                         <!-- Video Icon Overlay -->
                                                         <materialDesign:PackIcon Kind="Video" Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#AA000000" Foreground="White" Width="20" Height="20" Margin="4"/>
                                                         <TextBlock Grid.Row="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center" Margin="2,4"/>

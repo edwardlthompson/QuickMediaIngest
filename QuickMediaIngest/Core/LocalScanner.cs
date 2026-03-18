@@ -17,29 +17,39 @@ namespace QuickMediaIngest.Core
                 return items;
             }
 
-            // Get standard file handles (Recursively)
             var files = Directory.GetFiles(drivePath, "*.*", SearchOption.AllDirectories);
 
             foreach (var file in files)
             {
                 FileInfo info = new FileInfo(file);
+                string ext = info.Extension.ToLower();
+
+                // Skip non-media metadata files (CTG, DAT, etc.)
+                if (!IsMediaFile(ext)) continue;
+
                 items.Add(new ImportItem
                 {
                     SourcePath = info.FullName,
                     FileName = info.Name,
                     FileSize = info.Length,
-                    DateTaken = info.LastWriteTime, // Fallback; EXIF parser will improve this in Sprint 3
-                    IsVideo = IsVideoFile(info.Extension),
-                    FileType = info.Extension.TrimStart('.').ToUpper()
+                    DateTaken = info.LastWriteTime, 
+                    IsVideo = IsVideoFile(ext),
+                    FileType = ext.TrimStart('.').ToUpper()
                 });
             }
 
             return items;
         }
 
+        private bool IsMediaFile(string ext)
+        {
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || 
+                   ext == ".cr2" || ext == ".cr3" || ext == ".nef" || ext == ".arw" || 
+                   IsVideoFile(ext);
+        }
+
         private bool IsVideoFile(string ext)
         {
-            ext = ext.ToLower();
             return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv";
         }
     }

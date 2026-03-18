@@ -20,6 +20,7 @@ namespace QuickMediaIngest.ViewModels
         private string? _selectedSource;
         private string _destinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
         private bool _deleteAfterImport = false;
+        private bool _selectAll = true;
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -28,7 +29,7 @@ namespace QuickMediaIngest.ViewModels
         public string AlbumName
         {
             get => _albumName;
-            set { _albumName = value; OnPropertyChanged(); UpdateAlbumNameOnGroups(); }
+            set { _albumName = value; OnPropertyChanged(); }
         }
 
         public string StatusMessage
@@ -65,6 +66,20 @@ namespace QuickMediaIngest.ViewModels
         {
             get => _deleteAfterImport;
             set { _deleteAfterImport = value; OnPropertyChanged(); }
+        }
+
+        public bool SelectAll
+        {
+            get => _selectAll;
+            set
+            {
+                _selectAll = value;
+                OnPropertyChanged();
+                foreach (var g in Groups)
+                {
+                    g.IsSelected = value;
+                }
+            }
         }
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
@@ -115,6 +130,9 @@ namespace QuickMediaIngest.ViewModels
 
                 foreach (var g in groups)
                 {
+                    // Skip folders/groups with NO files
+                    if (g.Items.Count == 0) continue;
+
                     g.AlbumName = AlbumName;
                     if (g.Items.Count > 0)
                     {
@@ -136,7 +154,7 @@ namespace QuickMediaIngest.ViewModels
                             var thumb = thumbService.GetThumbnail(item.SourcePath);
                             if (thumb != null)
                             {
-                                item.Thumbnail = thumb; // item.Thumbnail implements INotifyPropertyChanged
+                                item.Thumbnail = thumb; 
                             }
                         }
                     }
@@ -146,14 +164,6 @@ namespace QuickMediaIngest.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Error scanning {drive}: {ex.Message}";
-            }
-        }
-
-        private void UpdateAlbumNameOnGroups()
-        {
-            foreach (var g in Groups)
-            {
-                g.AlbumName = AlbumName;
             }
         }
 
