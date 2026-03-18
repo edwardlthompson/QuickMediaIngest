@@ -1,6 +1,7 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="Quick Media Ingest" Manufacturer="Edward Thompson" Version="$(var.Version)" UpgradeCode="01bde9fd-023d-4297-8316-b4610a48b914" Scope="perMachine">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <ui:WixUI Id="WixUI_Mondo" />
     
     <MediaTemplate EmbedCab="yes" />
 
@@ -9,9 +10,11 @@
       <Directory Id="INSTALLFOLDER" Name="QuickMediaIngest" />
     </StandardDirectory>
 
-    <StandardDirectory Id="ProgramMenuFolder">
+        <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="Quick Media Ingest"/>
     </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
 
     <!-- Components -->
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
@@ -34,9 +37,25 @@
     </ComponentGroup>
 
     <!-- Trigger feature sets -->
-    <Feature Id="MainFeature" Title="Quick Media Ingest" Level="1">
+        <ComponentGroup Id="DesktopShortcutComponents" Directory="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="b73e2646-302a-4389-8097-7bc9dc8b1221">
+         <Shortcut Id="ApplicationDesktopShortcut" 
+                   Name="Quick Media Ingest" 
+                   Description="Speedy Media Ingestion Tool" 
+                   Target="[INSTALLFOLDER]QuickMediaIngest.exe" 
+                   WorkingDirectory="INSTALLFOLDER"/>
+         <RemoveFolder Id="CleanUpDesktopShortCut" On="uninstall"/>
+         <RegistryValue Root="HKMU" Key="Software\EdwardThompson\QuickMediaIngest" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+        <!-- Trigger feature sets -->
+    <Feature Id="MainFeature" Title="Quick Media Ingest" Level="1" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="ShortcutComponents" />
+      
+      <Feature Id="DesktopShortcutFeature" Title="Desktop Shortcut" Level="1" Description="Create a shortcut on your desktop">
+         <ComponentGroupRef Id="DesktopShortcutComponents" />
+      </Feature>
     </Feature>
   </Package>
 </Wix>

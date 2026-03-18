@@ -45,11 +45,13 @@ jobs:
         Compress-Archive -Path ./publish/portable/* -DestinationPath ./publish/QuickMediaIngest-Portable.zip
 
     - name: Install WiX Toolset
-      run: dotnet tool install --global wix
+      run: |
+        dotnet tool install --global wix
+        wix extension add WixToolset.UI.wixext --global
 
     - name: Build MSI Installer
       run: |
-        wix build Installer/QuickMediaIngest.wxs -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
+        wix build Installer/QuickMediaIngest.wxs -ext WixToolset.UI.wixext -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
