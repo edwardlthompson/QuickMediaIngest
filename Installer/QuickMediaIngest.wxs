@@ -1,0 +1,21 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Quick Media Ingest" Manufacturer="Edward Thompson" Version="$(var.Version)" UpgradeCode="01bde9fd-023d-4297-8316-b4610a48b914">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="QuickMediaIngest" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable">
+        <File Source="publish/portable/QuickMediaIngest.exe" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="MainFeature" Title="Quick Media Ingest" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Package>
+</Wix>

@@ -14,22 +14,38 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Get Version from Project
+      shell: pwsh
+      run: |
+        $csproj = "QuickMediaIngest/QuickMediaIngest.csproj"
+        $version = (Select-String -Path $csproj -Pattern '<Version>(.*)</Version>').Matches.Value -replace '<Version>|</Version>', ''
+        if (-not $version) { $version = "1.0.0" }
+        echo "Updating GitHub Env with Version: $version"
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
 
     - name: Restore Dependencies
-      run: dotnet restore QuickMediaIngest/QuickMediaIngest/QuickMediaIngest.csproj
+      run: dotnet restore QuickMediaIngest/QuickMediaIngest.csproj
 
     - name: Build and Publish Portable EXE
       run: |
-        dotnet publish QuickMediaIngest/QuickMediaIngest/QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/portable
+        dotnet publish QuickMediaIngest/QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:Version=${{ env.VERSION }} -o ./publish/portable
 
     - name: Zip Portable Version
       shell: pwsh
       run: |
         Compress-Archive -Path ./publish/portable/* -DestinationPath ./publish/QuickMediaIngest-Portable.zip
+
+    - name: Install WiX Toolset
+      run: dotnet tool install --global wix
+
+    - name: Build MSI Installer
+      run: |
+        wix build Installer/QuickMediaIngest.wxs -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
     - name: Create Release
       id: create_release
@@ -37,5 +53,6 @@ jobs:
       with:
         files: |
           ./publish/QuickMediaIngest-Portable.zip
+          ./publish/QuickMediaIngest.msi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
