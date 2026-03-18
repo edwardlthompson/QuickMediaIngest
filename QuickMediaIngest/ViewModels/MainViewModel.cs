@@ -18,7 +18,21 @@ namespace QuickMediaIngest.ViewModels
         private string _albumName = "New Album";
         private string _statusMessage = "Ready";
         private int _progressPercent = 0;
-                private object? _selectedSource;
+                        private object? _selectedSource;
+        private string _destinationRoot = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+        private bool _deleteAfterImport = false;
+        private bool _selectAll = true;
+
+        private bool _showUpdateBanner = false;
+        private string _updateUrl = string.Empty;
+        private bool _showAboutDialog = false;
+        private int _updateIntervalHours = 24; 
+        private string _namingTemplate = "[Date]_[Time]_[Original]";
+        private double _thumbnailSize = 120; 
+
+        private readonly DeviceWatcher _watcher;
+        private readonly LocalScanner _scanner;
+        private readonly GroupBuilder _groupBuilder;
         public object? SelectedSource
         {
             get => _selectedSource;
