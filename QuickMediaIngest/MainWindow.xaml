@@ -173,13 +173,7 @@
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="Check Frequency:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
-                            <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedItem="{Binding UpdateIntervalHours}" Width="100" Style="{StaticResource MaterialDesignComboBox}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding StringFormat='{}{0} Hours'}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                            <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedValue="{Binding UpdateIntervalHours}" SelectedValuePath="Hours" DisplayMemberPath="Display" Width="100" Style="{StaticResource MaterialDesignComboBox}"/>
                         </StackPanel>
 
                         <Button Content="Check for Updates Now" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="8,2" Height="24" FontSize="11"/>

@@ -76,7 +76,8 @@ namespace QuickMediaIngest.Core
 
         private bool ShouldCheck(int intervalHours)
         {
-            if (intervalHours <= 0) return true; // 0 means always check on startup
+            if (intervalHours < 0) return false; // -1 means Off / Manual Check Only
+            if (intervalHours == 0) return true; // 0 means always check on startup
             if (!File.Exists(_cacheFile)) return true;
             
             try

@@ -116,8 +116,14 @@ namespace QuickMediaIngest.ViewModels
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
-        public ObservableCollection<int> IntervalOptions { get; } = new ObservableCollection<int> { 0, 1, 12, 24 };
-
+        public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>
+        {
+            new UpdateIntervalOption { Display = "Daily", Hours = 24 },
+            new UpdateIntervalOption { Display = "Weekly", Hours = 168 },
+            new UpdateIntervalOption { Display = "Monthly", Hours = 720 },
+            new UpdateIntervalOption { Display = "Off", Hours = -1 }
+        };
+       
         public ICommand ImportCommand { get; }
         public ICommand DownloadUpdateCommand { get; }
         public ICommand ToggleAboutCommand { get; }
@@ -370,5 +376,11 @@ namespace QuickMediaIngest.ViewModels
         public bool CanExecute(object? parameter) => true;
         public void Execute(object? parameter) => _execute();
         public event EventHandler? CanExecuteChanged;
+    }
+
+    public class UpdateIntervalOption
+    {
+        public string Display { get; set; } = string.Empty;
+        public int Hours { get; set; }
     }
 }
