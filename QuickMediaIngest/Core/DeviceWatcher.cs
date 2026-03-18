@@ -6,24 +6,31 @@ namespace QuickMediaIngest.Core
 {
     public class DeviceWatcher
     {
-        private ManagementEventWatcher _watcher;
+                private ManagementEventWatcher _watcher;
+        private ManagementEventWatcher _watcherDelete;
 
-        // Custom Event passing the Drive Letter (e.g. "E:\")
+        // Custom Events passing the Drive Letter (e.g. "E:\")
         public event Action<string> DeviceConnected; 
+        public event Action<string> DeviceDisconnected; 
 
         public void Start()
         {
             try
             {
-                // Monitor for volume mountings (SD cards / USB sticks)
+                // Monitor for volume mountings
                 string query = "SELECT * FROM __InstanceCreationEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_Volume'";
                 _watcher = new ManagementEventWatcher(new WqlEventQuery(query));
                 _watcher.EventArrived += Watcher_EventArrived;
                 _watcher.Start();
+
+                // Monitor for volume removals
+                string queryDelete = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_Volume'";
+                _watcherDelete = new ManagementEventWatcher(new WqlEventQuery(queryDelete));
+                _watcherDelete.EventArrived += WatcherDelete_EventArrived;
+                _watcherDelete.Start();
             }
             catch (Exception ex)
             {
-                // Fallback or log error
                 Console.WriteLine($"[Watcher Error] {ex.Message}");
             }
         }
@@ -32,6 +39,8 @@ namespace QuickMediaIngest.Core
         {
             _watcher?.Stop();
             _watcher?.Dispose();
+            _watcherDelete?.Stop();
+            _watcherDelete?.Dispose();
         }
 
         private void Watcher_EventArrived(object sender, EventArrivedEventArgs e)
@@ -42,15 +51,25 @@ namespace QuickMediaIngest.Core
                 string driveLetter = volume["DriveLetter"]?.ToString();
                 if (!string.IsNullOrEmpty(driveLetter))
                 {
-                    // Ensure standard formatting "X:\"
-                    if (!driveLetter.EndsWith("\\")) 
-                    {
-                        driveLetter += "\\";
-                    }
-                    
+                    if (!driveLetter.EndsWith("\\")) driveLetter += "\\";
                     DeviceConnected?.Invoke(driveLetter);
                 }
             }
+        }
+
+        private void WatcherDelete_EventArrived(object sender, EventArrivedEventArgs e)
+        {
+            var volume = e.NewEvent["TargetInstance"] as ManagementBaseObject;
+            if (volume != null)
+            {
+                string driveLetter = volume["DriveLetter"]?.ToString();
+                if (!string.IsNullOrEmpty(driveLetter))
+                {
+                    if (!driveLetter.EndsWith("\\")) driveLetter += "\\";
+                    DeviceDisconnected?.Invoke(driveLetter);
+                }
+            }
+        }
         }
     }
 }
