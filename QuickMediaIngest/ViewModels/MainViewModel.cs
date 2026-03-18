@@ -33,6 +33,24 @@ namespace QuickMediaIngest.ViewModels
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
         private readonly GroupBuilder _groupBuilder;
+                public string AlbumName
+        {
+            get => _albumName;
+            set { _albumName = value; OnPropertyChanged(); }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(); }
+        }
+
+        public int ProgressPercent
+        {
+            get => _progressPercent;
+            set { _progressPercent = value; OnPropertyChanged(); }
+        }
+
         public object? SelectedSource
         {
             get => _selectedSource;
