@@ -20,9 +20,9 @@ namespace QuickMediaIngest.Core
             _cacheFile = Path.Combine(appFolder, "last_update_check.txt");
         }
 
-        public async Task<string?> CheckForUpdateAsync()
+        public async Task<string?> CheckForUpdateAsync(int intervalHours = 24, bool force = false)
         {
-            if (!ShouldCheck()) return null;
+            if (!force && !ShouldCheck(intervalHours)) return null;
 
             try
             {
@@ -33,14 +33,32 @@ namespace QuickMediaIngest.Core
                 var doc = JsonDocument.Parse(response);
                 
                 string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-                string downloadUrl = doc.RootElement.GetProperty("html_url").GetString() ?? "";
+                
+                // Find MSI assets instead of html_url for automatic installs
+                string downloadUrl = string.Empty;
+                if (doc.RootElement.TryGetProperty("assets", out var assets))
+                {
+                    foreach (var asset in assets.EnumerateArray())
+                    {
+                        string name = asset.GetProperty("name").GetString() ?? "";
+                        if (name.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+                        {
+                            downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
+                            break;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                    downloadUrl = doc.RootElement.GetProperty("html_url").GetString() ?? "";
+                }
 
                 SaveLastCheck();
 
                 var localVersion = typeof(UpdateService).Assembly.GetName().Version;
                 if (localVersion == null) return null;
 
-                // Strip 'v' prefix if present: e.g., "v1.2.3" -> "1.2.3"
                 string versionText = remoteTag.TrimStart('v');
 
                 if (Version.TryParse(versionText, out var remoteVersion))
@@ -51,16 +69,14 @@ namespace QuickMediaIngest.Core
                     }
                 }
             }
-            catch (Exception)
-            {
-                // Suppress updates errors due to rate limiting or offline statuses
-            }
+            catch (Exception) { }
 
             return null;
         }
 
-        private bool ShouldCheck()
+        private bool ShouldCheck(int intervalHours)
         {
+            if (intervalHours <= 0) return true; // 0 means always check on startup
             if (!File.Exists(_cacheFile)) return true;
             
             try
@@ -68,7 +84,7 @@ namespace QuickMediaIngest.Core
                 string text = File.ReadAllText(_cacheFile);
                 if (DateTime.TryParse(text, out var lastCheck))
                 {
-                    return (DateTime.Now - lastCheck).TotalHours >= 24;
+                    return (DateTime.Now - lastCheck).TotalHours >= intervalHours;
                 }
             }
             catch { }

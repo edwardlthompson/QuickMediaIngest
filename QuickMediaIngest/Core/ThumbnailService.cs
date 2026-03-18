@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Media.Imaging;
+using MetadataExtractor;
+using MetadataExtractor.Formats.Exif;
 
 namespace QuickMediaIngest.Core
 {
@@ -10,11 +13,11 @@ namespace QuickMediaIngest.Core
         {
             if (!File.Exists(filePath)) return null;
 
+            // 1. Try Native WPF Decoder First
             try
             {
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    // DelayCreation avoids rendering the full image if a thumbnail is available
                     var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
                     if (decoder.Frames.Count > 0)
                     {
@@ -23,10 +26,37 @@ namespace QuickMediaIngest.Core
                     }
                 }
             }
+            catch { /* Native decoder failed, fallback to EXIF */ }
+
+            // 2. Fallback to MetadataExtractor (Embedded JPEG thumbnail usually in RAWs like CR2)
+            try
+            {
+                var directories = ImageMetadataReader.ReadMetadata(filePath);
+                var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
+                
+                if (thumbDir != null)
+                {
+                    var thumbBytes = thumbDir.GetThumbnailData();
+                    if (thumbBytes != null && thumbBytes.Length > 0)
+                    {
+                        using (var ms = new MemoryStream(thumbBytes))
+                        {
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmap.StreamSource = ms;
+                            bitmap.EndInit();
+                            bitmap.Freeze(); // Cross-thread safe
+                            return bitmap;
+                        }
+                    }
+                }
+            }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Thumbnail Error] {filePath}: {ex.Message}");
+                Console.WriteLine($"[Thumbnail Service Error] {filePath}: {ex.Message}");
             }
+
             return null;
         }
 
@@ -34,10 +64,9 @@ namespace QuickMediaIngest.Core
         {
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
-            bitmap.DecodePixelWidth = 160; // Shrink immediately in RAM
+            bitmap.DecodePixelWidth = 120; // Match Card widths well
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             
-            // Convert Frame to Stream to bypass lock issues
             var memoryStream = new MemoryStream();
             var encoder = new JpegBitmapEncoder();
             encoder.Frames.Add(frame);
@@ -46,7 +75,7 @@ namespace QuickMediaIngest.Core
 
             bitmap.StreamSource = memoryStream;
             bitmap.EndInit();
-            bitmap.Freeze(); // Make cross-thread safe for WPF binding
+            bitmap.Freeze(); 
             return bitmap;
         }
     }

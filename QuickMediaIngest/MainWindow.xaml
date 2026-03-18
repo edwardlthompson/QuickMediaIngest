@@ -150,7 +150,7 @@
 
         <!-- About Dialog Overlay -->
         <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <materialDesign:Card Width="320" Height="220" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
+            <materialDesign:Card Width="350" Height="340" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -161,11 +161,28 @@
                     <TextBlock Text="Quick Media Ingest" Style="{StaticResource MaterialDesignHeadline5TextBlock}" FontWeight="Bold" TextAlignment="Center" Foreground="Yellow"/>
                     
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center"/>
-                        <TextBlock Text="Open source on GitHub." TextAlignment="Center" Margin="0,0,0,16"/>
+                        <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center" FontSize="12"/>
                         
-                        <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="16,2" Height="30"/>
+                        <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="12,2" Height="28" Margin="0,8,0,12"/>
+
+                        <Separator Background="{DynamicResource MaterialDesignDivider}" Margin="0,0,0,8"/>
+
+                        <!-- Update Settings -->
+                        <TextBlock Text="Update Settings" FontWeight="Bold" Margin="0,0,0,4" FontSize="12" Foreground="Yellow"/>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Check Frequency:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                            <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedItem="{Binding UpdateIntervalHours}" Width="100" Style="{StaticResource MaterialDesignComboBox}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat='{}{0} Hours'}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <Button Content="Check for Updates Now" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="8,2" Height="24" FontSize="11"/>
                     </StackPanel>
 
                     <Button Grid.Row="2" Content="Close" Command="{Binding ToggleAboutCommand}" HorizontalAlignment="Center" Style="{StaticResource MaterialDesignRaisedButton}"/>

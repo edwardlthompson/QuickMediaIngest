@@ -26,6 +26,7 @@ namespace QuickMediaIngest.ViewModels
         private bool _showUpdateBanner = false;
         private string _updateUrl = string.Empty;
         private bool _showAboutDialog = false;
+        private int _updateIntervalHours = 24; // Default
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -105,15 +106,23 @@ namespace QuickMediaIngest.ViewModels
             set { _showAboutDialog = value; OnPropertyChanged(); }
         }
 
+        public int UpdateIntervalHours
+        {
+            get => _updateIntervalHours;
+            set { _updateIntervalHours = value; OnPropertyChanged(); SaveConfig(); CheckUpdates(); }
+        }
+
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
+        public ObservableCollection<int> IntervalOptions { get; } = new ObservableCollection<int> { 0, 1, 12, 24 };
 
         public ICommand ImportCommand { get; }
         public ICommand DownloadUpdateCommand { get; }
         public ICommand ToggleAboutCommand { get; }
         public ICommand OpenGitHubCommand { get; }
+        public ICommand RefreshUpdateCommand { get; }
 
         public MainViewModel()
         {
@@ -124,6 +133,9 @@ namespace QuickMediaIngest.ViewModels
             DownloadUpdateCommand = new RelayCommand(ExecuteDownloadUpdate);
             ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
             OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
+            RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
+
+            LoadConfig();
 
             // 1. Scan existing drives on Startup
             try 
@@ -132,7 +144,7 @@ namespace QuickMediaIngest.ViewModels
                 {
                     Sources.Add(drive.Name);
                 }
-            } catch { /* Suppress Context airgapped issues */ }
+            } catch { }
 
             // 2. Setup watcher
             _watcher = new DeviceWatcher();
@@ -152,12 +164,12 @@ namespace QuickMediaIngest.ViewModels
             CheckUpdates();
         }
 
-        private void CheckUpdates()
+        private void CheckUpdates(bool force = false)
         {
             System.Threading.Tasks.Task.Run(async () =>
             {
                 var updater = new UpdateService();
-                var url = await updater.CheckForUpdateAsync();
+                var url = await updater.CheckForUpdateAsync(UpdateIntervalHours, force);
                 if (!string.IsNullOrEmpty(url))
                 {
                      Application.Current.Dispatcher.Invoke(() =>
@@ -166,12 +178,49 @@ namespace QuickMediaIngest.ViewModels
                          ShowUpdateBanner = true;
                      });
                 }
+                else if (force)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                         StatusMessage = "No updates found. App is up to date.";
+                    });
+                }
             });
         }
 
-        private void ExecuteDownloadUpdate()
+        private async void ExecuteDownloadUpdate()
         {
-            if (!string.IsNullOrEmpty(UpdateUrl))
+            if (string.IsNullOrEmpty(UpdateUrl)) return;
+
+            if (UpdateUrl.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+            {
+                StatusMessage = "Downloading update installer (Auto)...";
+                ShowUpdateBanner = false;
+
+                try
+                {
+                    string tempPath = Path.Combine(Path.GetTempPath(), "QuickMediaIngest_Update.msi");
+
+                    using (var client = new System.Net.Http.HttpClient())
+                    {
+                        var response = await client.GetAsync(UpdateUrl);
+                        using (var fs = new FileStream(tempPath, FileMode.Create))
+                        {
+                            await response.Content.CopyToAsync(fs);
+                        }
+                    }
+
+                    StatusMessage = "Installing update... App will close for restart.";
+                    Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+                    Application.Current.Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Update download failed: {ex.Message}";
+                    ShowUpdateBanner = true;
+                }
+            }
+            else
             {
                 OpenUrl(UpdateUrl);
             }
@@ -280,6 +329,31 @@ namespace QuickMediaIngest.ViewModels
 
             StatusMessage = "Import Completed!";
             ProgressPercent = 100;
+        }
+
+        private void SaveConfig()
+        {
+            try
+            {
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config_interval.txt");
+                File.WriteAllText(path, UpdateIntervalHours.ToString());
+            } catch { }
+        }
+
+        private void LoadConfig()
+        {
+            try
+            {
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config_interval.txt");
+                if (File.Exists(path))
+                {
+                    string text = File.ReadAllText(path).Trim();
+                    if (int.TryParse(text, out var val))
+                    {
+                        _updateIntervalHours = val;
+                    }
+                }
+            } catch { }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
