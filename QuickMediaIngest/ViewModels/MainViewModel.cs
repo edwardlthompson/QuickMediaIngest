@@ -143,7 +143,7 @@ namespace QuickMediaIngest.ViewModels
         public ICommand ToggleAboutCommand { get; }
         public ICommand OpenGitHubCommand { get; }
         public ICommand RefreshUpdateCommand { get; }
-        public ICommand BrowseDestinationCommand { get; }
+        public ICommand BrowseDestinationCommand { get; }\r\n        public ICommand RescanCommand { get; }
 
         public MainViewModel()
         {
@@ -155,7 +155,7 @@ namespace QuickMediaIngest.ViewModels
             ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
             OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
             RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
-            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
+            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);\r\n            RescanCommand = new RelayCommand(ScanDrives);
 
             LoadConfig();
 
@@ -174,9 +174,17 @@ namespace QuickMediaIngest.ViewModels
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (!Sources.Contains(drive))
+                    if (!Sources.Contains(drive)) Sources.Add(drive);
+                });
+            };
+            _watcher.DeviceDisconnected += (drive) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (Sources.Contains(drive))
                     {
-                        Sources.Add(drive);
+                        Sources.Remove(drive);
+                        if (SelectedSource == drive) SelectedSource = null;
                     }
                 });
             };
@@ -409,6 +417,35 @@ namespace QuickMediaIngest.ViewModels
                         OnPropertyChanged("DestinationRoot");
                         OnPropertyChanged("NamingTemplate");
                         OnPropertyChanged("ThumbnailSize");
+                    }
+                }
+            } catch { }
+        }
+
+                private void ScanDrives()
+        {
+            try
+            {
+                var activeDrives = System.IO.DriveInfo.GetDrives()
+                    .Where(d => d.DriveType == System.IO.DriveType.Removable && d.IsReady)
+                    .Select(d => d.Name)
+                    .ToList();
+
+                for (int i = Sources.Count - 1; i >= 0; i--)
+                {
+                    string s = Sources[i];
+                    if (s.Contains(":") && !activeDrives.Contains(s))
+                    {
+                        Sources.RemoveAt(i);
+                        if (SelectedSource == s) SelectedSource = null;
+                    }
+                }
+
+                foreach (var drive in activeDrives)
+                {
+                    if (!Sources.Contains(drive))
+                    {
+                        Sources.Add(drive);
                     }
                 }
             } catch { }

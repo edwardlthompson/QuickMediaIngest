@@ -27,7 +27,16 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
-                <TextBlock Text="Sources" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="16" FontWeight="Bold"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Sources" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="16" FontWeight="Bold"/>
+                    <Button Grid.Column="1" Margin="16" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Rescan Drives" Command="{Binding RescanCommand}" VerticalAlignment="Center" Padding="0">
+                        <materialDesign:PackIcon Kind="Refresh" Height="22" Width="22" Foreground="Yellow"/>
+                    </Button>
+                </Grid>
                 
                 <ListBox Grid.Row="1" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" BorderThickness="0" Background="Transparent">
                     <ListBox.ItemTemplate>

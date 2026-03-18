@@ -12,15 +12,14 @@ if ($runId) {
     $errors = $logs -split "`n" | Where-Object { $_ -match "##\[error\]" }
     
     if ($errors) {
-        $report = @(
-            "# GitHub Build Error Report",
-            "**Run ID**: $runId",
-            "",
-            "## Errors Found",
-            "```"
-        )
+        $report = @()
+        $report += "# GitHub Build Error Report"
+        $report += ("**Run ID**: " + $runId)
+        $report += ""
+        $report += "## Errors Found"
+        $report += '```'
         $report += $errors
-        $report += "```"
+        $report += '```'
         
         $report | Out-File -FilePath "build_errors.md" -Encoding utf8
         Write-Host "Errors saved to build_errors.md successfully!"
@@ -30,5 +29,3 @@ if ($runId) {
 } else {
     Write-Host "No failed run found in the latest item."
 }
- drum
-(Wait, REMOVE DRUM, absolute target content replacement)
