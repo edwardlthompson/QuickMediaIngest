@@ -18,48 +18,15 @@ namespace QuickMediaIngest.ViewModels
         private string _albumName = "New Album";
         private string _statusMessage = "Ready";
         private int _progressPercent = 0;
-        private string? _selectedSource;
-        private string _destinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
-        private bool _deleteAfterImport = false;
-        private bool _selectAll = true;
-
-        private bool _showUpdateBanner = false;
-        private string _updateUrl = string.Empty;
-        private bool _showAboutDialog = false;
-        private int _updateIntervalHours = 24; // Default
-        private string _namingTemplate = "[Date]_[Time]_[Original]";
-        private double _thumbnailSize = 120; // Default
-
-        private readonly DeviceWatcher _watcher;
-        private readonly LocalScanner _scanner;
-        private readonly GroupBuilder _groupBuilder;
-
-        public string AlbumName
-        {
-            get => _albumName;
-            set { _albumName = value; OnPropertyChanged(); }
-        }
-
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
-
-        public int ProgressPercent
-        {
-            get => _progressPercent;
-            set { _progressPercent = value; OnPropertyChanged(); }
-        }
-
-        public string? SelectedSource
+                private object? _selectedSource;
+        public object? SelectedSource
         {
             get => _selectedSource;
             set 
             { 
                 _selectedSource = value; 
                 OnPropertyChanged(); 
-                if (!string.IsNullOrEmpty(_selectedSource)) 
+                if (_selectedSource != null) 
                     LoadSourceItems(_selectedSource); 
             }
         }
@@ -108,6 +75,31 @@ namespace QuickMediaIngest.ViewModels
             set { _showAboutDialog = value; OnPropertyChanged(); }
         }
 
+        private bool _showAddFtpDialog = false;
+        public bool ShowAddFtpDialog
+        {
+            get => _showAddFtpDialog;
+            set { _showAddFtpDialog = value; OnPropertyChanged(); }
+        }
+
+        private string _ftpHost = "192.168.1.100";
+        public string FtpHost { get => _ftpHost; set { _ftpHost = value; OnPropertyChanged(); } }
+
+        private int _ftpPort = 21;
+        public int FtpPort { get => _ftpPort; set { _ftpPort = value; OnPropertyChanged(); } }
+
+        private string _ftpUser = "anonymous";
+        public string FtpUser { get => _ftpUser; set { _ftpUser = value; OnPropertyChanged(); } }
+
+        private string _ftpPass = "anonymous";
+        public string FtpPass { get => _ftpPass; set { _ftpPass = value; OnPropertyChanged(); } }
+
+        private string _ftpRemoteFolder = "/";
+        public string FtpRemoteFolder { get => _ftpRemoteFolder; set { _ftpRemoteFolder = value; OnPropertyChanged(); } }
+
+        public ICommand ToggleAddFtpCommand { get; }
+        public ICommand SaveFtpCommand { get; }
+
         public int UpdateIntervalHours
         {
             get => _updateIntervalHours;
@@ -128,7 +120,7 @@ namespace QuickMediaIngest.ViewModels
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
-        public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
+        public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
                 public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>
         {
@@ -281,29 +273,59 @@ namespace QuickMediaIngest.ViewModels
             catch { }
         }
 
-        private void LoadSourceItems(string drive)
+                private void ExecuteSaveFtp()
         {
-            StatusMessage = $"Scanning {drive}...";
-            Groups.Clear();
+            if (string.IsNullOrEmpty(FtpHost)) return;
 
+            var ftp = new FtpSourceItem
+            {
+                Host = FtpHost,
+                Port = FtpPort,
+                User = FtpUser,
+                Pass = FtpPass,
+                RemoteFolder = FtpRemoteFolder
+            };
+
+            bool exists = Sources.OfType<FtpSourceItem>().Any(f => f.Host == ftp.Host && f.RemoteFolder == ftp.RemoteFolder);
+            if (!exists) Sources.Add(ftp);
+
+            ShowAddFtpDialog = false;
+            SelectedSource = ftp; // triggers scan instantly
+        }
+
+        private async void LoadSourceItems(object source)
+        {
+            Groups.Clear();
             try 
             {
-                var items = _scanner.Scan(drive);
+                List<QuickMediaIngest.Core.Models.ImportItem> items;
+                string sourceLabel = string.Empty;
+
+                if (source is FtpSourceItem ftp)
+                {
+                    sourceLabel = ftp.Host;
+                    StatusMessage = $"Scanning FTP: {ftp.Host}...";
+                    items = await new FtpScanner().ScanAsync(ftp.Host, ftp.Port, ftp.User, ftp.Pass, ftp.RemoteFolder);
+                }
+                else if (source is string drive)
+                {
+                    sourceLabel = drive;
+                    StatusMessage = $"Scanning Drive: {drive}...";
+                    items = _scanner.Scan(drive);
+                }
+                else return;
+
                 var groups = _groupBuilder.BuildGroups(items, TimeSpan.FromHours(2));
 
                 foreach (var g in groups)
                 {
                     if (g.Items.Count == 0) continue;
-
                     g.AlbumName = AlbumName;
-                    if (g.Items.Count > 0)
-                    {
-                        g.FolderPath = Path.GetDirectoryName(g.Items[0].SourcePath) ?? string.Empty;
-                    }
+                    if (g.Items.Count > 0) g.FolderPath = Path.GetDirectoryName(g.Items[0].SourcePath) ?? string.Empty;
                     Groups.Add(g);
                 }
 
-                StatusMessage = $"Found {groups.Count} Group(s) from {drive}. Core parsing images...";
+                StatusMessage = $"Found {groups.Count} Group(s) from {sourceLabel}. Core parsing images...";
 
                 System.Threading.Tasks.Task.Run(() =>
                 {
@@ -312,6 +334,10 @@ namespace QuickMediaIngest.ViewModels
                     {
                         foreach (var item in g.Items)
                         {
+                            if (source is FtpSourceItem) {
+                                // FTP thumb placeholders if needed
+                                continue;
+                            }
                             var thumb = thumbService.GetThumbnail(item.SourcePath);
                             if (thumb != null)
                             {
@@ -339,7 +365,12 @@ namespace QuickMediaIngest.ViewModels
             StatusMessage = "Starting Import...";
             ProgressPercent = 0;
 
-            var engine = new IngestEngine(new LocalFileProvider());
+                        IFileProvider provider = new LocalFileProvider();
+            if (SelectedSource is FtpSourceItem ftp)
+            {
+                provider = new FtpFileProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+            }
+            var engine = new IngestEngine(provider);
             engine.ProgressChanged += (percent, msg) =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -467,13 +498,15 @@ namespace QuickMediaIngest.ViewModels
                     .Select(d => d.Name)
                     .ToList();
 
-                for (int i = Sources.Count - 1; i >= 0; i--)
+                                for (int i = Sources.Count - 1; i >= 0; i--)
                 {
-                    string s = Sources[i];
-                    if (s.Contains(":") && !activeDrives.Contains(s))
+                    if (Sources[i] is string s)
                     {
-                        Sources.RemoveAt(i);
-                        if (SelectedSource == s) SelectedSource = null;
+                        if (s.Contains(":") && !activeDrives.Contains(s))
+                        {
+                            Sources.RemoveAt(i);
+                            if (SelectedSource as string == s) SelectedSource = null;
+                        }
                     }
                 }
 
@@ -494,7 +527,18 @@ namespace QuickMediaIngest.ViewModels
         }
     }
 
-        public class TokenItem
+            public class FtpSourceItem
+    {
+        public string Host { get; set; } = string.Empty;
+        public int Port { get; set; } = 21;
+        public string User { get; set; } = "anonymous";
+        public string Pass { get; set; } = "anonymous";
+        public string RemoteFolder { get; set; } = "/DCIM";
+
+        public override string ToString() => $"FTP: {Host} ({RemoteFolder})";
+    }
+
+    public class TokenItem
     {
         public string Value { get; set; } = string.Empty;
     }

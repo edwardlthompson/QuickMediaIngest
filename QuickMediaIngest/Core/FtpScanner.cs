@@ -9,12 +9,12 @@ namespace QuickMediaIngest.Core
 {
     public class FtpScanner
     {
-        public async Task<List<ImportItem>> ScanAsync(string host, int port, string remotePath)
+        public async Task<List<ImportItem>> ScanAsync(string host, int port, string user, string pass, string remotePath)
         {
             var items = new List<ImportItem>();
 
             // WiFi FTP Server Android usually uses anonymous or user/pass
-            using (var client = new AsyncFtpClient(host, "anonymous", "anonymous", port))
+            using (var client = new AsyncFtpClient(host, user, pass, port))
             {
                 await client.Connect();
 

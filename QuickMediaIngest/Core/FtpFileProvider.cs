@@ -5,20 +5,24 @@ using FluentFTP;
 
 namespace QuickMediaIngest.Core
 {
-    public class FtpFileProvider : IFileProvider
+        public class FtpFileProvider : IFileProvider
     {
         private readonly string _host;
         private readonly int _port;
+        private readonly string _user;
+        private readonly string _pass;
 
-        public FtpFileProvider(string host, int port)
+        public FtpFileProvider(string host, int port, string user, string pass)
         {
             _host = host;
             _port = port;
+            _user = user;
+            _pass = pass;
         }
 
         public async Task CopyAsync(string srcPath, string destPath, CancellationToken token)
         {
-            using (var client = new AsyncFtpClient(_host, "anonymous", "anonymous", _port))
+            using (var client = new AsyncFtpClient(_host, _user, _pass, _port))
             {
                 await client.Connect(token);
                 
