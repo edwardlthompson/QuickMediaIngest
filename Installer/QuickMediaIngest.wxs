@@ -1,11 +1,11 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="Quick Media Ingest" Manufacturer="Edward Thompson" Version="$(var.Version)" UpgradeCode="01bde9fd-023d-4297-8316-b4610a48b914">
+  <Package Name="Quick Media Ingest" Manufacturer="Edward Thompson" Version="$(var.Version)" UpgradeCode="01bde9fd-023d-4297-8316-b4610a48b914" Scope="perMachine">
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Standard Directories -->
-    <StandardDirectory Id="ProgramFilesFolder">
+    <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="QuickMediaIngest" />
     </StandardDirectory>
 
@@ -29,7 +29,7 @@
                    Target="[INSTALLFOLDER]QuickMediaIngest.exe" 
                    WorkingDirectory="INSTALLFOLDER"/>
          <RemoveFolder Id="CleanUpShortCut" On="uninstall"/>
-         <RegistryValue Root="HKCU" Key="Software\EdwardThompson\QuickMediaIngest" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+         <RegistryValue Root="HKMU" Key="Software\EdwardThompson\QuickMediaIngest" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
       </Component>
     </ComponentGroup>
 
