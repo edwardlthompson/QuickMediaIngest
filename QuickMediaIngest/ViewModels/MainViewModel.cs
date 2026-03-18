@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,6 +22,10 @@ namespace QuickMediaIngest.ViewModels
         private string _destinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
         private bool _deleteAfterImport = false;
         private bool _selectAll = true;
+
+        private bool _showUpdateBanner = false;
+        private string _updateUrl = string.Empty;
+        private bool _showAboutDialog = false;
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -82,10 +87,33 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
+        public bool ShowUpdateBanner
+        {
+            get => _showUpdateBanner;
+            set { _showUpdateBanner = value; OnPropertyChanged(); }
+        }
+
+        public string UpdateUrl
+        {
+            get => _updateUrl;
+            set { _updateUrl = value; OnPropertyChanged(); }
+        }
+
+        public bool ShowAboutDialog
+        {
+            get => _showAboutDialog;
+            set { _showAboutDialog = value; OnPropertyChanged(); }
+        }
+
+        public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
 
         public ICommand ImportCommand { get; }
+        public ICommand DownloadUpdateCommand { get; }
+        public ICommand ToggleAboutCommand { get; }
+        public ICommand OpenGitHubCommand { get; }
 
         public MainViewModel()
         {
@@ -93,6 +121,9 @@ namespace QuickMediaIngest.ViewModels
             _groupBuilder = new GroupBuilder();
 
             ImportCommand = new RelayCommand(ExecuteImport);
+            DownloadUpdateCommand = new RelayCommand(ExecuteDownloadUpdate);
+            ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
+            OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
 
             // 1. Scan existing drives on Startup
             try 
@@ -101,7 +132,7 @@ namespace QuickMediaIngest.ViewModels
                 {
                     Sources.Add(drive.Name);
                 }
-            } catch { /* Handle air-gapped security context errors */ }
+            } catch { /* Suppress Context airgapped issues */ }
 
             // 2. Setup watcher
             _watcher = new DeviceWatcher();
@@ -116,6 +147,43 @@ namespace QuickMediaIngest.ViewModels
                 });
             };
             _watcher.Start();
+
+            // 3. Check for Updates
+            CheckUpdates();
+        }
+
+        private void CheckUpdates()
+        {
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                var updater = new UpdateService();
+                var url = await updater.CheckForUpdateAsync();
+                if (!string.IsNullOrEmpty(url))
+                {
+                     Application.Current.Dispatcher.Invoke(() =>
+                     {
+                         UpdateUrl = url;
+                         ShowUpdateBanner = true;
+                     });
+                }
+            });
+        }
+
+        private void ExecuteDownloadUpdate()
+        {
+            if (!string.IsNullOrEmpty(UpdateUrl))
+            {
+                OpenUrl(UpdateUrl);
+            }
+        }
+
+        private void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch { }
         }
 
         private void LoadSourceItems(string drive)
@@ -130,7 +198,6 @@ namespace QuickMediaIngest.ViewModels
 
                 foreach (var g in groups)
                 {
-                    // Skip folders/groups with NO files
                     if (g.Items.Count == 0) continue;
 
                     g.AlbumName = AlbumName;
@@ -143,7 +210,6 @@ namespace QuickMediaIngest.ViewModels
 
                 StatusMessage = $"Found {groups.Count} Group(s) from {drive}. Core parsing images...";
 
-                // Background load thumbnails
                 System.Threading.Tasks.Task.Run(() =>
                 {
                     var thumbService = new ThumbnailService();
@@ -206,7 +272,7 @@ namespace QuickMediaIngest.ViewModels
                                 {
                                     File.Delete(item.SourcePath);
                                 }
-                            } catch { /* Suppress IO issues for locked files */ }
+                            } catch { }
                         }
                     }
                 }

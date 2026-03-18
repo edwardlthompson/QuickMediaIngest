@@ -41,27 +41,40 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 
-                <Button Grid.Row="2" Content="Add FTP Source" Margin="16" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                <StackPanel Grid.Row="2" Margin="16">
+                    <Button Content="Add FTP Source" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,8"/>
+                    <Button Content="About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="2" FontSize="11"/>
+                </StackPanel>
             </Grid>
         </Border>
 
         <!-- Main Content -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/> <!-- Update Banner -->
+                <RowDefinition Height="Auto"/> <!-- Top Controls -->
+                <RowDefinition Height="*"/>    <!-- ScrollViewer -->
+                <RowDefinition Height="Auto"/> <!-- Status Bar -->
             </Grid.RowDefinitions>
+
+            <!-- Update Banner -->
+            <Border Background="Yellow" Padding="6" CornerRadius="4" Margin="16,16,16,0" Visibility="{Binding ShowUpdateBanner, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <materialDesign:PackIcon Kind="Update" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Black"/>
+                    <TextBlock Text="A new version is available!" VerticalAlignment="Center" Foreground="Black" FontWeight="Bold"/>
+                    <Button Content="Download" Margin="16,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Command="{Binding DownloadUpdateCommand}" Padding="8,2" Height="24" Background="Black" Foreground="Yellow" FontSize="11"/>
+                </StackPanel>
+            </Border>
             
             <!-- Top Controls -->
-            <StackPanel Orientation="Horizontal" Margin="16">
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16">
                 <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,16,0"/>
                 <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Yellow"/>
                 <Button Content="Import" Margin="16,0,0,2" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
             </StackPanel>
             
             <!-- Thumbnail Grid -->
-            <ScrollViewer Grid.Row="1" Margin="8">
+            <ScrollViewer Grid.Row="2" Margin="8">
                 <ItemsControl ItemsSource="{Binding Groups}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -125,7 +138,7 @@
             </ScrollViewer>
             
             <!-- Status Bar -->
-            <StatusBar Grid.Row="2" Background="{DynamicResource MaterialDesignDarkBackground}">
+            <StatusBar Grid.Row="3" Background="{DynamicResource MaterialDesignDarkBackground}">
                 <StatusBarItem>
                     <TextBlock Text="{Binding StatusMessage}" Foreground="White" Margin="4,0,16,0"/>
                 </StatusBarItem>
@@ -133,6 +146,31 @@
                     <ProgressBar Value="{Binding ProgressPercent}" Width="150" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource MaterialDesignSecondaryLightMidBrush}"/>
                 </StatusBarItem>
             </StatusBar>
+        </Grid>
+
+        <!-- About Dialog Overlay -->
+        <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <materialDesign:Card Width="320" Height="220" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="16" UniformCornerRadius="8" Background="{DynamicResource MaterialDesignPaper}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Text="Quick Media Ingest" Style="{StaticResource MaterialDesignHeadline5TextBlock}" FontWeight="Bold" TextAlignment="Center" Foreground="Yellow"/>
+                    
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center"/>
+                        <TextBlock Text="Open source on GitHub." TextAlignment="Center" Margin="0,0,0,16"/>
+                        
+                        <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="16,2" Height="30"/>
+                    </StackPanel>
+
+                    <Button Grid.Row="2" Content="Close" Command="{Binding ToggleAboutCommand}" HorizontalAlignment="Center" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                </Grid>
+            </materialDesign:Card>
         </Grid>
     </Grid>
 </Window>
