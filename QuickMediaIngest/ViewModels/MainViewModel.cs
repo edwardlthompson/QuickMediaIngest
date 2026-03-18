@@ -143,7 +143,8 @@ namespace QuickMediaIngest.ViewModels
         public ICommand ToggleAboutCommand { get; }
         public ICommand OpenGitHubCommand { get; }
         public ICommand RefreshUpdateCommand { get; }
-        public ICommand BrowseDestinationCommand { get; }\r\n        public ICommand RescanCommand { get; }
+        public ICommand BrowseDestinationCommand { get; }
+        public ICommand RescanCommand { get; }
 
         public MainViewModel()
         {
@@ -155,7 +156,8 @@ namespace QuickMediaIngest.ViewModels
             ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
             OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
             RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
-            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);\r\n            RescanCommand = new RelayCommand(ScanDrives);
+            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
+            RescanCommand = new RelayCommand(ScanDrives);
 
             LoadConfig();
 
