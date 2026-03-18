@@ -404,6 +404,11 @@ namespace QuickMediaIngest.ViewModels
                         if (!string.IsNullOrEmpty(config.DestinationRoot)) _destinationRoot = config.DestinationRoot;
                         if (!string.IsNullOrEmpty(config.NamingTemplate)) _namingTemplate = config.NamingTemplate;
                         if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
+
+                        OnPropertyChanged("UpdateIntervalHours");
+                        OnPropertyChanged("DestinationRoot");
+                        OnPropertyChanged("NamingTemplate");
+                        OnPropertyChanged("ThumbnailSize");
                     }
                 }
             } catch { }
