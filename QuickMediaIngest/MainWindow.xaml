@@ -7,7 +7,8 @@
         TextElement.FontWeight="Regular"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        Background="{DynamicResource MaterialDesignPaper}">
+        Background="{DynamicResource MaterialDesignPaper}"
+        PreviewMouseWheel="Window_PreviewMouseWheel">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
@@ -43,7 +44,7 @@
                 
                 <StackPanel Grid.Row="2" Margin="16">
                     <Button Content="Add FTP Source" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,8"/>
-                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="LightGray" Padding="2" FontSize="11"/>
+                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" Padding="2" FontSize="11"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -67,11 +68,23 @@
             </Border>
             
             <!-- Top Controls -->
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16">
-                <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,16,0"/>
-                <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Yellow"/>
-                <Button Content="Import" Margin="16,0,0,2" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
-            </StackPanel>
+            <Grid Grid.Row="1" Margin="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,16,0"/>
+                    <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Yellow"/>
+                    <Button Content="Import" Margin="16,0,0,2" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
+                    <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="150" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight"/>
+                </StackPanel>
+            </Grid>
             
             <!-- Thumbnail Grid -->
             <ScrollViewer Grid.Row="2" Margin="8">
@@ -114,17 +127,24 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <materialDesign:Card Margin="8" Width="100" Height="120" Padding="4">
+                                                <materialDesign:Card Margin="8" Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Padding="4">
                                                     <Grid>
                                                         <Grid.RowDefinitions>
                                                             <RowDefinition Height="*"/>
                                                             <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
                                                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
-                                                        <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4" Foreground="Yellow"/>
-                                                        <!-- Video Icon Overlay -->
                                                         <materialDesign:PackIcon Kind="Video" Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#AA000000" Foreground="White" Width="20" Height="20" Margin="4"/>
-                                                        <TextBlock Grid.Row="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center" Margin="2,4"/>
+
+                                                        <!-- Footer Location for Checkbox and Label beneath image frame -->
+                                                        <Grid Grid.Row="1" Margin="2,4">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                        </Grid>
                                                     </Grid>
                                                 </materialDesign:Card>
                                             </DataTemplate>

@@ -28,6 +28,7 @@ namespace QuickMediaIngest.ViewModels
         private bool _showAboutDialog = false;
         private int _updateIntervalHours = 24; // Default
         private string _namingTemplate = "[Date]_[Time]_[Original]";
+        private double _thumbnailSize = 120; // Default
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -117,6 +118,12 @@ namespace QuickMediaIngest.ViewModels
         {
             get => _namingTemplate;
             set { _namingTemplate = value; OnPropertyChanged(); SaveConfig(); }
+        }
+
+        public double ThumbnailSize
+        {
+            get => _thumbnailSize;
+            set { _thumbnailSize = value; OnPropertyChanged(); }
         }
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
@@ -373,7 +380,8 @@ namespace QuickMediaIngest.ViewModels
                 {
                     UpdateIntervalHours = UpdateIntervalHours,
                     DestinationRoot = DestinationRoot,
-                    NamingTemplate = NamingTemplate
+                    NamingTemplate = NamingTemplate,
+                    ThumbnailSize = ThumbnailSize
                 };
                 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
@@ -395,6 +403,7 @@ namespace QuickMediaIngest.ViewModels
                         _updateIntervalHours = config.UpdateIntervalHours;
                         if (!string.IsNullOrEmpty(config.DestinationRoot)) _destinationRoot = config.DestinationRoot;
                         if (!string.IsNullOrEmpty(config.NamingTemplate)) _namingTemplate = config.NamingTemplate;
+                        if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
                     }
                 }
             } catch { }
@@ -427,5 +436,7 @@ namespace QuickMediaIngest.ViewModels
         public int UpdateIntervalHours { get; set; } = 24;
         public string DestinationRoot { get; set; } = string.Empty;
         public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
+        public double ThumbnailSize { get; set; } = 120;
     }
+}
 }

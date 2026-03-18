@@ -63,11 +63,15 @@ namespace QuickMediaIngest.Core
         {
             string start = group.StartDate.ToString("yyyy-MM-dd");
             string end = group.EndDate.ToString("yyyy-MM-dd");
-            string name = string.IsNullOrEmpty(group.Title) ? "Shoot" : group.Title;
+            string name = group.Title;
 
-            if (start == end)
+            if (string.IsNullOrEmpty(name))
             {
-                return $"{start}+{name}";
+                return start == end ? start : $"{start} to {end}";
+            }
+
+            return start == end ? $"{start}+{name}" : $"{start} to {end}+{name}";
+        }+{name}";
             }
             return $"{start} to {end}+{name}";
         }
