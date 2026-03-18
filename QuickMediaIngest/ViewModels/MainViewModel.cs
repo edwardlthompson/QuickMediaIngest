@@ -130,13 +130,27 @@ namespace QuickMediaIngest.ViewModels
 
         public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
-        public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>
+                public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>
         {
             new UpdateIntervalOption { Display = "Daily", Hours = 24 },
             new UpdateIntervalOption { Display = "Weekly", Hours = 168 },
             new UpdateIntervalOption { Display = "Monthly", Hours = 720 },
             new UpdateIntervalOption { Display = "Off", Hours = -1 }
         };
+
+        public ObservableCollection<string> AvailableTokens { get; } = new ObservableCollection<string> 
+        { 
+            "[Date]", "[Time]", "[YYYY]", "[MM]", "[DD]", "[HH]", "[mm]", "[ss]", "[Original]", "[Ext]", "_", "-" 
+        };
+        
+        public ObservableCollection<TokenItem> SelectedTokens { get; } = new ObservableCollection<TokenItem>();
+        
+                public void UpdateNamingFromTokens()
+        {
+            _namingTemplate = string.Join("", SelectedTokens.Select(t => t.Value));
+            OnPropertyChanged("NamingTemplate");
+            SaveConfig();
+        }
        
         public ICommand ImportCommand { get; }
         public ICommand DownloadUpdateCommand { get; }
@@ -419,6 +433,19 @@ namespace QuickMediaIngest.ViewModels
                         OnPropertyChanged("DestinationRoot");
                         OnPropertyChanged("NamingTemplate");
                         OnPropertyChanged("ThumbnailSize");
+
+                        // Parse NamingTemplate to SelectedTokens
+                        Application.Current.Dispatcher.Invoke(() => {
+                            SelectedTokens.Clear();
+                            if (!string.IsNullOrEmpty(_namingTemplate))
+                            {
+                                var matches = System.Text.RegularExpressions.Regex.Matches(_namingTemplate, @"\[[^\]]+\]|[^\[\]]+");
+                                foreach (System.Text.RegularExpressions.Match m in matches)
+                                {
+                                    SelectedTokens.Add(m.Value);
+                                }
+                            }
+                        });
                     }
                 }
             } catch { }
@@ -458,6 +485,11 @@ namespace QuickMediaIngest.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+    }
+
+        public class TokenItem
+    {
+        public string Value { get; set; } = string.Empty;
     }
 
     public class RelayCommand : ICommand

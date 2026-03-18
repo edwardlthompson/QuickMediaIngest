@@ -83,9 +83,15 @@ namespace QuickMediaIngest.Core
                 outputName = "[Date]_[Time]_[Original]"; // Default fallback
             }
 
-            // Replace Tokens
+                        // Replace Tokens
             outputName = outputName.Replace("[Date]", item.DateTaken.ToString("yyyy-MM-dd"));
             outputName = outputName.Replace("[Time]", item.DateTaken.ToString("HH-mm-ss"));
+            outputName = outputName.Replace("[YYYY]", item.DateTaken.ToString("yyyy"));
+            outputName = outputName.Replace("[MM]", item.DateTaken.ToString("MM"));
+            outputName = outputName.Replace("[DD]", item.DateTaken.ToString("dd"));
+            outputName = outputName.Replace("[HH]", item.DateTaken.ToString("HH"));
+            outputName = outputName.Replace("[mm]", item.DateTaken.ToString("mm"));
+            outputName = outputName.Replace("[ss]", item.DateTaken.ToString("ss"));
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
             outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
 

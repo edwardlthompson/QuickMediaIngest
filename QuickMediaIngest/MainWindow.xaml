@@ -205,8 +205,32 @@
                                 </Grid>
 
                                 <TextBlock Text="File Naming Template" FontWeight="Bold" Margin="0,0,0,4" FontSize="13" Foreground="Yellow"/>
-                                <TextBox Text="{Binding NamingTemplate}" Style="{StaticResource MaterialDesignOutlinedTextBox}" Padding="8" materialDesign:HintAssist.Hint="[Date]_[Time]_[Original]"/>
-                                <TextBlock Text="Tokens: [Date] (yyyy-MM-dd), [Time] (HH-mm-ss), [Original] (File Name), [Ext] (Extension)" FontSize="10" Foreground="Gray" TextWrapping="Wrap" Margin="4,2,0,0"/>
+                                                                 <TextBlock Text="Available Tokens (Drag to below target panel)" FontSize="11" Foreground="Gray" Margin="0,4,0,2"/>
+                                 <ItemsControl ItemsSource="{Binding AvailableTokens}" Margin="0,0,0,8">
+                                     <ItemsControl.ItemsPanel>
+                                         <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                     </ItemsControl.ItemsPanel>
+                                     <ItemsControl.ItemTemplate>
+                                         <DataTemplate>
+                                             <materialDesign:Chip Content="{Binding}" Margin="2" Padding="4" IsDeletable="False" Cursor="Hand" MouseMove="Token_MouseMove"/>
+                                         </DataTemplate>
+                                     </ItemsControl.ItemTemplate>
+                                 </ItemsControl>
+
+                                 <TextBlock Text="Selected Format Design" FontSize="12" Foreground="Yellow" Margin="0,4,0,4" FontWeight="Bold"/>
+                                 <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" Padding="6" Background="#11FFFFFF" CornerRadius="4" AllowDrop="True" Drop="Token_Drop" DragOver="Token_DragOver">
+                                     <ItemsControl ItemsSource="{Binding SelectedTokens}">
+                                         <ItemsControl.ItemsPanel>
+                                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                         </ItemsControl.ItemsPanel>
+                                         <ItemsControl.ItemTemplate>
+                                             <DataTemplate>
+                                                 <materialDesign:Chip Content="{Binding Value}" Margin="2" Padding="4" IsDeletable="True" DeleteClick="Token_DeleteClick"/>
+                                             </DataTemplate>
+                                         </ItemsControl.ItemTemplate>
+                                     </ItemsControl>
+                                 </Border>
+                                 <TextBlock Text="{Binding NamingTemplate, StringFormat='Combined: {0}'}" FontSize="11" Foreground="Gray" Margin="4,4,0,0"/>
                             </StackPanel>
                         </TabItem>
 
