@@ -18,16 +18,13 @@ echo   [2] Minor Bump -> %MINOR_VERSION%
 echo   [3] Major Bump -> %MAJOR_VERSION%
 echo.
 
-set /p CHOICE="Enter choice [1-3, or type custom version, Press Enter for 1]: "
+choice /c 123 /t 5 /d 1 /m "Enter choice [5 sec timeout, default 1]: "
 
-if "%CHOICE%"=="1" set NEW_VERSION=%PATCH_VERSION%
-if "%CHOICE%"=="2" set NEW_VERSION=%MINOR_VERSION%
-if "%CHOICE%"=="3" set NEW_VERSION=%MAJOR_VERSION%
-if "%CHOICE%"=="" set NEW_VERSION=%PATCH_VERSION%
+if errorlevel 3 set NEW_VERSION=%MAJOR_VERSION% & goto SET_VERSION
+if errorlevel 2 set NEW_VERSION=%MINOR_VERSION% & goto SET_VERSION
+if errorlevel 1 set NEW_VERSION=%PATCH_VERSION%
 
-:: If they typed a custom version (not 1,2,3 and not empty)
-if not "%CHOICE%"=="1" if not "%CHOICE%"=="2" if not "%CHOICE%"=="3" if not "%CHOICE%"=="" set NEW_VERSION=%CHOICE%
-
+:SET_VERSION
 echo Setting version to %NEW_VERSION%...
 
 set CSPROJ=QuickMediaIngest\QuickMediaIngest.csproj
@@ -47,7 +44,7 @@ dotnet publish QuickMediaIngest\QuickMediaIngest.csproj -c Release -r win-x64 --
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Build failed. Verify .NET 8 SDK is installed.
-    pause
+    timeout /t 5
     exit /b
 )
 
@@ -69,7 +66,7 @@ git push origin main
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to push to main.
-    pause
+    timeout /t 5
     exit /b
 )
 
@@ -85,4 +82,4 @@ if %ERRORLEVEL% NEQ 0 (
     echo Check the 'Actions' or 'Releases' tab on GitHub.
 )
 
-pause
+timeout /t 3

@@ -1,7 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Windows;
 using System.Windows.Input;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
@@ -13,11 +17,17 @@ namespace QuickMediaIngest.ViewModels
         private string _albumName = "New Album";
         private string _statusMessage = "Ready";
         private int _progressPercent = 0;
+        private string? _selectedSource;
+        private string _destinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+
+        private readonly DeviceWatcher _watcher;
+        private readonly LocalScanner _scanner;
+        private readonly GroupBuilder _groupBuilder;
 
         public string AlbumName
         {
             get => _albumName;
-            set { _albumName = value; OnPropertyChanged(); }
+            set { _albumName = value; OnPropertyChanged(); UpdateAlbumNameOnGroups(); }
         }
 
         public string StatusMessage
@@ -32,39 +42,124 @@ namespace QuickMediaIngest.ViewModels
             set { _progressPercent = value; OnPropertyChanged(); }
         }
 
-        // List of groups grouping the items
+        public string? SelectedSource
+        {
+            get => _selectedSource;
+            set 
+            { 
+                _selectedSource = value; 
+                OnPropertyChanged(); 
+                if (!string.IsNullOrEmpty(_selectedSource)) 
+                    LoadSourceItems(_selectedSource); 
+            }
+        }
+
+        public string DestinationRoot
+        {
+            get => _destinationRoot;
+            set { _destinationRoot = value; OnPropertyChanged(); }
+        }
+
+        public ObservableCollection<string> Sources { get; } = new ObservableCollection<string>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
 
         public ICommand ImportCommand { get; }
 
         public MainViewModel()
         {
+            _scanner = new LocalScanner();
+            _groupBuilder = new GroupBuilder();
+
             ImportCommand = new RelayCommand(ExecuteImport);
-            LoadMockData();
+
+            // 1. Scan existing drives on Startup
+            try 
+            {
+                foreach (var drive in DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Removable && d.IsReady))
+                {
+                    Sources.Add(drive.Name);
+                }
+            } catch { /* Handle air-gapped security context errors */ }
+
+            // 2. Setup watcher
+            _watcher = new DeviceWatcher();
+            _watcher.DeviceConnected += (drive) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (!Sources.Contains(drive))
+                    {
+                        Sources.Add(drive);
+                    }
+                });
+            };
+            _watcher.Start();
         }
 
-        private void LoadMockData()
+        private void LoadSourceItems(string drive)
         {
-            // Populate mock data for visual preview when booted
-            var group = new ItemGroup 
-            { 
-                Title = "Shoot 1 (SD Card)", 
-                StartDate = DateTime.Now.AddDays(-1), 
-                EndDate = DateTime.Now,
-                AlbumName = "Vacation"
-            };
+            StatusMessage = $"Scanning {drive}...";
+            Groups.Clear();
 
-            group.Items.Add(new ImportItem { FileName = "IMG_001.JPG", FileSize = 4050000, DateTaken = DateTime.Now });
-            group.Items.Add(new ImportItem { FileName = "IMG_002.CR2", FileSize = 24050000, DateTaken = DateTime.Now, FileType = "CR2" });
+            try 
+            {
+                var items = _scanner.Scan(drive);
+                var groups = _groupBuilder.BuildGroups(items, TimeSpan.FromHours(2));
 
-            Groups.Add(group);
+                foreach (var g in groups)
+                {
+                    g.AlbumName = AlbumName;
+                    Groups.Add(g);
+                }
+                StatusMessage = $"Found {groups.Count} Group(s) from {drive}.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error scanning {drive}: {ex.Message}";
+            }
+        }
+
+        private void UpdateAlbumNameOnGroups()
+        {
+            foreach (var g in Groups)
+            {
+                g.AlbumName = AlbumName;
+            }
         }
 
         private async void ExecuteImport()
         {
-            StatusMessage = "Starting Ingestion...";
-            ProgressPercent = 10;
-            // Wire logic to IngestEngine here
+            if (Groups.Count == 0)
+            {
+                StatusMessage = "Nothing to import.";
+                return;
+            }
+
+            StatusMessage = "Starting Import...";
+            ProgressPercent = 0;
+
+            var engine = new IngestEngine(new LocalFileProvider());
+            engine.ProgressChanged += (percent, msg) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProgressPercent = percent;
+                    StatusMessage = msg;
+                });
+            };
+
+            var cts = new CancellationTokenSource();
+
+            await System.Threading.Tasks.Task.Run(async () =>
+            {
+                foreach (var group in Groups.ToList())
+                {
+                    await engine.IngestGroupAsync(group, DestinationRoot, cts.Token);
+                }
+            });
+
+            StatusMessage = "Import Completed!";
+            ProgressPercent = 100;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -74,7 +169,6 @@ namespace QuickMediaIngest.ViewModels
         }
     }
 
-    // Standard RelayCommand helper for WPF
     public class RelayCommand : ICommand
     {
         private readonly Action _execute;

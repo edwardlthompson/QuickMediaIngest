@@ -25,17 +25,18 @@
                 
                 <TextBlock Text="Sources" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="16" FontWeight="Bold"/>
                 
-                <ScrollViewer Grid.Row="1">
-                    <StackPanel>
-                        <!-- Sidebar items will go here -->
-                        <materialDesign:Card Margin="8" Padding="12">
-                            <TextBlock Text="📷 SD Card (E:)" Style="{StaticResource MaterialDesignBody1TextBlock}"/>
-                        </materialDesign:Card>
-                        <materialDesign:Card Margin="8" Padding="12">
-                            <TextBlock Text="📱 Phone (FTP)" Style="{StaticResource MaterialDesignBody1TextBlock}"/>
-                        </materialDesign:Card>
-                    </StackPanel>
-                </ScrollViewer>
+                <ListBox Grid.Row="1" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" BorderThickness="0" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <materialDesign:Card Margin="4" Padding="12" materialDesign:ElevationAssist.Elevation="Dp1">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Sd" VerticalAlignment="Center" Margin="0,0,8,0" Height="20" Width="20"/>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource MaterialDesignBody1TextBlock}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </materialDesign:Card>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
                 
                 <Button Grid.Row="2" Content="Add FTP Source" Margin="16" Style="{StaticResource MaterialDesignOutlinedButton}"/>
             </Grid>
