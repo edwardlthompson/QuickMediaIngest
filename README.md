@@ -15,7 +15,14 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.9)
+### Latest Updates (v1.0.10)
+
+* Replaced All/None buttons with a single **Select All** checkbox and positioned it next to **Include Subfolders** in the bottom bar.
+* Moved **Hours Between Shoots** and thumbnail zoom controls to the bottom bar.
+* Moved **Delete After Import** next to the Import button.
+* Refined Sources header alignment (refresh icon aligned with Sources title) and matched sidebar button typography.
+
+### Previous Updates (v1.0.9)
 
 * Renamed preview action to **Build FTP Previews** and show it only for FTP sources (SD card/local previews continue to build automatically during scan).
 * Local release process now explicitly refreshes `publish/local-test/QuickMediaIngest.exe` so the local EXE version tracks each release.
