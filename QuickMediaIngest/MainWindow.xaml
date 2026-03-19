@@ -122,8 +122,10 @@
             <Border Grid.Row="1" Margin="0,0,0,8" Padding="16,10,16,12" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Background="{DynamicResource MaterialDesignCardBackground}">
                 <StackPanel>
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                        <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,8,8" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Content="Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,8,8" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,8,8">
+                            <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,8,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            <Button Content="Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow"/>
+                        </StackPanel>
                         <Button Content="Build Previews" Margin="0,0,12,8" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                         <Button Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Margin="0,0,12,8" Style="{StaticResource MaterialDesignRaisedButton}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                         <Button Content="All" Command="{Binding SelectAllShootsCommand}" Margin="0,0,8,8" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
