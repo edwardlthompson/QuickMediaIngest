@@ -211,23 +211,23 @@
             <!-- Status Bar -->
             <StatusBar Grid.Row="3" Background="{DynamicResource MaterialDesignDarkBackground}">
                 <StatusBarItem>
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" Margin="4,0,16,0"/>
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" Margin="4,0,10,0"/>
                 </StatusBarItem>
                 <StatusBarItem>
-                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,12,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <CheckBox Content="Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,12,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <TextBlock Text="Hours Between Shoots" VerticalAlignment="Center" Foreground="LightGray" FontSize="11" Margin="0,0,8,0"/>
-                        <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Width="64" Margin="0,0,12,0" Style="{StaticResource MaterialDesignOutlinedTextBox}" materialDesign:HintAssist.Hint="4" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
-                        <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,10,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                        <CheckBox Content="Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,10,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                        <TextBlock Text="Hours Between Shoots" VerticalAlignment="Center" Foreground="LightGray" FontSize="10" Margin="0,0,6,0"/>
+                        <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Width="56" Margin="0,0,10,0" Style="{StaticResource MaterialDesignOutlinedTextBox}" materialDesign:HintAssist.Hint="4" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                        <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,3,0" Foreground="Yellow" Width="16" Height="16"/>
+                        <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="100" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
                     </WrapPanel>
                 </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                        <TextBlock Text="Progress:" Foreground="Gray" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="11"/>
-                        <ProgressBar Value="{Binding ProgressPercent}" Width="120" Height="8" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource MaterialDesignSecondaryLightMidBrush}"/>
-                        <TextBlock Text="{Binding ProgressPercent, StringFormat='Progress: {0}%'}" Foreground="Gray" Margin="8,0,16,0" VerticalAlignment="Center" FontSize="11"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <TextBlock Text="Progress:" Foreground="Gray" Margin="0,0,6,0" VerticalAlignment="Center" FontSize="10"/>
+                        <ProgressBar Value="{Binding ProgressPercent}" Width="100" Height="7" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource MaterialDesignSecondaryLightMidBrush}"/>
+                        <TextBlock Text="{Binding ProgressPercent, StringFormat='{}{0}%'}" Foreground="Gray" Margin="6,0,8,0" VerticalAlignment="Center" FontSize="10"/>
                     </StackPanel>
                 </StatusBarItem>
             </StatusBar>

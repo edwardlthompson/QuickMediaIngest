@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.10)
+### Latest Updates (v1.0.11)
+
+* Tightened bottom bar spacing and reduced control footprint for better narrow-width usability.
+* Reduced status/progress footprint in the bottom bar while preserving the same information.
+
+### Previous Updates (v1.0.10)
 
 * Replaced All/None buttons with a single **Select All** checkbox and positioned it next to **Include Subfolders** in the bottom bar.
 * Moved **Hours Between Shoots** and thumbnail zoom controls to the bottom bar.
