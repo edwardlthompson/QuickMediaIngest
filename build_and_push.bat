@@ -4,25 +4,27 @@ echo 🔍 1. Calculating Next Version...
 echo ==========================================
 
 :: Run helper script to calculate versions
-for /f "tokens=1,2,3,4 delims=|" %%a in ('powershell -File calculate_version.ps1') do (
+for /f "tokens=1,2,3,4,5,6,7 delims=|" %%a in ('powershell -ExecutionPolicy Bypass -File calculate_version.ps1') do (
     set CURRENT_VERSION=%%a
     set PATCH_VERSION=%%b
     set MINOR_VERSION=%%c
     set MAJOR_VERSION=%%d
+    set RECOMMENDED_VERSION=%%e
+    set RECOMMENDED_BUMP=%%f
+    set BUMP_REASON=%%g
 )
 
 echo Current Version: %CURRENT_VERSION%
-echo Proposing options (Semantic Versioning):
-echo   [1] Patch Bump -> %PATCH_VERSION% (Default)
-echo   [2] Minor Bump -> %MINOR_VERSION%
-echo   [3] Major Bump -> %MAJOR_VERSION%
+echo Recommended Bump: %RECOMMENDED_BUMP% ^(%RECOMMENDED_VERSION%^) 
+echo Reason: %BUMP_REASON%
 echo.
 
-choice /c 123 /t 5 /d 1 /m "Enter choice [5 sec timeout, default 1]: "
+:: Optional override: set VERSION_BUMP=patch^|minor^|major before running this script.
+if /I "%VERSION_BUMP%"=="major" set NEW_VERSION=%MAJOR_VERSION%
+if /I "%VERSION_BUMP%"=="minor" set NEW_VERSION=%MINOR_VERSION%
+if /I "%VERSION_BUMP%"=="patch" set NEW_VERSION=%PATCH_VERSION%
 
-if errorlevel 3 set NEW_VERSION=%MAJOR_VERSION% & goto SET_VERSION
-if errorlevel 2 set NEW_VERSION=%MINOR_VERSION% & goto SET_VERSION
-if errorlevel 1 set NEW_VERSION=%PATCH_VERSION%
+if not defined NEW_VERSION set NEW_VERSION=%RECOMMENDED_VERSION%
 
 :SET_VERSION
 echo Setting version to %NEW_VERSION%...

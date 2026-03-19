@@ -58,9 +58,26 @@ The local test app is now built automatically when running:
 * `build_and_push.bat`
 * `create_release_tag.bat`
 
+### 🔢 Automatic Versioning
+
+`build_and_push.bat` now auto-selects a Semantic Version bump using release heuristics:
+
+* **Major**: explicit breaking-change markers (e.g., `BREAKING CHANGE`, `feat!:`).
+* **Minor**: feature-level changes (e.g., `feat:` commits or newly added app-surface files).
+* **Patch**: fixes, maintenance, or docs/tooling changes.
+
+If needed, you can override the automatic choice by setting `VERSION_BUMP=patch`, `VERSION_BUMP=minor`, or `VERSION_BUMP=major` before running the script.
+
 ### 🤖 CI/CD (GitHub Actions)
 
-Fully automated builds are configured to pack a Portable EXE and an ZIP package automatically on Tag Releases (`v*`).
+Pushes to `main` now automatically:
+
+* Build portable EXE + MSI.
+* Check the version in the project file.
+* Create and push tag `v<Version>` if it does not already exist.
+* Publish a GitHub Release with build artifacts.
+
+This prevents the "version bumped but no GitHub Release appeared" issue.
 
 ---
 
