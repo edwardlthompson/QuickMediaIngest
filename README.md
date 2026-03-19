@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.8)
+### Latest Updates (v1.0.9)
+
+* Renamed preview action to **Build FTP Previews** and show it only for FTP sources (SD card/local previews continue to build automatically during scan).
+* Local release process now explicitly refreshes `publish/local-test/QuickMediaIngest.exe` so the local EXE version tracks each release.
+
+### Previous Updates (v1.0.8)
 
 * Kept Import and Scan as one non-breaking action group in the top banner so they no longer wrap apart on narrow widths.
 * Maintained two-row wrapped toolbar behavior for remaining controls.
