@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.6)
+### Latest Updates (v1.0.7)
+
+* Top banner controls were split into two wrapped rows so priority actions (Import, Scan, Build Previews) stay in the first row.
+* Improved narrow-window behavior so key controls remain discoverable while secondary controls wrap below.
+
+### Previous Updates (v1.0.6)
 
 * Removed the visible "Current Source Path" field from the top controls to reduce noise.
 * Redesigned top tools into a single wrapped banner with a distinct divider line above the main content.
