@@ -15,7 +15,18 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.11)
+### Latest Updates (v1.0.12)
+
+**🎨 Major UI Redesign with Professional Theme System:**
+* **Comprehensive Theme Framework**: Created modular theme system with colors (dark/light), brushes, typography, and control styles in `Themes/` directory for future extensibility.
+* **Excel 2003-Inspired Aesthetic**: Applied iconic cobalt blue (#007ACC) accent colors, light gray bar backgrounds, and horizontal divider lines between sections for retro-meets-modern visual hierarchy.
+* **Block-Based Control Layout**: Wrapped each control group (Import, Scan, Delete, Browse, FTP Preview, Select All, Hours, Zoom) in individual styled blocks for clarity and language-agnostic usability.
+* **Navigation Bar**: Added top navigation bar with application branding and **Dark/Light Theme Toggle** (moon/sun icons) in upper right corner with visual pill-button toggle control.
+* **Redesigned Status Bar**: Moved progress meter with percentage to the left side of the lower bar; verbose status message now in a prominent secondary row for improved readability.
+* **Universal Iconography**: Added emojis and Material Design icons throughout (📥 Import, 🔍 Scan, 🗑️ Delete, 🎬 FTP Preview, ⏱️ Hours, etc.) to make UI intuitively understandable in any language.
+* **Professional Styling**: Segoe UI typography system implemented globally (11pt headers, 10pt body, 9pt captions); consistent margin/padding; smooth hover/focus states; responsive narrow-width layout preservation.
+
+### Previous Updates (v1.0.11)
 
 * Tightened bottom bar spacing and reduced control footprint for better narrow-width usability.
 * Reduced status/progress footprint in the bottom bar while preserving the same information.

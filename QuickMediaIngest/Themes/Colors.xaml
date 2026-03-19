@@ -1,0 +1,80 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- ============ DARK THEME COLOR PALETTE ============ -->
+    <!-- Inspired by Excel 2003 with modern dark theme aesthetics -->
+    
+    <!-- Primary backgrounds -->
+    <Color x:Key="DarkTheme.Background">#1E1E1E</Color>
+    <Color x:Key="DarkTheme.Surface">#2D2D30</Color>
+    <Color x:Key="DarkTheme.BarBackground">#2D2D30</Color>
+    <Color x:Key="DarkTheme.CardBackground">#252526</Color>
+    
+    <!-- Text colors -->
+    <Color x:Key="DarkTheme.TextPrimary">#FFFFFF</Color>
+    <Color x:Key="DarkTheme.TextSecondary">#E0E0E0</Color>
+    <Color x:Key="DarkTheme.TextTertiary">#999999</Color>
+    
+    <!-- Accent colors - Excel 2003 iconic blue -->
+    <Color x:Key="DarkTheme.Accent">#007ACC</Color>
+    <Color x:Key="DarkTheme.AccentLight">#1084D7</Color>
+    
+    <!-- UI Elements -->
+    <Color x:Key="DarkTheme.Divider">#3F3F46</Color>
+    <Color x:Key="DarkTheme.Hover">#3E3E42</Color>
+    <Color x:Key="DarkTheme.Border">#3F3F46</Color>
+    <Color x:Key="DarkTheme.Success">#4CAF50</Color>
+    <Color x:Key="DarkTheme.Warning">#FFA500</Color>
+    <Color x:Key="DarkTheme.Error">#F44336</Color>
+    
+    <!-- Excel 2003 yellow accent (sheet tabs) -->
+    <Color x:Key="DarkTheme.ExcelYellow">#FFEB3B</Color>
+    
+    <!-- ============ LIGHT THEME COLOR PALETTE ============ -->
+    
+    <!-- Primary backgrounds -->
+    <Color x:Key="LightTheme.Background">#FFFFFF</Color>
+    <Color x:Key="LightTheme.Surface">#F5F5F5</Color>
+    <Color x:Key="LightTheme.BarBackground">#F5F5F5</Color>
+    <Color x:Key="LightTheme.CardBackground">#FAFAFA</Color>
+    
+    <!-- Text colors -->
+    <Color x:Key="LightTheme.TextPrimary">#212121</Color>
+    <Color x:Key="LightTheme.TextSecondary">#424242</Color>
+    <Color x:Key="LightTheme.TextTertiary">#757575</Color>
+    
+    <!-- Accent colors -->
+    <Color x:Key="LightTheme.Accent">#007ACC</Color>
+    <Color x:Key="LightTheme.AccentLight">#1084D7</Color>
+    
+    <!-- UI Elements -->
+    <Color x:Key="LightTheme.Divider">#BDBDBD</Color>
+    <Color x:Key="LightTheme.Hover">#EEEEEE</Color>
+    <Color x:Key="LightTheme.Border">#CCCCCC</Color>
+    <Color x:Key="LightTheme.Success">#4CAF50</Color>
+    <Color x:Key="LightTheme.Warning">#FFA500</Color>
+    <Color x:Key="LightTheme.Error">#F44336</Color>
+    
+    <!-- Excel 2003 yellow accent -->
+    <Color x:Key="LightTheme.ExcelYellow">#FFD700</Color>
+    
+    <!-- ============ DEFAULT TO DARK THEME ============ -->
+    <Color x:Key="Theme.Background">#1E1E1E</Color>
+    <Color x:Key="Theme.Surface">#2D2D30</Color>
+    <Color x:Key="Theme.BarBackground">#2D2D30</Color>
+    <Color x:Key="Theme.CardBackground">#252526</Color>
+    <Color x:Key="Theme.TextPrimary">#FFFFFF</Color>
+    <Color x:Key="Theme.TextSecondary">#E0E0E0</Color>
+    <Color x:Key="Theme.TextTertiary">#999999</Color>
+    <Color x:Key="Theme.Accent">#007ACC</Color>
+    <Color x:Key="Theme.AccentLight">#1084D7</Color>
+    <Color x:Key="Theme.Divider">#3F3F46</Color>
+    <Color x:Key="Theme.Hover">#3E3E42</Color>
+    <Color x:Key="Theme.Border">#3F3F46</Color>
+    <Color x:Key="Theme.Success">#4CAF50</Color>
+    <Color x:Key="Theme.Warning">#FFA500</Color>
+    <Color x:Key="Theme.Error">#F44336</Color>
+    <Color x:Key="Theme.ExcelYellow">#FFEB3B</Color>
+    
+</ResourceDictionary>
