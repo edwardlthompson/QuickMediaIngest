@@ -69,6 +69,7 @@ namespace QuickMediaIngest.ViewModels
         private string _skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
         private string _skippedFoldersReportText = string.Empty;
         private bool _isUpdatingSelectAll;
+        private bool _isDarkTheme = true;
 
         private readonly DeviceWatcher _watcher;
         private readonly LocalScanner _scanner;
@@ -455,6 +456,21 @@ namespace QuickMediaIngest.ViewModels
         public bool IsFtpSourceSelected => SelectedSource is FtpSourceItem;
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+
+        public bool IsDarkTheme
+        {
+            get => _isDarkTheme;
+            set
+            {
+                if (_isDarkTheme != value)
+                {
+                    _isDarkTheme = value;
+                    OnPropertyChanged();
+                    // Apply the theme when changed
+                    App.ApplyTheme(!value);
+                }
+            }
+        }
 
         public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();

@@ -6,15 +6,15 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Material Design Theme - Dark base -->
+                <!-- Material Design MUST load first -->
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Blue" SecondaryColor="Amber" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
                 
-                <!-- Custom Theme System -->
-                <ResourceDictionary Source="/Themes/Colors.xaml" />
-                <ResourceDictionary Source="/Themes/Brushes.xaml" />
-                <ResourceDictionary Source="/Themes/Typography.xaml" />
-                <ResourceDictionary Source="/Themes/ControlStyles.xaml" />
+                <!-- Custom Theme System - loads on top of Material Design -->
+                <ResourceDictionary Source="pack://application:,,,/QuickMediaIngest;component/Themes/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/QuickMediaIngest;component/Themes/Brushes.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/QuickMediaIngest;component/Themes/Typography.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/QuickMediaIngest;component/Themes/ControlStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

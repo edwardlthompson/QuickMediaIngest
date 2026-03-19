@@ -15,9 +15,18 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.12)
+### Latest Updates (v1.0.13)
 
-**🎨 Major UI Redesign with Professional Theme System:**
+**🔧 Theme System Critical Fixes:**
+* **Fixed broken UI rendering** - Corrected resource dictionary loading order so Material Design loads first, then custom theme overlays on top.
+* **Fixed resource path URIs** - Changed from relative paths to full `pack://application:,,,/` URIs for reliable resource resolution.
+* **Added DarkTheme.xaml & LightTheme.xaml** - Separate theme variant files for active color overrides at runtime.
+* **Implemented Windows System Theme Detection** - Auto-detects dark/light mode from Windows registry on startup (HKCU\...\Themes\Personalize\AppsUseLightTheme).
+* **Binding system ready** - Theme toggle now functionally bound to `IsDarkTheme` ViewModel property with live theme switching.
+* **App.xaml.cs theme switching** - Static method `App.ApplyTheme(useLightTheme)` enables runtime theme dictionary swapping.
+* **Fixed nullable reference warnings** - Added proper nullability annotations for Registry access.
+
+### Previous Updates (v1.0.12)
 * **Comprehensive Theme Framework**: Created modular theme system with colors (dark/light), brushes, typography, and control styles in `Themes/` directory for future extensibility.
 * **Excel 2003-Inspired Aesthetic**: Applied iconic cobalt blue (#007ACC) accent colors, light gray bar backgrounds, and horizontal divider lines between sections for retro-meets-modern visual hierarchy.
 * **Block-Based Control Layout**: Wrapped each control group (Import, Scan, Delete, Browse, FTP Preview, Select All, Hours, Zoom) in individual styled blocks for clarity and language-agnostic usability.
