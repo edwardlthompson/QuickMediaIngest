@@ -68,7 +68,9 @@ namespace QuickMediaIngest.Core
                     GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
                     GroupCurrent = current,
                     GroupTotal = total,
+                    SourcePath = item.SourcePath,
                     FileName = item.FileName,
+                    FileSizeBytes = item.FileSize,
                     Success = success,
                     ErrorMessage = errorMessage
                 });
@@ -145,7 +147,9 @@ namespace QuickMediaIngest.Core
         public string GroupTitle { get; set; } = string.Empty;
         public int GroupCurrent { get; set; }
         public int GroupTotal { get; set; }
+        public string SourcePath { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public long FileSizeBytes { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; } = string.Empty;
     }

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -30,7 +31,9 @@ namespace QuickMediaIngest.ViewModels
         private string _currentImportGroupTitle = string.Empty;
         private string _importElapsedText = "00:00:00";
         private string _importEtaText = "--:--:--";
+        private string _importDataRateText = "-- MB/s";
         private DateTime _importStartedAtUtc = DateTime.MinValue;
+        private long _processedBytesForImport = 0;
         private bool _showImportProgressDialog = false;
         private bool _showScanProgressDialog = false;
         private int _scanProgressPercent = 0;
@@ -148,6 +151,12 @@ namespace QuickMediaIngest.ViewModels
             set { _importEtaText = value; OnPropertyChanged(); }
         }
 
+        public string ImportDataRateText
+        {
+            get => _importDataRateText;
+            set { _importDataRateText = value; OnPropertyChanged(); }
+        }
+
         public bool ShowImportProgressDialog
         {
             get => _showImportProgressDialog;
@@ -211,6 +220,7 @@ namespace QuickMediaIngest.ViewModels
                 OnPropertyChanged(); 
                 OnPropertyChanged(nameof(HasSelectedSource));
                 OnPropertyChanged(nameof(IsLocalSourceSelected));
+                OnPropertyChanged(nameof(IsFtpSourceSelected));
 
                 if (_selectedSource is string drive)
                 {
@@ -442,6 +452,7 @@ namespace QuickMediaIngest.ViewModels
 
         public bool HasSelectedSource => SelectedSource != null;
         public bool IsLocalSourceSelected => SelectedSource is string;
+        public bool IsFtpSourceSelected => SelectedSource is FtpSourceItem;
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
@@ -1339,9 +1350,11 @@ namespace QuickMediaIngest.ViewModels
             CurrentImportGroupTitle = string.Empty;
             ImportElapsedText = "00:00:00";
             ImportEtaText = "--:--:--";
+            ImportDataRateText = "-- MB/s";
             ShowImportProgressDialog = true;
             StatusMessage = "Starting Import...";
             ProgressPercent = 0;
+            _processedBytesForImport = 0;
 
             _importStartedAtUtc = DateTime.UtcNow;
             using var importCts = new CancellationTokenSource();
@@ -1372,6 +1385,12 @@ namespace QuickMediaIngest.ViewModels
                         else if (TotalFilesForImport <= ProcessedFilesForImport && TotalFilesForImport > 0)
                         {
                             ImportEtaText = "00:00:00";
+                        }
+
+                        if (stopwatch.Elapsed.TotalSeconds > 0.25 && _processedBytesForImport > 0)
+                        {
+                            double bytesPerSecond = _processedBytesForImport / stopwatch.Elapsed.TotalSeconds;
+                            ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
                         }
                     });
                 }
@@ -1405,6 +1424,10 @@ namespace QuickMediaIngest.ViewModels
                             if (!progress.Success)
                             {
                                 FailedFilesForImport++;
+                            }
+                            else
+                            {
+                                _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
                             }
 
                             CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
@@ -1457,6 +1480,11 @@ namespace QuickMediaIngest.ViewModels
                 ProgressPercent = 100;
                 CurrentGroupProgressPercent = 100;
                 ImportEtaText = "00:00:00";
+                if (stopwatch.Elapsed.TotalSeconds > 0.25 && _processedBytesForImport > 0)
+                {
+                    double bytesPerSecond = _processedBytesForImport / stopwatch.Elapsed.TotalSeconds;
+                    ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
+                }
                 ShowSuccessNotification = true;
 
                 SaveImportHistoryRecord(stopwatch.Elapsed);
@@ -1481,6 +1509,10 @@ namespace QuickMediaIngest.ViewModels
                     LoadSourceItems(SelectedSource);
                 }
             }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Import failed: {ex.Message}";
+            }
             finally
             {
                 importCts.Cancel();
@@ -1494,6 +1526,7 @@ namespace QuickMediaIngest.ViewModels
                 }
 
                 ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+                SystemSounds.Asterisk.Play();
                 IsImporting = false;
                 ShowImportProgressDialog = false;
             }
