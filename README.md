@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.4)
+### Latest Updates (v1.0.5)
+
+* Fixed local single-file EXE startup crash caused by window icon path resolution during XAML load.
+* Embedded the icon as a WPF resource so the published standalone executable launches correctly.
+
+### Previous Updates (v1.0.4)
 
 * Import progress dialog was decluttered by removing duplicate counters while keeping key progress, ETA, and data-rate info.
 * Release process expectation tightened: each shipped update should include a local build and a GitHub build/release run.
