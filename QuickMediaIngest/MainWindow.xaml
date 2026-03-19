@@ -522,20 +522,21 @@
                             <TextBlock Text="{Binding CurrentFileBeingImported}" FontSize="28" FontWeight="Bold" Foreground="Yellow"/>
                             <TextBlock Text=" / " FontSize="28" FontWeight="Bold" Foreground="Gray" Margin="8,0"/>
                             <TextBlock Text="{Binding TotalFilesForImport}" FontSize="28" FontWeight="Bold" Foreground="Gray"/>
-                            <TextBlock Text=" files" FontSize="14" Foreground="Gray" VerticalAlignment="Bottom" Margin="8,0,0,4"/>
+                            <TextBlock Text=" imported" FontSize="14" Foreground="Gray" VerticalAlignment="Bottom" Margin="8,0,0,4"/>
                         </StackPanel>
 
-                        <TextBlock Text="{Binding ProcessedFilesForImport, StringFormat='Processed: {0}'}" FontSize="11" TextAlignment="Center" Foreground="LightGray" Margin="0,0,0,2"/>
-                        <TextBlock Text="{Binding FailedFilesForImport, StringFormat='Failed: {0}'}" FontSize="11" TextAlignment="Center" Foreground="#FFB347" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding FailedFilesForImport, StringFormat='Failed: {0}'}" FontSize="11" TextAlignment="Center" Foreground="#FFB347" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Overall Progress" FontSize="12" Foreground="Gray" Margin="0,0,0,4"/>
                         <ProgressBar Value="{Binding ProgressPercent}" Height="16" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource MaterialDesignSecondaryMidBrush}" Margin="0,0,0,12"/>
 
-                        <TextBlock Text="{Binding ProgressPercent, StringFormat='Progress: {0}%'}" FontSize="12" TextAlignment="Center" Foreground="Gray" Margin="0,0,0,16"/>
-
                         <TextBlock Text="{Binding CurrentImportGroupTitle, StringFormat='Current Shoot: {0}'}" FontSize="12" TextAlignment="Center" Foreground="LightGray" Margin="0,0,0,4"/>
-                        <TextBlock Text="{Binding CurrentGroupFileBeingImported, StringFormat='Current Shoot Files: {0}'}" FontSize="11" TextAlignment="Center" Foreground="Gray"/>
-                        <TextBlock Text="{Binding TotalFilesInCurrentGroup, StringFormat='Current Shoot Total: {0}'}" FontSize="11" TextAlignment="Center" Foreground="Gray" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <TextBlock Text="Shoot Progress: " FontSize="11" Foreground="Gray"/>
+                            <TextBlock Text="{Binding CurrentGroupFileBeingImported}" FontSize="11" Foreground="LightGray"/>
+                            <TextBlock Text=" / " FontSize="11" Foreground="Gray"/>
+                            <TextBlock Text="{Binding TotalFilesInCurrentGroup}" FontSize="11" Foreground="LightGray"/>
+                        </StackPanel>
                         <ProgressBar Value="{Binding CurrentGroupProgressPercent}" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="#FF8BC34A" Margin="0,0,0,8"/>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">

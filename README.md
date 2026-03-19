@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.3)
+### Latest Updates (v1.0.4)
+
+* Import progress dialog was decluttered by removing duplicate counters while keeping key progress, ETA, and data-rate info.
+* Release process expectation tightened: each shipped update should include a local build and a GitHub build/release run.
+
+### Previous Updates (v1.0.3)
 
 * FTP scanner and folder discovery were rewritten for better reliability with Android FTP servers.
 * Preview generation is now deferred and can be run only for selected shoots.
