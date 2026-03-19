@@ -196,6 +196,8 @@ namespace QuickMediaIngest.ViewModels
             RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
             BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
             RescanCommand = new RelayCommand(ScanDrives);
+            ToggleAddFtpCommand = new RelayCommand(() => ShowAddFtpDialog = !ShowAddFtpDialog);
+            SaveFtpCommand = new RelayCommand(ExecuteSaveFtp);
 
             LoadConfig();
 
@@ -328,10 +330,10 @@ namespace QuickMediaIngest.ViewModels
         private async void LoadSourceItems(object source)
         {
             Groups.Clear();
+            string sourceLabel = source.ToString() ?? "source";
             try 
             {
                 List<QuickMediaIngest.Core.Models.ImportItem> items;
-                string sourceLabel = string.Empty;
 
                 if (source is FtpSourceItem ftp)
                 {
@@ -377,12 +379,12 @@ namespace QuickMediaIngest.ViewModels
                             }
                         }
                     }
-                    Application.Current.Dispatcher.Invoke(() => StatusMessage = $"Scanning {drive} Complete. Loaded thumbs.");
+                    Application.Current.Dispatcher.Invoke(() => StatusMessage = $"Scanning {sourceLabel} complete. Loaded thumbs.");
                 });
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error scanning {drive}: {ex.Message}";
+                StatusMessage = $"Error scanning {sourceLabel}: {ex.Message}";
             }
         }
 
