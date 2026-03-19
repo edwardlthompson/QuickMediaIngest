@@ -118,57 +118,32 @@
                 </Border>
             </StackPanel>
 
-            <!-- Top Controls -->
-            <Grid Grid.Row="1" Margin="16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="All" Command="{Binding SelectAllShootsCommand}" Margin="0,0,8,2" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Content="None" Command="{Binding DeselectAllShootsCommand}" Margin="0,0,12,2" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Content="Build Previews" Margin="0,0,12,2" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,0,2" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+            <!-- Top Controls Banner -->
+            <Border Grid.Row="1" Margin="0,0,0,8" Padding="16,10,16,12" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Background="{DynamicResource MaterialDesignCardBackground}">
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="All" Command="{Binding SelectAllShootsCommand}" Margin="0,0,8,8" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="None" Command="{Binding DeselectAllShootsCommand}" Margin="0,0,12,8" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <CheckBox Content="Delete After Import" IsChecked="{Binding DeleteAfterImport}" Margin="0,0,12,8" VerticalAlignment="Center" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Build Previews" Margin="0,0,12,8" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,16,8" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+
+                    <Button Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Margin="0,0,8,8" Style="{StaticResource MaterialDesignRaisedButton}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,16,8" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow"/>
+
+                    <CheckBox Content="Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" VerticalAlignment="Center" Foreground="Yellow" Margin="0,0,16,8"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,8">
+                        <TextBlock Text="Hours Between Shoots" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="LightGray" FontSize="12"/>
+                        <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Width="110" Style="{StaticResource MaterialDesignOutlinedTextBox}" materialDesign:HintAssist.Hint="e.g., 4"/>
                     </StackPanel>
 
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <TextBlock Text="FTP scan folder is managed in Add FTP Source settings." Foreground="Gray" FontSize="11" VerticalAlignment="Center" Margin="0,0,16,8" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                        <Border Grid.Column="0" Padding="8,4" CornerRadius="4" Background="#11000000" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
-                            <TextBlock Text="{Binding ScanPath, StringFormat='Current Source Path: {0}'}" VerticalAlignment="Center" Foreground="LightGray" TextTrimming="CharacterEllipsis"/>
-                        </Border>
-                        <Button Grid.Column="1" Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Margin="8,0,0,0" Style="{StaticResource MaterialDesignRaisedButton}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Grid.Column="2" Content="Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="8,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow"/>
-                    </Grid>
-
-                    <TextBlock Text="FTP scan folder is managed in Add FTP Source settings." Foreground="Gray" FontSize="11" Margin="2,0,0,4" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Grid Margin="0,6,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="120"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <CheckBox Content="Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" VerticalAlignment="Center" Foreground="Yellow"/>
-                        <TextBlock Grid.Column="2" Text="Hours Between Shoots" VerticalAlignment="Center" Margin="18,0,8,0" Foreground="LightGray" FontSize="12"/>
-                        <TextBox Grid.Column="3" Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Width="110" Style="{StaticResource MaterialDesignOutlinedTextBox}" materialDesign:HintAssist.Hint="e.g., 4"/>
-                    </Grid>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
-                    <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="150" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
-                </StackPanel>
-            </Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                        <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
+                        <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="150" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                    </StackPanel>
+                </WrapPanel>
+            </Border>
             
             <!-- Thumbnail Grid -->
             <ScrollViewer Grid.Row="2" Margin="8">
