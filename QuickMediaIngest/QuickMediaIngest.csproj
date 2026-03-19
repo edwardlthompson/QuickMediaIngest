@@ -5,11 +5,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon></ApplicationIcon>
+    <ApplicationIcon>QuickMediaIngest.ico</ApplicationIcon>
     <Version>1.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="QuickMediaIngest.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\icon.svg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
     <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
     <PackageReference Include="FluentFTP" Version="50.0.1" />
     <PackageReference Include="MetadataExtractor" Version="2.8.1" />
