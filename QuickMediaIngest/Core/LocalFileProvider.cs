@@ -14,5 +14,16 @@ namespace QuickMediaIngest.Core
                 await sourceStream.CopyToAsync(destStream, 81920, token); 
             }
         }
+
+        public Task DeleteAsync(string srcPath, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            if (File.Exists(srcPath))
+            {
+                File.Delete(srcPath);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }

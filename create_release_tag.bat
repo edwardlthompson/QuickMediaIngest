@@ -1,6 +1,20 @@
 @echo off
 set /p TAG_NAME="Enter Version Tag (e.g., v1.0.0): "
 
+set VERSION=%TAG_NAME%
+if /I "%VERSION:~0,1%"=="v" set VERSION=%VERSION:~1%
+
+echo.
+echo Building local test app before tagging...
+call build_local_test.bat %VERSION%
+
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] Local build failed. Tag will not be created.
+    pause
+    exit /b
+)
+
 echo.
 echo Adding local tag: %TAG_NAME%
 git tag %TAG_NAME%

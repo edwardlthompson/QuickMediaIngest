@@ -39,7 +39,7 @@ echo.
 echo ==========================================
 echo 🛠️ 2. Building Portable EXE Locally...
 echo ==========================================
-dotnet publish QuickMediaIngest\QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:Version=%NEW_VERSION% -o ./publish/portable
+call build_local_test.bat %NEW_VERSION%
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -49,7 +49,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [SUCCESS] Local EXE built at: publish\portable\QuickMediaIngest.exe
+echo [SUCCESS] Local EXE built at: publish\local-test\QuickMediaIngest.exe
 echo.
 
 echo ==========================================

@@ -6,12 +6,12 @@ namespace QuickMediaIngest.Core
 {
     public class DeviceWatcher
     {
-                private ManagementEventWatcher _watcher;
-        private ManagementEventWatcher _watcherDelete;
+    private ManagementEventWatcher? _watcher;
+    private ManagementEventWatcher? _watcherDelete;
 
         // Custom Events passing the Drive Letter (e.g. "E:\")
-        public event Action<string> DeviceConnected; 
-        public event Action<string> DeviceDisconnected; 
+    public event Action<string>? DeviceConnected;
+    public event Action<string>? DeviceDisconnected;
 
         public void Start()
         {
@@ -48,7 +48,7 @@ namespace QuickMediaIngest.Core
             var volume = e.NewEvent["TargetInstance"] as ManagementBaseObject;
             if (volume != null)
             {
-                string driveLetter = volume["DriveLetter"]?.ToString();
+                string? driveLetter = volume["DriveLetter"]?.ToString();
                 if (!string.IsNullOrEmpty(driveLetter))
                 {
                     if (!driveLetter.EndsWith("\\")) driveLetter += "\\";
@@ -62,7 +62,7 @@ namespace QuickMediaIngest.Core
             var volume = e.NewEvent["TargetInstance"] as ManagementBaseObject;
             if (volume != null)
             {
-                string driveLetter = volume["DriveLetter"]?.ToString();
+                string? driveLetter = volume["DriveLetter"]?.ToString();
                 if (!string.IsNullOrEmpty(driveLetter))
                 {
                     if (!driveLetter.EndsWith("\\")) driveLetter += "\\";

@@ -11,6 +11,7 @@ namespace QuickMediaIngest.Core
     {
         // Event for UI progress monitoring (Percent, Status Message)
         public event Action<int, string>? ProgressChanged;
+        public event Action<IngestProgressInfo>? ItemProcessed;
 
         private readonly IFileProvider _provider;
 
@@ -23,6 +24,10 @@ namespace QuickMediaIngest.Core
         {
             if (group == null || group.Items.Count == 0) return;
 
+            // Check if there are any selected items; skip group if none are selected
+            var selectedItems = group.Items.Where(i => i.IsSelected).ToList();
+            if (selectedItems.Count == 0) return;
+
             string folderName = GetTargetFolderName(group);
             string targetDir = Path.Combine(destinationRoot, folderName);
 
@@ -31,29 +36,42 @@ namespace QuickMediaIngest.Core
                 Directory.CreateDirectory(targetDir);
             }
 
-            int total = group.Items.Count;
+            int total = selectedItems.Count;
             int current = 0;
 
-            foreach (var item in group.Items)
+            foreach (var item in selectedItems)
             {
                 if (cancellationToken.IsCancellationRequested) break;
-                if (!item.IsSelected) continue;
 
                 current++;
                 string status = $"Copying {item.FileName} ({current}/{total})";
                 ProgressChanged?.Invoke((current * 100) / total, status);
 
-                string destFileName = ResolveFileName(item, targetDir, namingTemplate);
+                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title);
                 string destPath = Path.Combine(targetDir, destFileName);
+                bool success = false;
+                string errorMessage = string.Empty;
 
                 try
                 {
                     await _provider.CopyAsync(item.SourcePath, destPath, cancellationToken);
+                    success = true;
                 }
                 catch (Exception ex)
                 {
+                    errorMessage = ex.Message;
                     Console.WriteLine($"[Copy Error] {item.FileName}: {ex.Message}");
                 }
+
+                ItemProcessed?.Invoke(new IngestProgressInfo
+                {
+                    GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
+                    GroupCurrent = current,
+                    GroupTotal = total,
+                    FileName = item.FileName,
+                    Success = success,
+                    ErrorMessage = errorMessage
+                });
             }
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
@@ -73,10 +91,11 @@ namespace QuickMediaIngest.Core
             return start == end ? $"{start}+{name}" : $"{start} to {end}+{name}";
         }
 
-        private string ResolveFileName(ImportItem item, string targetDir, string template)
+        private string ResolveFileName(ImportItem item, string targetDir, string template, string shootName)
         {
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;
+            string safeShootName = SanitizeFileNamePart(string.IsNullOrWhiteSpace(shootName) ? "Shoot" : shootName);
 
             if (string.IsNullOrEmpty(outputName))
             {
@@ -92,6 +111,7 @@ namespace QuickMediaIngest.Core
             outputName = outputName.Replace("[HH]", item.DateTaken.ToString("HH"));
             outputName = outputName.Replace("[mm]", item.DateTaken.ToString("mm"));
             outputName = outputName.Replace("[ss]", item.DateTaken.ToString("ss"));
+            outputName = outputName.Replace("[ShootName]", safeShootName);
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
             outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
 
@@ -108,5 +128,25 @@ namespace QuickMediaIngest.Core
 
             return destFileName;
         }
+
+        private static string SanitizeFileNamePart(string value)
+        {
+            foreach (var c in Path.GetInvalidFileNameChars())
+            {
+                value = value.Replace(c, '_');
+            }
+
+            return value.Trim();
+        }
+    }
+
+    public class IngestProgressInfo
+    {
+        public string GroupTitle { get; set; } = string.Empty;
+        public int GroupCurrent { get; set; }
+        public int GroupTotal { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
     }
 }

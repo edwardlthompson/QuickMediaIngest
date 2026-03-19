@@ -8,40 +8,66 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 
 ## 🚀 Key Features
 
-*   **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.
-*   **📂 Unified Scanner (Local & FTP)**: Scan any local drive, SD card, or network folder. Built-in high-performance **FTPS Support** for importing directly from Android over Wifi/Ethernet.
-*   **📷 RAW file support**: Super-fast visual preview grid using **Embedded JPEG Extraction** from popular raw image formats (CR2, NEF, DNG).
-*   **🛡️ Smart Whitelisting (Persistent IDs)**: Mark specific paths (e.g., `/DCIM`) per device to avoid scanning WhatsApp or system folders. Uses `.importer-id` files in the root for persistent identification.
-*   **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
-*   **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
+* **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.
+* **📂 Unified Scanner (Local & FTP)**: Scan any local drive, SD card, or network folder. Built-in high-performance **FTPS Support** for importing directly from Android over Wifi/Ethernet.
+* **📷 RAW file support**: Super-fast visual preview grid using **Embedded JPEG Extraction** from popular raw image formats (CR2, NEF, DNG).
+* **🛡️ Smart Whitelisting (Persistent IDs)**: Mark specific paths (e.g., `/DCIM`) per device to avoid scanning WhatsApp or system folders. Uses `.importer-id` files in the root for persistent identification.
+* **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
+* **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
+
+### Latest Updates (v1.0.3)
+
+* FTP scanner and folder discovery were rewritten for better reliability with Android FTP servers.
+* Preview generation is now deferred and can be run only for selected shoots.
+* FTP preview building now uses per-file timeout protection to prevent hangs.
+* Import progress now shows overall imported count, current-shoot progress, elapsed time, ETA, and failed-file count.
+* FTP import throughput improved by reusing a single FTP connection during import.
+* Delete After Import now works for FTP sources (when server permissions allow delete).
+* Import history is now saved (latest 50 records) with date/time, counts, and duration.
+* Added quick shoot selection controls: Select All Shoots, All, and None.
 
 ---
 
 ## 🛠️ Usage
 
-1.  **Insert Device**: Plug in your SD card or connect your Phone's FTP.
-2.  **Visual Preview**: View the populated grid of groupings divided by shoot time.
-3.  **Set Album Name**: Name the batch, adjust the Date/Time headers if grouping into a range.
-4.  **Import**: Click `Import` and watch it work.
+1. **Insert Device**: Plug in your SD card or connect your Phone's FTP.
+2. **Scan Source**: Run a scan for local or FTP media.
+3. **Select Shoots**: Use checkboxes or All/None to pick what you want.
+4. **Build Selected Previews (Optional)**: Generate previews only for selected shoots.
+5. **Import**: Click `Import` and monitor overall + per-shoot progress.
 
 ---
 
 ## 🛠️ Build & Development
 
-Built using **.NET 8 (C#)** and **WPF**. 
+Built using **.NET 8 (C#)** and **WPF**.
 
 To build a **Single-File Portable Executable** locally:
+
 ```bash
-dotnet publish QuickMediaIngest\QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/portable
+build_local_test.bat
 ```
 
+This creates a local test build at:
+`publish/local-test/QuickMediaIngest.exe`
+
+### ✅ Automatic Local Test Build
+
+The local test app is now built automatically when running:
+
+* `build_and_push.bat`
+* `create_release_tag.bat`
+
 ### 🤖 CI/CD (GitHub Actions)
+
 Fully automated builds are configured to pack a Portable EXE and an ZIP package automatically on Tag Releases (`v*`).
 
 ---
 
 ## 🤝 Contributing
+
 Contributions are welcome! Please feel free to open Issues or submit Pull Requests for visual/feature enhancements.
 
 ## 📄 License
-Released under the [MIT License](LICENSE).
+
+This project is free and open source. A formal license file is not currently included.

@@ -8,34 +8,66 @@ namespace QuickMediaIngest.Core
 {
     public class LocalScanner
     {
-        public List<ImportItem> Scan(string drivePath)
+        public List<ImportItem> Scan(string sourcePath, bool includeSubfolders, Action<int, int>? folderProgressCallback = null)
         {
             var items = new List<ImportItem>();
 
-            if (!Directory.Exists(drivePath))
+            if (!Directory.Exists(sourcePath))
             {
                 return items;
             }
 
-            var files = Directory.GetFiles(drivePath, "*.*", SearchOption.AllDirectories);
-
-            foreach (var file in files)
+            List<string> foldersToScan;
+            try
             {
-                FileInfo info = new FileInfo(file);
-                string ext = info.Extension.ToLower();
+                foldersToScan = includeSubfolders
+                    ? Directory.EnumerateDirectories(sourcePath, "*", SearchOption.AllDirectories).ToList()
+                    : new List<string>();
+            }
+            catch
+            {
+                return items;
+            }
 
-                // Skip non-media metadata files (CTG, DAT, etc.)
-                if (!IsMediaFile(ext)) continue;
+            foldersToScan.Insert(0, sourcePath);
+            int totalFolders = foldersToScan.Count;
+            int scannedFolders = 0;
 
-                items.Add(new ImportItem
+            foreach (var folder in foldersToScan)
+            {
+                IEnumerable<string> files;
+                try
                 {
-                    SourcePath = info.FullName,
-                    FileName = info.Name,
-                    FileSize = info.Length,
-                    DateTaken = info.LastWriteTime, 
-                    IsVideo = IsVideoFile(ext),
-                    FileType = ext.TrimStart('.').ToUpper()
-                });
+                    files = Directory.EnumerateFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
+                }
+                catch
+                {
+                    scannedFolders++;
+                    folderProgressCallback?.Invoke(scannedFolders, totalFolders);
+                    continue;
+                }
+
+                foreach (var file in files)
+                {
+                    FileInfo info = new FileInfo(file);
+                    string ext = info.Extension.ToLower();
+
+                    // Skip non-media metadata files (CTG, DAT, etc.)
+                    if (!IsMediaFile(ext)) continue;
+
+                    items.Add(new ImportItem
+                    {
+                        SourcePath = info.FullName,
+                        FileName = info.Name,
+                        FileSize = info.Length,
+                        DateTaken = info.LastWriteTime,
+                        IsVideo = IsVideoFile(ext),
+                        FileType = ext.TrimStart('.').ToUpper()
+                    });
+                }
+
+                scannedFolders++;
+                folderProgressCallback?.Invoke(scannedFolders, totalFolders);
             }
 
             return items;

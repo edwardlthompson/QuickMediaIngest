@@ -22,7 +22,12 @@ namespace QuickMediaIngest.Data
 
         private void InitializeDatabase()
         {
-            string dir = Path.GetDirectoryName(_dbPath);
+            string? dir = Path.GetDirectoryName(_dbPath);
+            if (string.IsNullOrEmpty(dir))
+            {
+                return;
+            }
+
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
@@ -59,7 +64,7 @@ namespace QuickMediaIngest.Data
             }
         }
 
-        public DeviceConfig GetDeviceConfig(string id)
+        public DeviceConfig? GetDeviceConfig(string id)
         {
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
@@ -74,9 +79,9 @@ namespace QuickMediaIngest.Data
                         {
                             return new DeviceConfig
                             {
-                                Id = reader["Id"].ToString(),
-                                DeviceName = reader["DeviceName"].ToString(),
-                                LastImportDate = reader["LastImportDate"].ToString(),
+                                Id = reader["Id"].ToString() ?? string.Empty,
+                                DeviceName = reader["DeviceName"].ToString() ?? string.Empty,
+                                LastImportDate = reader["LastImportDate"].ToString() ?? string.Empty,
                                 AutoTrigger = Convert.ToInt32(reader["AutoTrigger"]) == 1
                             };
                         }
@@ -123,9 +128,9 @@ namespace QuickMediaIngest.Data
                             list.Add(new WhitelistRule
                             {
                                 Id = Convert.ToInt32(reader["Id"]),
-                                DeviceId = reader["DeviceId"].ToString(),
-                                Path = reader["Path"].ToString(),
-                                RuleType = reader["Type"].ToString()
+                                DeviceId = reader["DeviceId"].ToString() ?? string.Empty,
+                                Path = reader["Path"].ToString() ?? string.Empty,
+                                RuleType = reader["Type"].ToString() ?? string.Empty
                             });
                         }
                     }
