@@ -42,6 +42,21 @@
             <EventSetter Event="GotKeyboardFocus" Handler="TextBox_SelectAll"/>
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TextBox_PreviewMouseLeftButtonDown"/>
         </Style>
+
+        <Style x:Key="RibbonCommandGroupStyle" TargetType="Border">
+            <Setter Property="Background" Value="#12000000"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+
+        <Style x:Key="RibbonGroupLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -144,13 +159,30 @@
             <Border Grid.Row="2" Margin="0,0,0,8" Padding="16,10,16,12" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Background="{DynamicResource MaterialDesignCardBackground}">
                 <StackPanel>
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                        <WrapPanel Orientation="Horizontal" Margin="0,0,8,8">
-                            <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,8,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                            <CheckBox Content="Delete After Import" MinWidth="140" IsChecked="{Binding DeleteAfterImport}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                            <Button Content="Scan" Height="32" VerticalAlignment="Center" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
-                        </WrapPanel>
-                        <Button Content="Build FTP Previews" Margin="0,0,12,8" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        <Button Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Margin="0,0,12,8" Style="{StaticResource MaterialDesignRaisedButton}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                        <Border Style="{StaticResource RibbonCommandGroupStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Import" Style="{StaticResource RibbonGroupLabelStyle}"/>
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,8,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                                    <CheckBox Content="Delete After Import" MinWidth="140" IsChecked="{Binding DeleteAfterImport}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                                    <Button Content="Scan" Height="32" VerticalAlignment="Center" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource RibbonCommandGroupStyle}" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="FTP" Style="{StaticResource RibbonGroupLabelStyle}"/>
+                                <Button Content="Build FTP Previews" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource RibbonCommandGroupStyle}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Local" Style="{StaticResource RibbonGroupLabelStyle}"/>
+                                <Button Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Style="{StaticResource MaterialDesignRaisedButton}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            </StackPanel>
+                        </Border>
                     </WrapPanel>
 
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
