@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 
@@ -69,8 +70,16 @@ namespace QuickMediaIngest
                 var paletteHelper = new PaletteHelper();
                 var theme = paletteHelper.GetTheme();
                 theme.SetBaseTheme(useLightTheme ? Theme.Light : Theme.Dark);
+
+                // Dark mode uses classic yellow accents, light mode uses blue accents.
+                Color accentColor = (Color)ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
+                theme.SetPrimaryColor(accentColor);
+                theme.SetSecondaryColor(accentColor);
+
                 paletteHelper.SetTheme(theme);
                 CurrentIsDarkTheme = !useLightTheme;
+
+                Current.Resources["AppAccentBrush"] = new SolidColorBrush(accentColor);
             }
             catch (Exception ex)
             {

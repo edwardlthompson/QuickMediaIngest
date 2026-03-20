@@ -15,7 +15,16 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.15)
+### Latest Updates (v1.0.16)
+
+* Fixed accent consistency: dark theme now uses yellow action text while light theme uses blue action text.
+* Unified left sidebar action button colors so **Add FTP Source** and **Settings & About** match.
+* Applied theme-aware accent coloring to the **Sources** refresh icon.
+* Normalized bottom bar typography so **Hours Between Shoots** matches nearby control text size.
+* Removed duplicate number display by dropping the hint overlay from the hours textbox.
+* Aligned magnifier icon and zoom slider in a shared centered container.
+
+### Previous Updates (v1.0.15)
 
 * Corrected the header toggle semantics so the dark-state pill aligns with the moon side and the light-state pill aligns with the sun side.
 * Improved top-bar alignment so the Scan button sits properly with Delete After Import.
