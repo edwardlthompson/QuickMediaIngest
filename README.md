@@ -15,7 +15,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.16)
+### Latest Updates (v1.0.17)
+
+* Improved top control bar wrapping behavior so actions wrap more reliably on narrower window widths.
+* Grouped **Hours Between Shoots** label and textbox into one non-breaking unit so they no longer separate across lines.
+
+### Previous Updates (v1.0.16)
 
 * Fixed accent consistency: dark theme now uses yellow action text while light theme uses blue action text.
 * Unified left sidebar action button colors so **Add FTP Source** and **Settings & About** match.
