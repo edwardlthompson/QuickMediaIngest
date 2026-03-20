@@ -15,7 +15,11 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.17)
+### Latest Updates (v1.0.18)
+
+* Locked the zoom controls as a single non-breaking unit so the magnifier and slider always stay together when wrapping.
+
+### Previous Updates (v1.0.17)
 
 * Improved top control bar wrapping behavior so actions wrap more reliably on narrower window widths.
 * Grouped **Hours Between Shoots** label and textbox into one non-breaking unit so they no longer separate across lines.

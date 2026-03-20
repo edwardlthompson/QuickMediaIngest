@@ -238,10 +238,12 @@
                         <TextBlock Text="Hours Between Shoots" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" FontSize="14" Margin="0,0,6,0"/>
                         <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" FontSize="14" VerticalAlignment="Center" Width="56" Style="{StaticResource MaterialDesignOutlinedTextBox}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppAccentBrush}" Width="18" Height="18"/>
-                        <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" VerticalAlignment="Center" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
-                    </StackPanel>
+                    <Border VerticalAlignment="Center" MinWidth="148" Padding="0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppAccentBrush}" Width="18" Height="18"/>
+                            <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" VerticalAlignment="Center" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                        </StackPanel>
+                    </Border>
                 </WrapPanel>
             </Border>
 
