@@ -15,7 +15,13 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.20)
+### Latest Updates (v1.0.21)
+
+* Unified the ribbon visual language across sidebar actions, top command groups, bottom option groups, and status band.
+* Added a lightweight ribbon tab-strip shell (`Home`, `File`, `Edit`, `Find`, `Create`, `View`) to progress toward the template look.
+* Added missing `Zoom` group caption so all bottom option groups now share the same visual structure.
+
+### Previous Updates (v1.0.20)
 
 * Refined the ribbon-style look to more closely match the template screenshot with clearer command-group framing.
 * Added stronger visual group separations and group captions in both the top action ribbon and bottom options ribbon.

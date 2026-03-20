@@ -81,6 +81,22 @@
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
+
+        <Style x:Key="RibbonSidebarButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="32"/>
+        </Style>
+
+        <Style x:Key="RibbonTabStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Background" Value="#12000000"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -124,8 +140,8 @@
                 </ListBox>
 
                 <StackPanel Grid.Row="2" Margin="12,12,12,12">
-                    <Button Content="Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="{DynamicResource AppAccentBrush}" BorderBrush="{DynamicResource AppAccentBrush}" Margin="0,0,0,8" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="{DynamicResource AppAccentBrush}" BorderBrush="{DynamicResource AppAccentBrush}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" Margin="0,0,0,8" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -182,6 +198,17 @@
             <!-- Top Controls Banner -->
             <Border Grid.Row="2" Margin="0,0,0,8" Style="{StaticResource RibbonBandStyle}">
                 <StackPanel>
+                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Border Style="{StaticResource RibbonTabStyle}" Background="{DynamicResource PrimaryHueMidBrush}">
+                            <TextBlock Text="Home" Foreground="Black" FontWeight="Bold"/>
+                        </Border>
+                        <Border Style="{StaticResource RibbonTabStyle}"><TextBlock Text="File" Foreground="{DynamicResource MaterialDesignBody}"/></Border>
+                        <Border Style="{StaticResource RibbonTabStyle}"><TextBlock Text="Edit" Foreground="{DynamicResource MaterialDesignBody}"/></Border>
+                        <Border Style="{StaticResource RibbonTabStyle}"><TextBlock Text="Find" Foreground="{DynamicResource MaterialDesignBody}"/></Border>
+                        <Border Style="{StaticResource RibbonTabStyle}"><TextBlock Text="Create" Foreground="{DynamicResource MaterialDesignBody}"/></Border>
+                        <Border Style="{StaticResource RibbonTabStyle}"><TextBlock Text="View" Foreground="{DynamicResource MaterialDesignBody}"/></Border>
+                    </WrapPanel>
+
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
                         <Border Style="{StaticResource RibbonCommandGroupStyle}">
                             <StackPanel VerticalAlignment="Stretch">
@@ -309,15 +336,18 @@
                     </Border>
 
                     <Border Style="{StaticResource RibbonCommandGroupStyle}" VerticalAlignment="Center" MinWidth="148" Padding="8,6,8,4">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppAccentBrush}" Width="18" Height="18"/>
-                            <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" VerticalAlignment="Center" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppAccentBrush}" Width="18" Height="18"/>
+                                <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" VerticalAlignment="Center" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                            </StackPanel>
+                            <TextBlock Text="Zoom" Style="{StaticResource RibbonSectionCaptionStyle}"/>
                         </StackPanel>
                     </Border>
                 </WrapPanel>
             </Border>
 
-            <Border Grid.Row="5" Background="{DynamicResource MaterialDesignCardBackground}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="12,8">
+            <Border Grid.Row="5" Style="{StaticResource RibbonBandStyle}" Padding="12,8" BorderThickness="0,1,0,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
