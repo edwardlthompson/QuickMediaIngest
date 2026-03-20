@@ -15,7 +15,13 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.19)
+### Latest Updates (v1.0.20)
+
+* Refined the ribbon-style look to more closely match the template screenshot with clearer command-group framing.
+* Added stronger visual group separations and group captions in both the top action ribbon and bottom options ribbon.
+* Kept the existing wrap behavior and must-stick pairs while improving overall ribbon readability and structure.
+
+### Previous Updates (v1.0.19)
 
 * Started the first incremental ribbon-style pass in the top action bar.
 * Added distinct bordered command groups (Import, FTP, Local) to create clearer visual separation between related actions.
