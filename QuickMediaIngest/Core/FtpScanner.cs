@@ -262,6 +262,11 @@ namespace QuickMediaIngest.Core
                 {
                     if (!entry.IsDirectory)
                     {
+                        if (!IsMediaFile(entry.Name))
+                        {
+                            continue;
+                        }
+
                         files.Add(new FtpScanFile
                         {
                             FullPath = entry.FullPath,
@@ -386,6 +391,24 @@ namespace QuickMediaIngest.Core
             }
 
             return entries;
+        }
+
+        private static bool IsMediaFile(string fileName)
+        {
+            string ext = Path.GetExtension(fileName).ToLowerInvariant();
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" ||
+                   ext == ".bmp" || ext == ".tif" || ext == ".tiff" || ext == ".webp" ||
+                   ext == ".dng" || ext == ".cr2" || ext == ".cr3" || ext == ".nef" ||
+                   ext == ".arw" || ext == ".raf" || ext == ".orf" || ext == ".rw2" ||
+                   ext == ".srw" || ext == ".heic" || ext == ".heif" ||
+                   IsVideoFile(fileName);
+        }
+
+        private static bool IsVideoFile(string fileName)
+        {
+            string ext = Path.GetExtension(fileName).ToLowerInvariant();
+            return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv" ||
+                   ext == ".mts" || ext == ".m2ts" || ext == ".mpg" || ext == ".mpeg";
         }
 
         private static bool TryParseListingLine(string line, string parentPath, out FtpEntry? entry)
@@ -537,12 +560,6 @@ namespace QuickMediaIngest.Core
             }
 
             return normalized;
-        }
-
-        private static bool IsVideoFile(string name)
-        {
-            string ext = Path.GetExtension(name).ToLowerInvariant();
-            return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv";
         }
 
         private sealed class FtpEntry

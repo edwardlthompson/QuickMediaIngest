@@ -50,7 +50,7 @@ namespace QuickMediaIngest.Core
                 foreach (var file in files)
                 {
                     FileInfo info = new FileInfo(file);
-                    string ext = info.Extension.ToLower();
+                    string ext = info.Extension.ToLowerInvariant();
 
                     // Skip non-media metadata files (CTG, DAT, etc.)
                     if (!IsMediaFile(ext)) continue;
@@ -73,16 +73,20 @@ namespace QuickMediaIngest.Core
             return items;
         }
 
-        private bool IsMediaFile(string ext)
+        private static bool IsMediaFile(string ext)
         {
-            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || 
-                   ext == ".cr2" || ext == ".cr3" || ext == ".nef" || ext == ".arw" || 
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" ||
+                   ext == ".bmp" || ext == ".tif" || ext == ".tiff" || ext == ".webp" ||
+                   ext == ".dng" || ext == ".cr2" || ext == ".cr3" || ext == ".nef" ||
+                   ext == ".arw" || ext == ".raf" || ext == ".orf" || ext == ".rw2" ||
+                   ext == ".srw" || ext == ".heic" || ext == ".heif" ||
                    IsVideoFile(ext);
         }
 
-        private bool IsVideoFile(string ext)
+        private static bool IsVideoFile(string ext)
         {
-            return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv";
+            return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv" ||
+                   ext == ".mts" || ext == ".m2ts" || ext == ".mpg" || ext == ".mpeg";
         }
     }
 }

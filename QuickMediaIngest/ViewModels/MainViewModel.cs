@@ -51,7 +51,8 @@ namespace QuickMediaIngest.ViewModels
         private bool _showUpdateBanner = false;
         private string _updateUrl = string.Empty;
         private bool _showAboutDialog = false;
-        private int _updateIntervalHours = 24; 
+        private int _updateIntervalHours = 24;
+        private string _updatePackageType = "Portable";
         private string _namingTemplate = "[Date]_[Time]_[Original]";
         private double _thumbnailSize = 120; 
         private string _scanPath = string.Empty;
@@ -63,8 +64,8 @@ namespace QuickMediaIngest.ViewModels
         private string _selectedFtpPresetFolder = "/DCIM";
         private FtpFolderOption? _selectedBrowsedFtpFolder;
         private string _ftpDialogStatusMessage = "Enter your phone FTP details, then test or browse folders.";
-        private bool _limitFtpThumbnailLoad = true;
-        private int _ftpInitialThumbnailCount = 200;
+        private bool _limitFtpThumbnailLoad = false;
+        private int _ftpInitialThumbnailCount = 0;
         private bool _showSkippedFoldersDialog = false;
         private string _skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
         private string _skippedFoldersReportText = string.Empty;
@@ -312,6 +313,19 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
+        private List<string> _ribbonTileOrder = new();
+        public List<string> RibbonTileOrder
+        {
+            get => _ribbonTileOrder;
+            set { _ribbonTileOrder = value; OnPropertyChanged(); }
+        }
+
+        public void SaveTileOrder(IEnumerable<string> order)
+        {
+            _ribbonTileOrder = order.ToList();
+            SaveConfig();
+        }
+
         public int TimeBetweenShootsHours
         {
             get => _timeBetweenShootsHours;
@@ -376,10 +390,10 @@ namespace QuickMediaIngest.ViewModels
         private int _ftpPort = 1024;
         public int FtpPort { get => _ftpPort; set { _ftpPort = value; OnPropertyChanged(); } }
 
-        private string _ftpUser = "anonymous";
+        private string _ftpUser = "android";
         public string FtpUser { get => _ftpUser; set { _ftpUser = value; OnPropertyChanged(); } }
 
-        private string _ftpPass = "anonymous";
+        private string _ftpPass = "android";
         public string FtpPass { get => _ftpPass; set { _ftpPass = value; OnPropertyChanged(); } }
 
         private string _ftpRemoteFolder = "/DCIM";
@@ -419,6 +433,12 @@ namespace QuickMediaIngest.ViewModels
             set { _updateIntervalHours = value; OnPropertyChanged(); SaveConfig(); CheckUpdates(); }
         }
 
+        public string UpdatePackageType
+        {
+            get => _updatePackageType;
+            set { _updatePackageType = value; OnPropertyChanged(); SaveConfig(); }
+        }
+
         public string NamingTemplate
         {
             get => _namingTemplate;
@@ -428,7 +448,7 @@ namespace QuickMediaIngest.ViewModels
         public double ThumbnailSize
         {
             get => _thumbnailSize;
-            set { _thumbnailSize = value; OnPropertyChanged(); }
+            set { _thumbnailSize = value; OnPropertyChanged(); SaveConfig(); }
         }
 
         public string ScanPath
@@ -491,6 +511,12 @@ namespace QuickMediaIngest.ViewModels
             new UpdateIntervalOption { Display = "Off", Hours = -1 }
         };
 
+        public ObservableCollection<string> PackageTypeOptions { get; } = new ObservableCollection<string>
+        {
+            "Portable",
+            "Installer"
+        };
+
         public ObservableCollection<string> AvailableTokens { get; } = new ObservableCollection<string> 
         { 
             "[Date]", "[Time]", "[YYYY]", "[MM]", "[DD]", "[HH]", "[mm]", "[ss]", "[ShootName]", "[Original]", "[Ext]", "_", "-" 
@@ -513,7 +539,6 @@ namespace QuickMediaIngest.ViewModels
         public ICommand BrowseDestinationCommand { get; }
         public ICommand RescanCommand { get; }
         public ICommand BrowseScanPathCommand { get; }
-        public ICommand ScanSelectedSourceCommand { get; }
         public ICommand BuildSelectedPreviewsCommand { get; }
         public ICommand SelectAllShootsCommand { get; }
         public ICommand DeselectAllShootsCommand { get; }
@@ -532,7 +557,6 @@ namespace QuickMediaIngest.ViewModels
             BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
             RescanCommand = new RelayCommand(ScanDrives);
             BrowseScanPathCommand = new RelayCommand(ExecuteBrowseScanPath);
-            ScanSelectedSourceCommand = new RelayCommand(ExecuteScanSelectedSource);
             BuildSelectedPreviewsCommand = new RelayCommand(ExecuteBuildSelectedPreviews);
             SelectAllShootsCommand = new RelayCommand(() => SetAllShootsSelected(true));
             DeselectAllShootsCommand = new RelayCommand(() => SetAllShootsSelected(false));
@@ -590,7 +614,7 @@ namespace QuickMediaIngest.ViewModels
             System.Threading.Tasks.Task.Run(async () =>
             {
                 var updater = new UpdateService();
-                var url = await updater.CheckForUpdateAsync(UpdateIntervalHours, force);
+                var url = await updater.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
                 if (!string.IsNullOrEmpty(url))
                 {
                      Application.Current.Dispatcher.Invoke(() =>
@@ -632,6 +656,34 @@ namespace QuickMediaIngest.ViewModels
                     }
 
                     StatusMessage = "Installing update... App will close for restart.";
+                    Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+                    Application.Current.Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Update download failed: {ex.Message}";
+                    ShowUpdateBanner = true;
+                }
+            }
+            else if (UpdateUrl.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                StatusMessage = "Downloading update...";
+                ShowUpdateBanner = false;
+
+                try
+                {
+                    string tempPath = Path.Combine(Path.GetTempPath(), "QuickMediaIngest_Update.exe");
+
+                    using (var client = new System.Net.Http.HttpClient())
+                    {
+                        var response = await client.GetAsync(UpdateUrl);
+                        using (var fs = new FileStream(tempPath, FileMode.Create))
+                        {
+                            await response.Content.CopyToAsync(fs);
+                        }
+                    }
+
+                    StatusMessage = "Launching updated version... App will close.";
                     Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
                     Application.Current.Shutdown();
                 }
@@ -936,7 +988,14 @@ namespace QuickMediaIngest.ViewModels
 
                 UpdateSelectAllFromGroups();
 
-                StatusMessage = $"Found {groups.Count} group(s) from {sourceLabel}. Select your final folders, then click Build Previews for Selected.";
+                if (groups.Count > 0)
+                {
+                    await LoadThumbnailsAsync(groups, source, sourceLabel);
+                }
+                else
+                {
+                    StatusMessage = $"Found 0 group(s) from {sourceLabel}.";
+                }
 
                 if (source is FtpSourceItem && skippedFolderDetails.Count > 0)
                 {
@@ -1064,9 +1123,14 @@ namespace QuickMediaIngest.ViewModels
             await Task.Run(() =>
             {
                 var thumbService = new ThumbnailService();
-                var allItems = groups.SelectMany(g => g.Items).ToList();
+                var allItems = groups.SelectMany(g => g.Items).Where(i => !i.IsVideo).ToList();
                 int total = allItems.Count;
                 int current = 0;
+
+                if (total == 0)
+                {
+                    return;
+                }
 
                 foreach (var item in allItems)
                 {
@@ -1090,7 +1154,7 @@ namespace QuickMediaIngest.ViewModels
                 }
             });
 
-            StatusMessage = $"Scanning {sourceLabel} complete. Loaded previews.";
+            StatusMessage = $"Scanning {sourceLabel} complete. Loaded previews automatically.";
         }
 
         private async Task LoadFtpThumbnailsAsync(List<ItemGroup> groups, FtpSourceItem ftp, string sourceLabel, bool preferBackgroundBatch = true)
@@ -1121,7 +1185,7 @@ namespace QuickMediaIngest.ViewModels
 
             if (remainingItems.Count == 0)
             {
-                StatusMessage = $"Scanning {sourceLabel} complete. Loaded FTP previews {loadedInitial}/{total}.";
+                StatusMessage = $"Scanning {sourceLabel} complete. Loaded FTP previews automatically {loadedInitial}/{total}.";
                 return;
             }
 
@@ -1590,17 +1654,6 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
-        private void ExecuteScanSelectedSource()
-        {
-            if (SelectedSource == null)
-            {
-                StatusMessage = "Select a source first.";
-                return;
-            }
-
-            LoadSourceItems(SelectedSource);
-        }
-
         private void SaveImportHistoryRecord(TimeSpan duration)
         {
             try
@@ -1684,7 +1737,9 @@ namespace QuickMediaIngest.ViewModels
                     ScanIncludeSubfolders = ScanIncludeSubfolders,
                     TimeBetweenShootsHours = TimeBetweenShootsHours,
                     LimitFtpThumbnailLoad = LimitFtpThumbnailLoad,
-                    FtpInitialThumbnailCount = FtpInitialThumbnailCount
+                    FtpInitialThumbnailCount = FtpInitialThumbnailCount,
+                    RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
+                    UpdatePackageType = UpdatePackageType
                 };
                 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
@@ -1709,10 +1764,14 @@ namespace QuickMediaIngest.ViewModels
                         if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
                         _scanIncludeSubfolders = config.ScanIncludeSubfolders;
                         if (config.TimeBetweenShootsHours > 0) _timeBetweenShootsHours = config.TimeBetweenShootsHours;
-                        _limitFtpThumbnailLoad = config.LimitFtpThumbnailLoad;
-                        if (config.FtpInitialThumbnailCount > 0) _ftpInitialThumbnailCount = config.FtpInitialThumbnailCount;
+                        _limitFtpThumbnailLoad = false;
+                        _ftpInitialThumbnailCount = 0;
+                        if (config.RibbonTileOrder is { Count: > 0 })
+                            _ribbonTileOrder = config.RibbonTileOrder;
+                        if (!string.IsNullOrEmpty(config.UpdatePackageType)) _updatePackageType = config.UpdatePackageType;
 
                         OnPropertyChanged("UpdateIntervalHours");
+                        OnPropertyChanged("UpdatePackageType");
                         OnPropertyChanged("DestinationRoot");
                         OnPropertyChanged("NamingTemplate");
                         OnPropertyChanged("ThumbnailSize");
@@ -1889,12 +1948,14 @@ namespace QuickMediaIngest.ViewModels
     public class AppConfig
     {
         public int UpdateIntervalHours { get; set; } = 24;
+        public string UpdatePackageType { get; set; } = "Portable";
         public string DestinationRoot { get; set; } = string.Empty;
         public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
         public double ThumbnailSize { get; set; } = 120;
         public bool ScanIncludeSubfolders { get; set; } = true;
         public int TimeBetweenShootsHours { get; set; } = 4;
-        public bool LimitFtpThumbnailLoad { get; set; } = true;
-        public int FtpInitialThumbnailCount { get; set; } = 200;
+        public bool LimitFtpThumbnailLoad { get; set; } = false;
+        public int FtpInitialThumbnailCount { get; set; } = 0;
+        public List<string>? RibbonTileOrder { get; set; }
     }
 }

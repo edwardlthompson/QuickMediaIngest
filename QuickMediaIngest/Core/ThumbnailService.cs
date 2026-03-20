@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
@@ -9,7 +12,7 @@ namespace QuickMediaIngest.Core
 {
     public class ThumbnailService
     {
-        public BitmapImage? GetThumbnail(string filePath)
+        public BitmapSource? GetThumbnail(string filePath)
         {
             if (!File.Exists(filePath)) return null;
 
@@ -75,6 +78,20 @@ namespace QuickMediaIngest.Core
                 Console.WriteLine($"[Thumbnail Service Error] {filePath}: {ex.Message}");
             }
 
+            // 3. Last-resort Windows Shell thumbnail extraction for codec-backed formats like DNG/HEIC.
+            try
+            {
+                var shellThumb = TryGetShellThumbnail(filePath, 160);
+                if (shellThumb != null)
+                {
+                    return shellThumb;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Shell Thumbnail Error] {filePath}: {ex.Message}");
+            }
+
             return null;
         }
 
@@ -95,6 +112,68 @@ namespace QuickMediaIngest.Core
             bitmap.EndInit();
             bitmap.Freeze(); 
             return bitmap;
+        }
+
+        private static BitmapSource? TryGetShellThumbnail(string filePath, int size)
+        {
+            Guid shellItemImageFactoryGuid = new("BCC18B79-BA16-442F-80C4-8A59C30C463B");
+            SHCreateItemFromParsingName(filePath, IntPtr.Zero, ref shellItemImageFactoryGuid, out IShellItemImageFactory imageFactory);
+
+            IntPtr hBitmap = IntPtr.Zero;
+            try
+            {
+                imageFactory.GetImage(new NativeSize(size, size), ShellItemImageFactoryFlags.BiggerSizeOk | ShellItemImageFactoryFlags.ThumbnailOnly, out hBitmap);
+                if (hBitmap == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromWidthAndHeight(size, size));
+                bitmapSource.Freeze();
+                return bitmapSource;
+            }
+            finally
+            {
+                if (hBitmap != IntPtr.Zero)
+                {
+                    DeleteObject(hBitmap);
+                }
+            }
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        private static extern void SHCreateItemFromParsingName(string pszPath, IntPtr pbc, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out IShellItemImageFactory ppv);
+
+        [DllImport("gdi32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeleteObject(IntPtr hObject);
+
+        [ComImport]
+        [Guid("BCC18B79-BA16-442F-80C4-8A59C30C463B")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IShellItemImageFactory
+        {
+            void GetImage(NativeSize size, ShellItemImageFactoryFlags flags, out IntPtr phbm);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private readonly struct NativeSize
+        {
+            public NativeSize(int width, int height)
+            {
+                Width = width;
+                Height = height;
+            }
+
+            public int Width { get; }
+            public int Height { get; }
+        }
+
+        [Flags]
+        private enum ShellItemImageFactoryFlags
+        {
+            BiggerSizeOk = 0x1,
+            ThumbnailOnly = 0x8
         }
     }
 }

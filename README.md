@@ -9,13 +9,34 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 ## 🚀 Key Features
 
 * **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.
-* **📂 Unified Scanner (Local & FTP)**: Scan any local drive, SD card, or network folder. Built-in high-performance **FTPS Support** for importing directly from Android over Wifi/Ethernet.
-* **📷 RAW file support**: Super-fast visual preview grid using **Embedded JPEG Extraction** from popular raw image formats (CR2, NEF, DNG).
+* **📂 Unified Scanner (Local & FTP)**: Selecting a source (SD/local/FTP) automatically scans and groups media.
+* **🖼️ Auto Preview Loading**: Thumbnails are loaded automatically during scan (including FTP) with no manual preview pass required.
+* **📷 RAW/Modern Format Support**: Includes DNG, HEIC/HEIF, CR2/CR3, NEF, ARW, RAF, ORF, RW2, SRW plus common photo/video types.
+* **🧠 Shell Thumbnail Fallback**: Uses Windows Shell extraction as a last resort for codec-backed formats.
 * **🛡️ Smart Whitelisting (Persistent IDs)**: Mark specific paths (e.g., `/DCIM`) per device to avoid scanning WhatsApp or system folders. Uses `.importer-id` files in the root for persistent identification.
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
+* **🧩 Draggable Ribbon Tiles**: Reorder Import controls via drag handle; order persists across launches.
+* **🔎 Persistent Zoom**: Thumbnail zoom level is saved and restored between runs.
+* **⬆️ Flexible Updates**: In-app updater supports **Portable (.exe)** and **Installer (.msi)** channels with selectable check interval.
 
-### Latest Updates (v1.0.22)
+### Latest Updates (v1.1.0)
+
+* Reworked ribbon into draggable tiles with persistent order and larger drag-handle hit zones.
+* Removed the redundant Scan tile: selecting a source now auto-scans, and post-import refresh remains automatic.
+* Added hover-shift animation for tile reordering and stabilized drag/drop by moving to container-level drop handling.
+* Added update package selection (**Portable** or **Installer**) and automatic EXE/MSI download flow based on selection.
+* Merged Settings tabs into an updated **About** section and improved light-theme readability with theme-aware colors.
+* Made zoom slider value persistent and removed the value popup during sliding.
+* Expanded scanner media-format coverage and improved RAW/HEIC thumbnail reliability.
+
+### Previous Updates (v1.0.23)
+
+* Moved **Selection**, **Grouping**, and **Zoom** controls from the lower options bar back into the upper ribbon area for faster access.
+* Added icon-first presentation for key actions (**Import**, **Scan**, **Build FTP Previews**, **Browse Local Folder**) to continue the Photo Gallery-style ribbon progression.
+* Removed the extra lower controls band row and simplified ribbon flow while keeping existing wrapping and must-stick control behavior.
+
+### Previous Updates (v1.0.22)
 
 * Standardized all ribbon section titles to match style and placement at the top of each group box.
 * Added explicit vertical separators between command and option groups for a cleaner ribbon structure.
@@ -74,6 +95,7 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 ### Previous Updates (v1.0.13)
 
 **🔧 Theme System Critical Fixes:**
+
 * **Fixed broken UI rendering** - Corrected resource dictionary loading order so Material Design loads first, then custom theme overlays on top.
 * **Fixed resource path URIs** - Changed from relative paths to full `pack://application:,,,/` URIs for reliable resource resolution.
 * **Added DarkTheme.xaml & LightTheme.xaml** - Separate theme variant files for active color overrides at runtime.
@@ -83,6 +105,7 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **Fixed nullable reference warnings** - Added proper nullability annotations for Registry access.
 
 ### Previous Updates (v1.0.12)
+
 * **Comprehensive Theme Framework**: Created modular theme system with colors (dark/light), brushes, typography, and control styles in `Themes/` directory for future extensibility.
 * **Excel 2003-Inspired Aesthetic**: Applied iconic cobalt blue (#007ACC) accent colors, light gray bar backgrounds, and horizontal divider lines between sections for retro-meets-modern visual hierarchy.
 * **Block-Based Control Layout**: Wrapped each control group (Import, Scan, Delete, Browse, FTP Preview, Select All, Hours, Zoom) in individual styled blocks for clarity and language-agnostic usability.
@@ -150,10 +173,10 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 ## 🛠️ Usage
 
 1. **Insert Device**: Plug in your SD card or connect your Phone's FTP.
-2. **Scan Source**: Run a scan for local or FTP media.
+2. **Select Source**: Click your SD/local/FTP source; scan starts automatically.
 3. **Select Shoots**: Use checkboxes or All/None to pick what you want.
-4. **Build Selected Previews (Optional)**: Generate previews only for selected shoots.
-5. **Import**: Click `Import` and monitor overall + per-shoot progress.
+4. **Import**: Click `Import` and monitor overall + per-shoot progress.
+5. **Review Refresh**: After import, the source list refreshes automatically so deleted/new files are reflected.
 
 ---
 

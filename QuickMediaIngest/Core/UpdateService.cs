@@ -20,7 +20,7 @@ namespace QuickMediaIngest.Core
             _cacheFile = Path.Combine(appFolder, "last_update_check.txt");
         }
 
-        public async Task<string?> CheckForUpdateAsync(int intervalHours = 24, bool force = false)
+        public async Task<string?> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable")
         {
             if (!force && !ShouldCheck(intervalHours)) return null;
 
@@ -34,14 +34,15 @@ namespace QuickMediaIngest.Core
                 
                 string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
                 
-                // Find MSI assets instead of html_url for automatic installs
+                // Find the preferred asset based on package type selection
+                string targetExt = packageType == "Installer" ? ".msi" : ".exe";
                 string downloadUrl = string.Empty;
                 if (doc.RootElement.TryGetProperty("assets", out var assets))
                 {
                     foreach (var asset in assets.EnumerateArray())
                     {
                         string name = asset.GetProperty("name").GetString() ?? "";
-                        if (name.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+                        if (name.EndsWith(targetExt, StringComparison.OrdinalIgnoreCase))
                         {
                             downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
                             break;
