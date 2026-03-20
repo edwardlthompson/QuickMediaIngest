@@ -25,7 +25,13 @@ namespace QuickMediaIngest
         public MainWindow()
         {
             InitializeComponent();
-            this.DataContext = new MainViewModel();
+                var vm = new MainViewModel();
+                this.DataContext = vm;
+
+                Width = vm.SavedWindowWidth;
+                Height = vm.SavedWindowHeight;
+                if (vm.SavedWindowMaximized)
+                    WindowState = WindowState.Maximized;
         }
 
         private void MainContent_Loaded(object sender, RoutedEventArgs e)
@@ -80,6 +86,9 @@ namespace QuickMediaIngest
                 return;
             }
 
+                if (WindowState == WindowState.Normal && DataContext is MainViewModel vmSize)
+                    vmSize.SaveWindowState(Width, Height, false);
+
             _ribbonLayoutRefreshQueued = true;
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -94,6 +103,16 @@ namespace QuickMediaIngest
         {
             _ribbonTileDragStartPoint = e.GetPosition(this);
         }
+
+            private void Window_StateChanged(object sender, EventArgs e)
+            {
+                if (DataContext is not MainViewModel vm) return;
+
+                if (WindowState == WindowState.Maximized)
+                    vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
+                else if (WindowState == WindowState.Normal)
+                    vm.SaveWindowState(Width, Height, false);
+            }
 
         private void RibbonTileHandle_PreviewMouseMove(object sender, MouseEventArgs e)
         {

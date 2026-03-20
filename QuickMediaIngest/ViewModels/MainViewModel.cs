@@ -73,7 +73,11 @@ namespace QuickMediaIngest.ViewModels
         private bool _isDarkTheme = true;
 
         private readonly DeviceWatcher _watcher;
-        private readonly LocalScanner _scanner;
+    private double _savedWindowWidth = 960;
+    private double _savedWindowHeight = 620;
+    private bool _savedWindowMaximized = false;
+
+    private readonly LocalScanner _scanner;
         private readonly GroupBuilder _groupBuilder;
                 public string AlbumName
         {
@@ -325,6 +329,18 @@ namespace QuickMediaIngest.ViewModels
             _ribbonTileOrder = order.ToList();
             SaveConfig();
         }
+
+            public double SavedWindowWidth => _savedWindowWidth;
+            public double SavedWindowHeight => _savedWindowHeight;
+            public bool SavedWindowMaximized => _savedWindowMaximized;
+
+            public void SaveWindowState(double width, double height, bool maximized)
+            {
+                _savedWindowWidth = width;
+                _savedWindowHeight = height;
+                _savedWindowMaximized = maximized;
+                SaveConfig();
+            }
 
         public int TimeBetweenShootsHours
         {
@@ -1125,33 +1141,35 @@ namespace QuickMediaIngest.ViewModels
                 var thumbService = new ThumbnailService();
                 var allItems = groups.SelectMany(g => g.Items).Where(i => !i.IsVideo).ToList();
                 int total = allItems.Count;
-                int current = 0;
 
                 if (total == 0)
                 {
                     return;
                 }
 
-                foreach (var item in allItems)
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    current++;
-                    if (current == 1 || current % 20 == 0 || current == total)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            ScannedFiles = current;
-                            TotalFilesToScan = total;
-                            ScanProgressPercent = total > 0 ? (current * 100) / total : 0;
-                            ScanProgressMessage = $"Loading previews: {current}/{total}";
-                        });
-                    }
+                    TotalFilesToScan = total;
+                    ScanProgressPercent = 0;
+                    ScanProgressMessage = $"Loading previews: 0/{total}";
+                });
 
+                int current = 0;
+
+                // Load up to 4 thumbnails in parallel — safely bounded for SD card I/O.
+                Parallel.ForEach(allItems, new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
+                {
                     var thumb = thumbService.GetThumbnail(item.SourcePath);
-                    if (thumb != null)
+                    int c = Interlocked.Increment(ref current);
+
+                    Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() => item.Thumbnail = thumb);
-                    }
-                }
+                        if (thumb != null) item.Thumbnail = thumb;
+                        ScannedFiles = c;
+                        ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
+                        ScanProgressMessage = $"Loading previews: {c}/{total}";
+                    });
+                });
             });
 
             StatusMessage = $"Scanning {sourceLabel} complete. Loaded previews automatically.";
@@ -1739,7 +1757,10 @@ namespace QuickMediaIngest.ViewModels
                     LimitFtpThumbnailLoad = LimitFtpThumbnailLoad,
                     FtpInitialThumbnailCount = FtpInitialThumbnailCount,
                     RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
-                    UpdatePackageType = UpdatePackageType
+                    UpdatePackageType = UpdatePackageType,
+                    WindowWidth = _savedWindowWidth,
+                    WindowHeight = _savedWindowHeight,
+                    WindowMaximized = _savedWindowMaximized
                 };
                 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
@@ -1769,6 +1790,9 @@ namespace QuickMediaIngest.ViewModels
                         if (config.RibbonTileOrder is { Count: > 0 })
                             _ribbonTileOrder = config.RibbonTileOrder;
                         if (!string.IsNullOrEmpty(config.UpdatePackageType)) _updatePackageType = config.UpdatePackageType;
+                            if (config.WindowWidth >= 400) _savedWindowWidth = config.WindowWidth;
+                            if (config.WindowHeight >= 300) _savedWindowHeight = config.WindowHeight;
+                            _savedWindowMaximized = config.WindowMaximized;
 
                         OnPropertyChanged("UpdateIntervalHours");
                         OnPropertyChanged("UpdatePackageType");
@@ -1957,5 +1981,8 @@ namespace QuickMediaIngest.ViewModels
         public bool LimitFtpThumbnailLoad { get; set; } = false;
         public int FtpInitialThumbnailCount { get; set; } = 0;
         public List<string>? RibbonTileOrder { get; set; }
+            public double WindowWidth { get; set; } = 960;
+            public double WindowHeight { get; set; } = 620;
+            public bool WindowMaximized { get; set; } = false;
     }
 }

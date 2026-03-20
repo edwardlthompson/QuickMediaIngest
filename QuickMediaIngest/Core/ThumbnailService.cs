@@ -16,7 +16,18 @@ namespace QuickMediaIngest.Core
         {
             if (!File.Exists(filePath)) return null;
 
-            // 1. Try Native WPF Decoder First
+            // 1. Embedded EXIF JPEG thumbnail — fastest path. Camera files (JPEG and RAW alike)
+            //    almost always embed a small JPEG preview in the EXIF header, so we read a few KB
+            //    rather than decoding the full image. This avoids expensive WPF decoder exceptions
+            //    on RAW formats and is measurably faster over slow media like SD cards.
+            try
+            {
+                var exifThumb = TryGetExifThumbnail(filePath);
+                if (exifThumb != null) return exifThumb;
+            }
+            catch { }
+
+            // 2. Native WPF decoder — handles JPEG/PNG/BMP/GIF/TIFF that have no embedded preview.
             try
             {
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -24,72 +35,60 @@ namespace QuickMediaIngest.Core
                     var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
                     if (decoder.Frames.Count > 0)
                     {
-                        var frame = decoder.Frames[0];
-                        return CreateResizedThumbnail(frame);
+                        return CreateResizedThumbnail(decoder.Frames[0]);
                     }
                 }
             }
-            catch { /* Native decoder failed, fallback to EXIF */ }
+            catch { }
 
-            // 2. Fallback to MetadataExtractor (Embedded JPEG thumbnail usually in RAWs like CR2)
+            // 3. Windows Shell fallback for codec-backed formats like DNG/HEIC.
             try
             {
-                var directories = ImageMetadataReader.ReadMetadata(filePath);
-                var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
-                
-                if (thumbDir != null)
-                {
-                    const int TagThumbnailOffset = 513; // 0x0201
-                    const int TagThumbnailLength = 514; // 0x0202
-
-                    if (thumbDir.ContainsTag(TagThumbnailOffset) && thumbDir.ContainsTag(TagThumbnailLength))
-                    {
-                        int offset = thumbDir.GetInt32(TagThumbnailOffset);
-                        int length = thumbDir.GetInt32(TagThumbnailLength);
-
-                        if (length > 0)
-                        {
-                            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                            {
-                                fs.Seek(offset, SeekOrigin.Begin);
-                                byte[] thumbBytes = new byte[length];
-                                int read = fs.Read(thumbBytes, 0, length);
-
-                                if (read > 4 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8) // Safe JPEG Header check
-                                {
-                                    using (var ms = new MemoryStream(thumbBytes))
-                                    {
-                                        var bitmap = new BitmapImage();
-                                        bitmap.BeginInit();
-                                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                                        bitmap.StreamSource = ms;
-                                        bitmap.EndInit();
-                                        bitmap.Freeze(); 
-                                        return bitmap;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Thumbnail Service Error] {filePath}: {ex.Message}");
-            }
-
-            // 3. Last-resort Windows Shell thumbnail extraction for codec-backed formats like DNG/HEIC.
-            try
-            {
-                var shellThumb = TryGetShellThumbnail(filePath, 160);
-                if (shellThumb != null)
-                {
-                    return shellThumb;
-                }
+                return TryGetShellThumbnail(filePath, 160);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[Shell Thumbnail Error] {filePath}: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private static BitmapSource? TryGetExifThumbnail(string filePath)
+        {
+            var directories = ImageMetadataReader.ReadMetadata(filePath);
+            var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
+            if (thumbDir == null) return null;
+
+            const int TagThumbnailOffset = 513; // 0x0201
+            const int TagThumbnailLength = 514; // 0x0202
+
+            if (!thumbDir.ContainsTag(TagThumbnailOffset) || !thumbDir.ContainsTag(TagThumbnailLength))
+                return null;
+
+            int offset = thumbDir.GetInt32(TagThumbnailOffset);
+            int length = thumbDir.GetInt32(TagThumbnailLength);
+            if (length <= 0) return null;
+
+            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                fs.Seek(offset, SeekOrigin.Begin);
+                byte[] thumbBytes = new byte[length];
+                int read = fs.Read(thumbBytes, 0, length);
+
+                if (read > 4 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8) // Valid JPEG header
+                {
+                    using (var ms = new MemoryStream(thumbBytes))
+                    {
+                        var bitmap = new BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.StreamSource = ms;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                        return bitmap;
+                    }
+                }
             }
 
             return null;
