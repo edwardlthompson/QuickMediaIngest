@@ -522,6 +522,7 @@ namespace QuickMediaIngest.ViewModels
         {
             _scanner = new LocalScanner();
             _groupBuilder = new GroupBuilder();
+            _isDarkTheme = App.CurrentIsDarkTheme;
 
             ImportCommand = new RelayCommand(ExecuteImport);
             DownloadUpdateCommand = new RelayCommand(ExecuteDownloadUpdate);

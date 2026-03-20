@@ -15,7 +15,14 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.13)
+### Latest Updates (v1.0.14)
+
+* Restored the main window to a stable layout after the v1.0.12-v1.0.13 visual rewrite broke the visible controls.
+* Replaced the fragile custom theme resource wiring with Material Design's native theme engine for dark/light switching.
+* Added a working theme toggle in the upper-right header and kept Windows dark/light detection on startup.
+* Split the lower area into a light controls bar and a separate status/progress bar for clearer readability.
+
+### Previous Updates (v1.0.13)
 
 **🔧 Theme System Critical Fixes:**
 * **Fixed broken UI rendering** - Corrected resource dictionary loading order so Material Design loads first, then custom theme overlays on top.

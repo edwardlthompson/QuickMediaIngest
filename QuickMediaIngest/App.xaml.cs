@@ -1,10 +1,14 @@
+using System;
 using System.Windows;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 
 namespace QuickMediaIngest
 {
     public partial class App : Application
     {
+        public static bool CurrentIsDarkTheme { get; private set; } = true;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -62,27 +66,11 @@ namespace QuickMediaIngest
         {
             try
             {
-                // Find the theme dictionary file to load
-                string themeFile = useLightTheme 
-                    ? "pack://application:,,,/QuickMediaIngest;component/Themes/LightTheme.xaml"
-                    : "pack://application:,,,/QuickMediaIngest;component/Themes/DarkTheme.xaml";
-                
-                // Load the theme dictionary
-                ResourceDictionary themeDict = new ResourceDictionary { Source = new Uri(themeFile) };
-                
-                // Remove old theme dictionary if it exists
-                for (int i = Current.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
-                {
-                    var dict = Current.Resources.MergedDictionaries[i];
-                    if (dict.Source != null && (dict.Source.ToString().Contains("/Themes/DarkTheme.xaml") || 
-                        dict.Source.ToString().Contains("/Themes/LightTheme.xaml")))
-                    {
-                        Current.Resources.MergedDictionaries.RemoveAt(i);
-                    }
-                }
-                
-                // Add the new theme dictionary (add at the end for highest priority)
-                Current.Resources.MergedDictionaries.Add(themeDict);
+                var paletteHelper = new PaletteHelper();
+                var theme = paletteHelper.GetTheme();
+                theme.SetBaseTheme(useLightTheme ? Theme.Light : Theme.Dark);
+                paletteHelper.SetTheme(theme);
+                CurrentIsDarkTheme = !useLightTheme;
             }
             catch (Exception ex)
             {

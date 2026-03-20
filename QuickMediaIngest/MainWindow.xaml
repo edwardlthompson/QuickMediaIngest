@@ -1,17 +1,16 @@
 <Window x:Class="QuickMediaIngest.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:QuickMediaIngest"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="Quick Media Ingest" Height="650" Width="1000"
-        Icon="QuickMediaIngest.ico"
-        TextElement.Foreground="{DynamicResource Theme.TextSecondary.Brush}"
-        TextElement.FontWeight="Regular"
-        TextElement.FontSize="10"
-        FontFamily="{StaticResource Theme.FontFamilyDefault}"
-        Background="{DynamicResource Theme.Background.Brush}"
-        PreviewMouseWheel="Window_PreviewMouseWheel"
-        Foreground="{DynamicResource Theme.TextSecondary.Brush}">
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:QuickMediaIngest"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    Title="Quick Media Ingest" Height="620" Width="960"
+    Icon="QuickMediaIngest.ico"
+    TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+    TextElement.FontWeight="Regular"
+    TextElement.FontSize="14"
+    FontFamily="{materialDesign:MaterialDesignFont}"
+    Background="{DynamicResource MaterialDesignPaper}"
+    PreviewMouseWheel="Window_PreviewMouseWheel">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         
@@ -45,85 +44,49 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Navigation Bar -->
-            <RowDefinition Height="Auto"/> <!-- Divider -->
-            <RowDefinition Height="*"/>    <!-- Main Content -->
-            <RowDefinition Height="Auto"/> <!-- Divider -->
-            <RowDefinition Height="Auto"/> <!-- Status Bar -->
-        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Navigation Top Bar with Theme Toggle -->
-        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{DynamicResource Theme.BarBackground.Brush}" Padding="16,8,16,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Theme.Divider.Brush}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="🎬 Quick Media Ingest" Style="{StaticResource Theme.SectionHeaderTextBlock}" VerticalAlignment="Center"/>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="🌙" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="16"/>
-                    <ToggleButton x:Name="ThemeToggle" Width="44" Height="24" Margin="0,0,16,0" Style="{StaticResource MaterialDesignActionToggleButton}" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"/>
-                    <TextBlock Text="☀️" VerticalAlignment="Center" Margin="0,0,0,0" FontSize="16"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Divider Line -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{DynamicResource Theme.Divider.Brush}" Height="1"/>
-
-        <!-- Main Grid: Sidebar + Content -->
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Sidebar / Sources -->
-            <Border Background="{DynamicResource Theme.CardBackground.Brush}" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource Theme.Divider.Brush}">
+        <!-- Sidebar / Sources -->
+        <Border Background="{DynamicResource MaterialDesignCardBackground}" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource MaterialDesignDivider}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
-                <!-- Sources Header with Icons -->
-                <Border Background="{DynamicResource Theme.Hover.Brush}" Padding="12,8,12,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Theme.Divider.Brush}">
+
+                <Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="📁 Sources" Style="{StaticResource Theme.SectionHeaderTextBlock}" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" ToolTip="Rescan Drives" Command="{Binding RescanCommand}" VerticalAlignment="Center" Padding="0" Background="Transparent" BorderThickness="0" Width="24" Height="24">
-                            <TextBlock Text="🔄" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Sources" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="16,12,8,12" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Margin="0,12,16,12" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Rescan Drives" Command="{Binding RescanCommand}" VerticalAlignment="Center" Padding="0">
+                            <materialDesign:PackIcon Kind="Refresh" Height="20" Width="20" Foreground="Yellow"/>
                         </Button>
                     </Grid>
-                </Border>
-                
-                <!-- Sources List -->
+                </Grid>
+
                 <ListBox Grid.Row="1" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" BorderThickness="0" Background="Transparent" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource Theme.CardBackground.Brush}" BorderThickness="1" BorderBrush="{DynamicResource Theme.Border.Brush}" CornerRadius="3" Margin="4" Padding="8">
+                            <materialDesign:Card Margin="4" Padding="12" materialDesign:ElevationAssist.Elevation="Dp1">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="💾" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <TextBlock Text="{Binding}" VerticalAlignment="Center" Foreground="{DynamicResource Theme.TextSecondary.Brush}"/>
+                                    <materialDesign:PackIcon Kind="Sd" VerticalAlignment="Center" Margin="0,0,8,0" Height="20" Width="20"/>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource MaterialDesignBody1TextBlock}" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
+                            </materialDesign:Card>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                
-                <!-- Sidebar Action Buttons -->
+
                 <StackPanel Grid.Row="2" Margin="12,12,12,12">
-                    <Button Content="➕ Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" Foreground="{DynamicResource Theme.Accent.Brush}" BorderBrush="{DynamicResource Theme.Accent.Brush}" Margin="0,0,0,8"/>
-                    <Button Content="⚙️ Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignRaisedButton}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" Background="{DynamicResource Theme.Accent.Brush}" Foreground="{DynamicResource Theme.TextPrimary.Brush}"/>
+                    <Button Content="Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,8" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Foreground="Yellow" BorderBrush="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -131,113 +94,73 @@
         <!-- Main Content Area -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Theme Bar -->
                 <RowDefinition Height="Auto"/> <!-- Notification Area -->
                 <RowDefinition Height="Auto"/> <!-- Top Controls Banner -->
-                <RowDefinition Height="Auto"/> <!-- Options Row -->
                 <RowDefinition Height="*"/>    <!-- Thumbnail Grid -->
+                <RowDefinition Height="Auto"/> <!-- Controls Bar -->
+                <RowDefinition Height="Auto"/> <!-- Lower Status Bar -->
             </Grid.RowDefinitions>
 
-            <!-- Notification Area -->
-            <StackPanel Grid.Row="0" Margin="8,8,8,0">
+            <Border Grid.Row="0" Background="{DynamicResource MaterialDesignCardBackground}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="16,10,16,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <materialDesign:PackIcon Kind="TableLarge" Width="18" Height="18" Margin="0,0,8,0" Foreground="Yellow"/>
+                        <TextBlock Text="Quick Media Ingest" Style="{StaticResource MaterialDesignHeadline6TextBlock}" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <materialDesign:PackIcon Kind="WeatherNight" Width="18" Height="18" Margin="0,0,8,0" Foreground="LightGray"/>
+                        <ToggleButton Width="46" Height="24" Margin="0,0,8,0" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" Style="{StaticResource MaterialDesignSwitchToggleButton}"/>
+                        <materialDesign:PackIcon Kind="WhiteBalanceSunny" Width="18" Height="18" Foreground="Yellow"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Notification Area (Update Banner OR Success Notification) -->
+            <StackPanel Grid.Row="1">
                 <!-- Update Banner -->
-                <Border Background="{DynamicResource Theme.Warning.Brush}" Padding="12" CornerRadius="4" Margin="0,0,0,4" Visibility="{Binding ShowUpdateBanner, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="🆕 A new version is available!" VerticalAlignment="Center" Foreground="#000"/>
-                        <Button Grid.Column="1" Content="⬇️ Download" Command="{Binding DownloadUpdateCommand}" Padding="8,4" Background="#000" Foreground="{DynamicResource Theme.Warning.Brush}"/>
-                    </Grid>
+                <Border Background="Yellow" Padding="6" CornerRadius="4" Margin="16,16,16,8" Visibility="{Binding ShowUpdateBanner, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="Update" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Black"/>
+                        <TextBlock Text="A new version is available!" VerticalAlignment="Center" Foreground="Black" FontWeight="Bold"/>
+                        <Button Content="Download" Margin="16,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Command="{Binding DownloadUpdateCommand}" Padding="8,2" Height="24" Background="Black" Foreground="Yellow" FontSize="11"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- Success Notification Toast -->
-                <Border Background="{DynamicResource Theme.Success.Brush}" Padding="12" CornerRadius="4" Visibility="{Binding ShowSuccessNotification, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <TextBlock Text="✅ Import successful! Files have been added to your destination folder." Foreground="#FFF"/>
+                <Border Background="#4CAF50" Padding="6" CornerRadius="4" Margin="16,16,16,8" Visibility="{Binding ShowSuccessNotification, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="White"/>
+                        <TextBlock Text="Import successful! Files have been added to your destination folder." VerticalAlignment="Center" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                    </StackPanel>
                 </Border>
             </StackPanel>
 
-            <!-- Top Controls Banner with Blocks -->
-            <Border Grid.Row="1" Margin="8,8,8,4" Padding="12" Background="{DynamicResource Theme.BarBackground.Brush}" BorderThickness="1" BorderBrush="{DynamicResource Theme.Divider.Brush}" CornerRadius="3">
+            <!-- Top Controls Banner -->
+            <Border Grid.Row="2" Margin="0,0,0,8" Padding="16,10,16,12" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Background="{DynamicResource MaterialDesignCardBackground}">
                 <StackPanel>
-                    <!-- Action Buttons Row 1 -->
-                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <!-- Import Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,4">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" Style="{StaticResource Theme.PrimaryButton}"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Scan Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,4">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="🔍 Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Style="{StaticResource Theme.SecondaryButton}"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Delete After Import Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,4">
-                            <CheckBox Content="🗑️ Delete After Import" IsChecked="{Binding DeleteAfterImport}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" VerticalAlignment="Center" Style="{StaticResource Theme.CheckBox}"/>
-                        </Border>
-
-                        <!-- Refresh Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,4">
-                            <Button Content="🔄 Refresh" Command="{Binding RescanCommand}" Style="{StaticResource Theme.SecondaryButton}"/>
-                        </Border>
+                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,8,8">
+                            <Button Content="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" Margin="0,0,8,0" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            <CheckBox Content="Delete After Import" MinWidth="140" IsChecked="{Binding DeleteAfterImport}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="Yellow" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            <Button Content="Scan" Command="{Binding ScanSelectedSourceCommand}" IsEnabled="{Binding HasSelectedSource}" Margin="0,0,0,0" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Yellow"/>
+                        </StackPanel>
+                        <Button Content="Build FTP Previews" Margin="0,0,12,8" Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding BuildSelectedPreviewsCommand}" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                        <Button Content="Browse Local Folder" Command="{Binding BrowseScanPathCommand}" Margin="0,0,12,8" Style="{StaticResource MaterialDesignRaisedButton}" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                     </WrapPanel>
 
-                    <!-- Action Buttons Row 2 -->
-                    <WrapPanel Orientation="Horizontal">
-                        <!-- Build FTP Previews Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,0" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Button Content="🎬 Build FTP Previews" Command="{Binding BuildSelectedPreviewsCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" Style="{StaticResource Theme.PrimaryButton}"/>
-                        </Border>
-
-                        <!-- Browse Local Folder Block -->
-                        <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,0" Visibility="{Binding IsLocalSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Button Content="📂 Browse Local Folder" Command="{Binding BrowseScanPathCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" Style="{StaticResource Theme.PrimaryButton}"/>
-                        </Border>
-
-                        <!-- FTP Info Block -->
-                        <TextBlock Text="ℹ️ FTP scan folder is managed in Settings" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}" VerticalAlignment="Center" Foreground="{DynamicResource Theme.TextTertiary.Brush}" FontSize="9" Margin="8,0,0,0"/>
+                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="FTP scan folder is managed in Add FTP Source settings." Foreground="Gray" FontSize="11" VerticalAlignment="Center" Margin="0,0,0,8" Visibility="{Binding IsFtpSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Options Row (Select All, Include Subfolders, Hours, Zoom) -->
-            <Border Grid.Row="2" Margin="8,0,8,4" Padding="12" Background="{DynamicResource Theme.BarBackground.Brush}" BorderThickness="1" BorderBrush="{DynamicResource Theme.Divider.Brush}" CornerRadius="3">
-                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Select All Block -->
-                    <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,0">
-                        <CheckBox Content="☑️ Select All" IsChecked="{Binding SelectAll}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" VerticalAlignment="Center" Style="{StaticResource Theme.CheckBox}"/>
-                    </Border>
-
-                    <!-- Include Subfolders Block -->
-                    <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,0">
-                        <CheckBox Content="📂 Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" VerticalAlignment="Center" Style="{StaticResource Theme.CheckBox}"/>
-                    </Border>
-
-                    <!-- Hours Between Shoots Block -->
-                    <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,4,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏱️ Hours:" Style="{StaticResource Theme.ControlLabelTextBlock}"/>
-                            <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" Width="48" Style="{StaticResource Theme.TextBox}" materialDesign:HintAssist.Hint="4" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Zoom Block -->
-                    <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,0,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="🔍" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                            <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
-                        </StackPanel>
-                    </Border>
-                </WrapPanel>
-            </Border>
-
             <!-- Thumbnail Grid -->
-            <ScrollViewer Grid.Row="3" Margin="8" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="3" Margin="8">
                 <ItemsControl ItemsSource="{Binding Groups}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -306,36 +229,33 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-            
-        </Grid>
 
-        <!-- Divider Line before Status Bar -->
-        <Border Grid.Row="3" Grid.ColumnSpan="2" Background="{DynamicResource Theme.Divider.Brush}" Height="1"/>
+            <Border Grid.Row="4" Background="#FFE6E6E6" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,1,0,1" Padding="12,8">
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox Content="Select All" IsChecked="{Binding SelectAll}" VerticalAlignment="Center" Foreground="Black" Margin="0,0,12,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <CheckBox Content="Include Subfolders" IsChecked="{Binding ScanIncludeSubfolders}" VerticalAlignment="Center" Foreground="Black" Margin="0,0,12,0" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <TextBlock Text="Hours Between Shoots" VerticalAlignment="Center" Foreground="Black" FontSize="11" Margin="0,0,6,0"/>
+                    <TextBox Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Width="56" Margin="0,0,12,0" Style="{StaticResource MaterialDesignOutlinedTextBox}" materialDesign:HintAssist.Hint="4" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <materialDesign:PackIcon Kind="MagnifyPlus" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Black" Width="18" Height="18"/>
+                    <Slider Minimum="80" Maximum="250" Value="{Binding ThumbnailSize}" Width="120" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="None"/>
+                </WrapPanel>
+            </Border>
 
-        <!-- Lower Status Bar with Progress -->
-        <Border Grid.Row="4" Grid.ColumnSpan="2" Background="{DynamicResource Theme.BarBackground.Brush}" Padding="12,8,12,8" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Theme.Divider.Brush}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Progress Meter on Left -->
-                <Border Style="{StaticResource Theme.ControlBlockBorder}" Margin="0,0,12,0">
+            <Border Grid.Row="5" Background="{DynamicResource MaterialDesignCardBackground}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="12,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <ProgressBar Value="{Binding ProgressPercent}" Width="120" Height="8" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource Theme.Accent.Brush}"/>
-                        <TextBlock Text="{Binding ProgressPercent, StringFormat=' {0}%'}" Style="{StaticResource Theme.BodyTextBlock}" Margin="6,0,0,0"/>
+                        <TextBlock Text="Progress" Foreground="LightGray" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="11"/>
+                        <ProgressBar Value="{Binding ProgressPercent}" Width="140" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}" Foreground="{DynamicResource MaterialDesignSecondaryLightMidBrush}"/>
+                        <TextBlock Text="{Binding ProgressPercent, StringFormat='{}{0}%'}" Foreground="LightGray" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="11"/>
                     </StackPanel>
-                </Border>
-
-                <!-- Verbose Status Readout on Right -->
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Theme.ControlLabelTextBlock}" Foreground="{DynamicResource Theme.TextSecondary.Brush}"/>
-                </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Foreground="White" Margin="16,0,4,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </Grid>
+            </Border>
             </Grid>
-        </Border>
-    </Grid>
-
         <!-- Options Dialog Overlay -->
         <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid>
