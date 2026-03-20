@@ -15,7 +15,14 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
 * **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
 
-### Latest Updates (v1.0.14)
+### Latest Updates (v1.0.15)
+
+* Corrected the header toggle semantics so the dark-state pill aligns with the moon side and the light-state pill aligns with the sun side.
+* Improved top-bar alignment so the Scan button sits properly with Delete After Import.
+* Reworked bar readability in both themes by removing hardcoded yellow text from functional controls and using theme-aware foregrounds.
+* Shifted the Material Design accent toward blue for better light-mode contrast and a safer path toward the Excel 2003 ribbon styling.
+
+### Previous Updates (v1.0.14)
 
 * Restored the main window to a stable layout after the v1.0.12-v1.0.13 visual rewrite broke the visible controls.
 * Replaced the fragile custom theme resource wiring with Material Design's native theme engine for dark/light switching.
