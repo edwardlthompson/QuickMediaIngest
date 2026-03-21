@@ -32,22 +32,36 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Determine Release Tag
+    - name: Determine Release Status
       shell: pwsh
       run: |
         $tag = "v${{ env.VERSION }}"
         git fetch --tags --force
         $existingTag = git tag -l $tag
-        $shouldRelease = [string]::IsNullOrWhiteSpace($existingTag)
+        $tagExists = -not [string]::IsNullOrWhiteSpace($existingTag)
+
+        # Check whether a GitHub Release already exists for this tag.
+        gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+        $releaseExists = $LASTEXITCODE -eq 0
+
+        $shouldCreateTag = -not $tagExists
+        $shouldCreateRelease = -not $releaseExists
 
         echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
-        echo "SHOULD_RELEASE=$($shouldRelease.ToString().ToLower())" >> $env:GITHUB_ENV
+        echo "SHOULD_CREATE_TAG=$($shouldCreateTag.ToString().ToLower())" >> $env:GITHUB_ENV
+        echo "SHOULD_CREATE_RELEASE=$($shouldCreateRelease.ToString().ToLower())" >> $env:GITHUB_ENV
 
-        if ($shouldRelease) {
-          Write-Host "No existing tag found for $tag. A release will be created."
+        if (-not $tagExists -and -not $releaseExists) {
+          Write-Host "No existing tag or release found for $tag. Tag and release will be created."
+        }
+        elseif ($tagExists -and -not $releaseExists) {
+          Write-Host "Tag $tag exists but release is missing. A release will be created."
+        }
+        elseif ($tagExists -and $releaseExists) {
+          Write-Host "Tag and release for $tag already exist. Release creation will be skipped."
         }
         else {
-          Write-Host "Tag $tag already exists. Release creation will be skipped."
+          Write-Host "Release for $tag already exists. Tag will be created and release step skipped."
         }
 
     - name: Restore Dependencies
@@ -73,7 +87,7 @@ jobs:
         wix build Installer/QuickMediaIngest.wxs -ext WixToolset.UI.wixext -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
     - name: Create and Push Version Tag
-      if: env.SHOULD_RELEASE == 'true'
+      if: env.SHOULD_CREATE_TAG == 'true'
       shell: pwsh
       run: |
         git config user.name "github-actions[bot]"
@@ -82,7 +96,7 @@ jobs:
         git push origin ${{ env.RELEASE_TAG }}
 
     - name: Upload Build Artifacts
-      if: env.SHOULD_RELEASE == 'true'
+      if: env.SHOULD_CREATE_RELEASE == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: QuickMediaIngest-Build-${{ env.VERSION }}
@@ -91,7 +105,7 @@ jobs:
           ./publish/QuickMediaIngest.msi
 
     - name: Create Release
-      if: env.SHOULD_RELEASE == 'true'
+      if: env.SHOULD_CREATE_RELEASE == 'true'
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
