@@ -12,7 +12,7 @@ echo Building local portable test app (v%VERSION%)...
 echo Output: publish\local-test\QuickMediaIngest.exe
 echo ==========================================
 
-dotnet publish QuickMediaIngest\QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:Version=%VERSION% -o ./publish/local-test
+dotnet publish QuickMediaIngest\QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishReadyToRun=true /p:Version=%VERSION% -o ./publish/local-test
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

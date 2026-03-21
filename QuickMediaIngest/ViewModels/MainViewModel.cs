@@ -72,7 +72,8 @@ namespace QuickMediaIngest.ViewModels
         private bool _isUpdatingSelectAll;
         private bool _isDarkTheme = true;
 
-        private readonly DeviceWatcher _watcher;
+        private DeviceWatcher? _watcher;
+        private bool _startupInitialized;
     private double _savedWindowWidth = 960;
     private double _savedWindowHeight = 620;
     private bool _savedWindowMaximized = false;
@@ -247,13 +248,13 @@ namespace QuickMediaIngest.ViewModels
         public string DestinationRoot
         {
             get => _destinationRoot;
-            set { _destinationRoot = value; OnPropertyChanged(); }
+            set { _destinationRoot = value; OnPropertyChanged(); SaveConfig(); }
         }
 
         public bool DeleteAfterImport
         {
             get => _deleteAfterImport;
-            set { _deleteAfterImport = value; OnPropertyChanged(); }
+            set { _deleteAfterImport = value; OnPropertyChanged(); SaveConfig(); }
         }
 
         public bool IsImporting
@@ -365,6 +366,8 @@ namespace QuickMediaIngest.ViewModels
                 {
                     g.IsSelected = value;
                 }
+
+                SaveConfig();
             }
         }
 
@@ -478,6 +481,7 @@ namespace QuickMediaIngest.ViewModels
                     ftp.RemoteFolder = NormalizeFtpPath(value);
                 }
                 OnPropertyChanged();
+                SaveConfig();
             }
         }
 
@@ -504,6 +508,7 @@ namespace QuickMediaIngest.ViewModels
                     OnPropertyChanged();
                     // Apply the theme when changed
                     App.ApplyTheme(!value);
+                    SaveConfig();
                 }
             }
         }
@@ -583,46 +588,55 @@ namespace QuickMediaIngest.ViewModels
             UseBrowsedFtpFolderCommand = new RelayCommand(ExecuteUseBrowsedFtpFolder);
             CopySkippedFoldersReportCommand = new RelayCommand(ExecuteCopySkippedFoldersReport);
             CloseSkippedFoldersReportCommand = new RelayCommand(ExecuteCloseSkippedFoldersReport);
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (_startupInitialized)
+            {
+                return;
+            }
+
+            _startupInitialized = true;
+            await Task.Yield();
 
             LoadConfig();
             LoadImportHistory();
+            ScanDrives();
 
-            // 1. Scan existing drives on Startup
-            try 
+            if (_watcher == null)
             {
-                foreach (var drive in DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Removable && d.IsReady))
+                _watcher = new DeviceWatcher();
+                _watcher.DeviceConnected += (drive) =>
                 {
-                    Sources.Add(drive.Name);
-                }
-            } catch { }
-
-            // 2. Setup watcher
-            _watcher = new DeviceWatcher();
-            _watcher.DeviceConnected += (drive) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!Sources.Contains(drive)) Sources.Add(drive);
-                });
-            };
-            _watcher.DeviceDisconnected += (drive) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (Sources.Contains(drive))
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Sources.Remove(drive);
-                        if (SelectedSource is string selectedDrive && string.Equals(selectedDrive, drive, StringComparison.Ordinal))
+                        if (!Sources.Contains(drive)) Sources.Add(drive);
+                    });
+                };
+                _watcher.DeviceDisconnected += (drive) =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (Sources.Contains(drive))
                         {
-                            SelectedSource = null;
+                            Sources.Remove(drive);
+                            if (SelectedSource is string selectedDrive && string.Equals(selectedDrive, drive, StringComparison.Ordinal))
+                            {
+                                SelectedSource = null;
+                            }
                         }
-                    }
-                });
-            };
-            _watcher.Start();
+                    });
+                };
+                _watcher.Start();
+            }
 
-            // 3. Check for Updates
-            CheckUpdates();
+            // Run update check shortly after startup work finishes.
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                CheckUpdates();
+            });
         }
 
         private void CheckUpdates(bool force = false)
@@ -1750,7 +1764,11 @@ namespace QuickMediaIngest.ViewModels
                 {
                     UpdateIntervalHours = UpdateIntervalHours,
                     DestinationRoot = DestinationRoot,
+                    DeleteAfterImport = DeleteAfterImport,
                     NamingTemplate = NamingTemplate,
+                    ScanPath = ScanPath,
+                    SelectAll = SelectAll,
+                    IsDarkTheme = IsDarkTheme,
                     ThumbnailSize = ThumbnailSize,
                     ScanIncludeSubfolders = ScanIncludeSubfolders,
                     TimeBetweenShootsHours = TimeBetweenShootsHours,
@@ -1781,7 +1799,15 @@ namespace QuickMediaIngest.ViewModels
                     {
                         _updateIntervalHours = config.UpdateIntervalHours;
                         if (!string.IsNullOrEmpty(config.DestinationRoot)) _destinationRoot = config.DestinationRoot;
+                        _deleteAfterImport = config.DeleteAfterImport;
                         if (!string.IsNullOrEmpty(config.NamingTemplate)) _namingTemplate = config.NamingTemplate;
+                        if (!string.IsNullOrWhiteSpace(config.ScanPath)) _scanPath = config.ScanPath;
+                        _selectAll = config.SelectAll;
+                        if (config.IsDarkTheme.HasValue)
+                        {
+                            _isDarkTheme = config.IsDarkTheme.Value;
+                            App.ApplyTheme(!_isDarkTheme);
+                        }
                         if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
                         _scanIncludeSubfolders = config.ScanIncludeSubfolders;
                         if (config.TimeBetweenShootsHours > 0) _timeBetweenShootsHours = config.TimeBetweenShootsHours;
@@ -1797,7 +1823,11 @@ namespace QuickMediaIngest.ViewModels
                         OnPropertyChanged("UpdateIntervalHours");
                         OnPropertyChanged("UpdatePackageType");
                         OnPropertyChanged("DestinationRoot");
+                        OnPropertyChanged("DeleteAfterImport");
                         OnPropertyChanged("NamingTemplate");
+                        OnPropertyChanged("ScanPath");
+                        OnPropertyChanged("SelectAll");
+                        OnPropertyChanged("IsDarkTheme");
                         OnPropertyChanged("ThumbnailSize");
                         OnPropertyChanged("ScanIncludeSubfolders");
                         OnPropertyChanged("TimeBetweenShootsHours");
@@ -1974,7 +2004,11 @@ namespace QuickMediaIngest.ViewModels
         public int UpdateIntervalHours { get; set; } = 24;
         public string UpdatePackageType { get; set; } = "Portable";
         public string DestinationRoot { get; set; } = string.Empty;
+        public bool DeleteAfterImport { get; set; } = false;
         public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
+        public string ScanPath { get; set; } = string.Empty;
+        public bool SelectAll { get; set; } = true;
+        public bool? IsDarkTheme { get; set; }
         public double ThumbnailSize { get; set; } = 120;
         public bool ScanIncludeSubfolders { get; set; } = true;
         public int TimeBetweenShootsHours { get; set; } = 4;

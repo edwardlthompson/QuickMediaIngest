@@ -6,6 +6,15 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 
 ---
 
+## 🆕 What's New in v1.1.2
+
+* **✨ Startup Splash Screen**: Added a startup splash window so users get immediate visual feedback while the app initializes.
+* **🚀 Faster-Feeling Launch**: Moved heavy startup initialization out of the constructor into deferred startup logic.
+* **⚙️ Expanded Settings Persistence**: Added persistence for additional settings including **Delete After Import**, scan path, theme preference, and select-all state.
+* **🧰 Startup-Oriented Publish Tuning**: Release publishing now uses `PublishReadyToRun=true` to improve startup characteristics.
+
+---
+
 ## 🚀 Key Features
 
 * **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.

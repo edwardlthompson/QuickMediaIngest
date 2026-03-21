@@ -25,13 +25,22 @@ namespace QuickMediaIngest
         public MainWindow()
         {
             InitializeComponent();
-                var vm = new MainViewModel();
-                this.DataContext = vm;
+            DataContext = new MainViewModel();
+        }
 
-                Width = vm.SavedWindowWidth;
-                Height = vm.SavedWindowHeight;
-                if (vm.SavedWindowMaximized)
-                    WindowState = WindowState.Maximized;
+        public void ApplyWindowStateFromViewModel()
+        {
+            if (DataContext is not MainViewModel vm)
+            {
+                return;
+            }
+
+            Width = vm.SavedWindowWidth;
+            Height = vm.SavedWindowHeight;
+            if (vm.SavedWindowMaximized)
+            {
+                WindowState = WindowState.Maximized;
+            }
         }
 
         private void MainContent_Loaded(object sender, RoutedEventArgs e)

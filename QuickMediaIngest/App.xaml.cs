@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
+using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
 {
@@ -10,12 +11,29 @@ namespace QuickMediaIngest
     {
         public static bool CurrentIsDarkTheme { get; private set; } = true;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            
+
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
+
+            var splash = new SplashWindow();
+            splash.Show();
+
+            var mainWindow = new MainWindow();
+            mainWindow.Hide();
+
+            if (mainWindow.DataContext is MainViewModel vm)
+            {
+                // Complete startup work while splash is visible.
+                await vm.InitializeAsync();
+                mainWindow.ApplyWindowStateFromViewModel();
+            }
+
+            MainWindow = mainWindow;
+            mainWindow.Show();
+            splash.Close();
         }
         
         /// <summary>
