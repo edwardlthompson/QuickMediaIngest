@@ -468,6 +468,26 @@
 
                                 <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
 
+                                <Border Background="Yellow"
+                                        Padding="8"
+                                        CornerRadius="4"
+                                        Margin="0,0,0,16"
+                                        Visibility="{Binding ShowUpdateBanner, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <materialDesign:PackIcon Kind="Update" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Black"/>
+                                        <TextBlock Text="A new version is available!" VerticalAlignment="Center" Foreground="Black" FontWeight="Bold"/>
+                                        <Button Content="Download"
+                                                Margin="16,0,0,0"
+                                                Style="{StaticResource MaterialDesignFlatButton}"
+                                                Command="{Binding DownloadUpdateCommand}"
+                                                Padding="8,2"
+                                                Height="24"
+                                                Background="Black"
+                                                Foreground="Yellow"
+                                                FontSize="11"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <TextBlock Text="Update Checking" FontWeight="Bold" Margin="0,0,0,8" FontSize="13" Foreground="{DynamicResource MaterialDesignBody}" TextAlignment="Center" HorizontalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8" HorizontalAlignment="Center">
                                     <TextBlock Text="Package:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
