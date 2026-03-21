@@ -1,7 +1,9 @@
+#nullable enable
 using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -10,54 +12,117 @@ using MetadataExtractor.Formats.Exif;
 
 namespace QuickMediaIngest.Core
 {
-    public class ThumbnailService
+    public class ThumbnailService : IThumbnailService
     {
+        private readonly ILogger<ThumbnailService> _logger;
+
+        public ThumbnailService(ILogger<ThumbnailService> logger)
+        {
+            _logger = logger;
+        }
+
         public BitmapSource? GetThumbnail(string filePath)
         {
             if (!File.Exists(filePath)) return null;
 
-            // 1. Embedded EXIF JPEG thumbnail — fastest path. Camera files (JPEG and RAW alike)
-            //    almost always embed a small JPEG preview in the EXIF header, so we read a few KB
-            //    rather than decoding the full image. This avoids expensive WPF decoder exceptions
-            //    on RAW formats and is measurably faster over slow media like SD cards.
+            string cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "Thumbnails");
+            System.IO.Directory.CreateDirectory(cacheDir);
+
+            string cacheKey = GetCacheKey(filePath);
+            string cachePath = Path.Combine(cacheDir, cacheKey + ".jpg");
+
+            // Try to load from disk cache first
+            if (File.Exists(cachePath))
+            {
+                try
+                {
+                    var bitmap = new BitmapImage();
+                    using (var stream = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.StreamSource = stream;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                    }
+                    return bitmap;
+                }
+                catch { /* If cache is corrupt, fall through to regenerate */ }
+            }
+
+            BitmapSource? thumb = null;
+
+            // 1. Embedded EXIF JPEG thumbnail — fastest path.
             try
             {
                 var exifThumb = TryGetExifThumbnail(filePath);
-                if (exifThumb != null) return exifThumb;
+                if (exifThumb != null) thumb = exifThumb;
             }
             catch { }
 
-            // 2. Native WPF decoder — handles JPEG/PNG/BMP/GIF/TIFF that have no embedded preview.
-            try
+            // 2. Native WPF decoder
+            if (thumb == null)
             {
-                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                try
                 {
-                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
-                    if (decoder.Frames.Count > 0)
+                    using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        return CreateResizedThumbnail(decoder.Frames[0]);
+                        var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
+                        if (decoder.Frames.Count > 0)
+                        {
+                            thumb = CreateResizedThumbnail(decoder.Frames[0]);
+                        }
                     }
                 }
-            }
-            catch { }
-
-            // 3. Windows Shell fallback for codec-backed formats like DNG/HEIC.
-            try
-            {
-                return TryGetShellThumbnail(filePath, 160);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Shell Thumbnail Error] {filePath}: {ex.Message}");
+                catch { }
             }
 
-            return null;
+            // 3. Windows Shell fallback
+            if (thumb == null)
+            {
+                try
+                {
+                    thumb = TryGetShellThumbnail(filePath, 160);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Shell thumbnail extraction failed for {FilePath}.", filePath);
+                }
+            }
+
+            // Save to disk cache if generated
+            if (thumb != null)
+            {
+                try
+                {
+                    var encoder = new JpegBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(thumb));
+                    using (var fs = new FileStream(cachePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        encoder.Save(fs);
+                    }
+                }
+                catch { /* Ignore cache write errors */ }
+            }
+
+            return thumb;
+        }
+
+        private static string GetCacheKey(string filePath)
+        {
+            // Use SourcePath + LastWriteTime as cache key for uniqueness
+            string input = filePath + File.GetLastWriteTimeUtc(filePath).Ticks.ToString();
+            using (var sha1 = System.Security.Cryptography.SHA1.Create())
+            {
+                byte[] hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
         }
 
         private static BitmapSource? TryGetExifThumbnail(string filePath)
         {
             var directories = ImageMetadataReader.ReadMetadata(filePath);
-            var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
+                var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
             if (thumbDir == null) return null;
 
             const int TagThumbnailOffset = 513; // 0x0201

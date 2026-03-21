@@ -6,12 +6,14 @@ using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media.Animation;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
 {
     public partial class MainWindow : Window
     {
+        private readonly ILogger<MainWindow> _logger;
         private const string TokenDragFormat = "QuickMediaIngest.TokenPayload";
         private const string RibbonTileDragFormat = "QuickMediaIngest.RibbonTile";
         private Point _tokenDragStartPoint;
@@ -22,10 +24,12 @@ namespace QuickMediaIngest
         private Border? _activeRibbonDraggedTile;
         private int _activeRibbonPreviewIndex = -1;
 
-        public MainWindow()
+        public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger)
         {
             InitializeComponent();
-            DataContext = new MainViewModel();
+            DataContext = viewModel;
+            _logger = logger;
+            _logger.LogInformation("Main window initialized.");
         }
 
         public void ApplyWindowStateFromViewModel()

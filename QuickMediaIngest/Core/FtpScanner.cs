@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,10 +8,14 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
 {
+    /// <summary>
+    /// Represents progress information for an FTP scan operation.
+    /// </summary>
     public class FtpScanProgress
     {
         public string Phase { get; set; } = "Prescan";
@@ -25,8 +30,22 @@ namespace QuickMediaIngest.Core
         public string Note { get; set; } = string.Empty;
     }
 
-    public class FtpScanner
+    /// <summary>
+    /// Scans FTP servers for directories and files, providing directory listing and parsing.
+    /// </summary>
+    public class FtpScanner : IFtpScanner
     {
+        private readonly ILogger<FtpScanner> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FtpScanner"/> class.
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output.</param>
+        public FtpScanner(ILogger<FtpScanner> logger)
+        {
+            _logger = logger;
+        }
+
         private static readonly Regex UnixListRegex = new Regex(
             "^(?<type>[dl-])[rwxstST-]{9}\\s+\\d+\\s+\\S+\\s+\\S+\\s+(?<size>\\d+)\\s+(?<month>[A-Za-z]{3})\\s+(?<day>\\d{1,2})\\s+(?<timeyear>[0-9:]{4,5}|\\d{4})\\s+(?<name>.+)$",
             RegexOptions.Compiled);
@@ -35,6 +54,17 @@ namespace QuickMediaIngest.Core
             "^(?<date>\\d{2}-\\d{2}-\\d{2})\\s+(?<time>\\d{2}:\\d{2}[AP]M)\\s+(?<dir><DIR>|\\d+)\\s+(?<name>.+)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        /// <summary>
+        /// Lists directories on an FTP server at the specified remote path.
+        /// </summary>
+        /// <param name="host">FTP server host.</param>
+        /// <param name="port">FTP server port.</param>
+        /// <param name="user">FTP username.</param>
+        /// <param name="pass">FTP password.</param>
+        /// <param name="remotePath">Remote path to list.</param>
+        /// <param name="timeoutSeconds">Timeout in seconds.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>List of directory names.</returns>
         public async Task<List<string>> ListDirectoriesAsync(
             string host,
             int port,
@@ -45,6 +75,7 @@ namespace QuickMediaIngest.Core
             CancellationToken cancellationToken = default)
         {
             string normalizedPath = NormalizeRemotePath(remotePath);
+            _logger.LogInformation("Listing FTP directories for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
             var entries = await ListDirectoryEntriesAsync(
                 host,
                 port,
@@ -71,6 +102,7 @@ namespace QuickMediaIngest.Core
             CancellationToken cancellationToken = default)
         {
             string normalizedPath = NormalizeRemotePath(remotePath);
+            _logger.LogInformation("Testing FTP connection to {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
 
             try
             {
@@ -87,10 +119,12 @@ namespace QuickMediaIngest.Core
             }
             catch (OperationCanceledException)
             {
+                _logger.LogError("FTP connection test canceled for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
                 return (false, "Connection was canceled.");
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "FTP connection test failed for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
                 return (false, ex.Message);
             }
         }
@@ -108,6 +142,7 @@ namespace QuickMediaIngest.Core
         {
             var items = new List<ImportItem>();
             string normalizedPath = NormalizeRemotePath(remotePath);
+            _logger.LogInformation("Starting FTP scan for {Host}:{Port}{RemotePath}. IncludeSubfolders={IncludeSubfolders}", host, port, normalizedPath, includeSubfolders);
 
             List<FtpFolderScanPlan> plans = await BuildScanPlanAsync(
                 host,
@@ -181,6 +216,7 @@ namespace QuickMediaIngest.Core
                 });
             }
 
+            _logger.LogInformation("Completed FTP scan for {Host}:{Port}{RemotePath}. Files={FileCount}, Folders={FolderCount}, SkippedFolders={SkippedFolders}", host, port, normalizedPath, items.Count, totalFolders, skippedFolders);
             return items;
         }
 

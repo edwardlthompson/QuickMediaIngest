@@ -1,19 +1,25 @@
+#nullable enable
 using System;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
 {
-    public class UpdateService
+    public class UpdateService : IUpdateService
     {
         private const string RepoOwner = "edwardlthompson";
         private const string RepoName = "QuickMediaIngest";
         private readonly string _cacheFile;
+        private readonly HttpClient _httpClient;
+        private readonly ILogger<UpdateService> _logger;
 
-        public UpdateService()
+        public UpdateService(HttpClient httpClient, ILogger<UpdateService> logger)
         {
+            _httpClient = httpClient;
+            _logger = logger;
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appData, "QuickMediaIngest");
             Directory.CreateDirectory(appFolder);
@@ -26,10 +32,8 @@ namespace QuickMediaIngest.Core
 
             try
             {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("QuickMediaIngest-Updater");
-                
-                var response = await client.GetStringAsync($"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
+                _logger.LogInformation("Checking for updates. Force={Force}, IntervalHours={IntervalHours}, PackageType={PackageType}", force, intervalHours, packageType);
+                var response = await _httpClient.GetStringAsync($"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
                 var doc = JsonDocument.Parse(response);
                 
                 string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
@@ -66,11 +70,15 @@ namespace QuickMediaIngest.Core
                 {
                     if (remoteVersion > localVersion)
                     {
+                        _logger.LogInformation("Update available. LocalVersion={LocalVersion}, RemoteVersion={RemoteVersion}", localVersion, remoteVersion);
                         return downloadUrl;
                     }
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Update check failed.");
+            }
 
             return null;
         }

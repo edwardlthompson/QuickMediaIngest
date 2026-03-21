@@ -13,6 +13,11 @@
     PreviewMouseWheel="Window_PreviewMouseWheel"
     SizeChanged="Window_SizeChanged"
     StateChanged="Window_StateChanged">
+    <Window.InputBindings>
+        <KeyBinding Key="I" Modifiers="Control" Command="{Binding ImportCommand}" />
+        <KeyBinding Key="A" Modifiers="Control" Command="{Binding SelectAllCommand}" />
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}" />
+    </Window.InputBindings>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         
@@ -88,6 +93,21 @@
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
+        <!-- Onboarding Overlay -->
+        <Grid Visibility="{Binding ShowOnboardingOverlay, Converter={StaticResource BooleanToVisibilityConverter}}"
+              Background="#CC222222" Panel.ZIndex="1000">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="420" Height="340" Background="White" CornerRadius="12" Padding="32" Effect="{DynamicResource MaterialDesignElevation8}">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" >
+                        <TextBlock Text="Welcome to Quick Media Ingest!" FontSize="22" FontWeight="Bold" Foreground="#222" Margin="0,0,0,16" TextAlignment="Center"/>
+                        <TextBlock Text="• Use the sidebar to add SD cards or FTP sources.\n• Use the Import button to start ingesting.\n• Try the dark/light toggle in the top bar.\n• Tooltips and keyboard shortcuts are available throughout the app.\n\nYou can revisit this tour from Settings > About." 
+                                   FontSize="15" Foreground="#444" TextWrapping="Wrap" Margin="0,0,0,24" TextAlignment="Left"/>
+                        <Button Content="Got it!" Width="120" Height="38" FontWeight="SemiBold" Background="#2A5FFF" Foreground="White" 
+                                Command="{Binding DismissOnboardingCommand}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
 
         <!-- Sidebar / Sources -->
         <Border Background="{DynamicResource MaterialDesignCardBackground}" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource MaterialDesignDivider}">
@@ -105,7 +125,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Sources" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="16,12,8,12" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Margin="0,12,16,12" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Rescan Drives" Command="{Binding RescanCommand}" VerticalAlignment="Center" Padding="0">
+                        <Button Grid.Column="1" Margin="0,12,16,12" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Rescan Drives (F5)" Command="{Binding RescanCommand}" VerticalAlignment="Center" Padding="0">
                             <materialDesign:PackIcon Kind="Refresh" Height="20" Width="20" Foreground="{DynamicResource AppAccentBrush}"/>
                         </Button>
                     </Grid>
@@ -125,8 +145,8 @@
                 </ListBox>
 
                 <StackPanel Grid.Row="2" Margin="12,12,12,12">
-                    <Button Content="Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" Margin="0,0,0,8" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                    <Button Content="Add FTP Source" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" Margin="0,0,0,8" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" ToolTip="Add FTP Source (Alt+F)"/>
+                    <Button Content="Settings &amp; About" Command="{Binding ToggleAboutCommand}" Style="{StaticResource RibbonSidebarButtonStyle}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" ToolTip="Settings &amp; About (Alt+S)"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -182,6 +202,19 @@
             <!-- Top Controls Banner -->
             <Border Grid.Row="2" Margin="0,0,0,8" Style="{StaticResource RibbonBandStyle}">
                 <StackPanel>
+                    <!-- Advanced Filtering Controls -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8" VerticalAlignment="Center">
+                        <TextBlock Text="Filter:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Text="Date" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <DatePicker SelectedDate="{Binding FilterStartDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Margin="0,0,4,0"/>
+                        <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <DatePicker SelectedDate="{Binding FilterEndDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Margin="0,0,8,0"/>
+                        <TextBlock Text="Type" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="0,0,8,0"/>
+                        <TextBlock Text="Name" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBox Text="{Binding FilterKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Margin="0,0,8,0"/>
+                        <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Height="24"/>
+                    </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
                         <StackPanel x:Name="RibbonTilePanel" Orientation="Horizontal" VerticalAlignment="Center" AllowDrop="True" Background="Transparent" DragOver="RibbonTilePanel_DragOver" Drop="RibbonTilePanel_Drop" DragLeave="RibbonTilePanel_DragLeave">
 
@@ -194,7 +227,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <materialDesign:PackIcon Grid.Column="0" Kind="FolderDownload" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource AppAccentBrush}"/>
-                                    <Button Grid.Column="1" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}">
+                                    <Button Grid.Column="1" Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" ToolTip="Import (Ctrl+I)">
                                         <TextBlock Text="{Binding IsImporting, StringFormat={}, Converter={StaticResource ImportingTextConverter}}" TextWrapping="NoWrap"/>
                                     </Button>
                                     <Border Grid.Column="2" Style="{StaticResource RibbonTileHandleStyle}" PreviewMouseLeftButtonDown="RibbonTileHandle_PreviewMouseLeftButtonDown" PreviewMouseMove="RibbonTileHandle_PreviewMouseMove">
@@ -228,7 +261,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <materialDesign:PackIcon Grid.Column="0" Kind="CheckboxMultipleMarked" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource AppAccentBrush}"/>
-                                    <CheckBox Grid.Column="1" Content="Select All" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" IsChecked="{Binding SelectAll}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                                    <CheckBox Grid.Column="1" Content="Select All" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" IsChecked="{Binding SelectAll}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}" ToolTip="Select All (Ctrl+A)"/>
                                     <Border Grid.Column="2" Style="{StaticResource RibbonTileHandleStyle}" PreviewMouseLeftButtonDown="RibbonTileHandle_PreviewMouseLeftButtonDown" PreviewMouseMove="RibbonTileHandle_PreviewMouseMove">
                                         <materialDesign:PackIcon Kind="DragVertical" Width="28" Height="28" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
                                     </Border>
@@ -312,70 +345,32 @@
 
             <!-- Thumbnail Grid -->
             <ScrollViewer Grid.Row="3" Margin="8">
-                <ItemsControl ItemsSource="{Binding Groups}">
+                <ItemsControl ItemsSource="{Binding FilteredItemsView}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Expander Margin="8" BorderThickness="1" BorderBrush="{DynamicResource MaterialDesignDivider}" IsExpanded="False">
-                                <Expander.Header>
-                                    <Grid Width="Auto">
+                            <materialDesign:Card Margin="8" Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Padding="4">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                    <materialDesign:PackIcon Kind="Video" Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#AA000000" Foreground="White" Width="20" Height="20" Margin="4"/>
+                                    <Grid Grid.Row="1" Margin="2,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        
-                                        <!-- Bulk Checkbox -->
-                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Yellow"/>
-                                        
-                                        <!-- Editable Title -->
-                                        <TextBox Grid.Column="1" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ShootTitleTextBoxStyle}"/>
-                                        
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0" VerticalAlignment="Center">
-                                            <TextBlock Text="📁 " />
-                                            <TextBlock Text="{Binding FolderPath}" Style="{StaticResource MaterialDesignBody2TextBlock}"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
-                                            <materialDesign:PackIcon Kind="ImageMultiple" Margin="0,0,4,0"/>
-                                            <TextBlock Text="{Binding Items.Count}" FontWeight="Bold"/>
-                                            <TextBlock Text=" items" />
-                                        </StackPanel>
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                     </Grid>
-                                </Expander.Header>
-                                <Expander.Content>
-                                    <ItemsControl ItemsSource="{Binding Items}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel Orientation="Horizontal"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <materialDesign:Card Margin="8" Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}" Padding="4">
-                                                    <Grid>
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="*"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
-                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
-                                                        <materialDesign:PackIcon Kind="Video" Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#AA000000" Foreground="White" Width="20" Height="20" Margin="4"/>
-
-                                                        <!-- Footer Location for Checkbox and Label beneath image frame -->
-                                                        <Grid Grid.Row="1" Margin="2,4">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="Yellow"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="10" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                        </Grid>
-                                                    </Grid>
-                                                </materialDesign:Card>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Expander.Content>
-                            </Expander>
+                                </Grid>
+                            </materialDesign:Card>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -485,6 +480,11 @@
                                 <TextBlock Text="{Binding AppVersion, StringFormat='{}Version: {0}'}" Style="{StaticResource MaterialDesignBody2TextBlock}" TextAlignment="Center" Margin="0,0,0,4"/>
                                 <TextBlock Text="Speedy ingestion pipeline manager." TextAlignment="Center" FontSize="12" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="0,0,0,16"/>
                                 <Button Content="Visit GitHub" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Height="32" HorizontalAlignment="Center" Margin="0,0,0,24"/>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                                    <Button Content="Export Settings" Command="{Binding ExportSettingsCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Height="32" Margin="0,0,8,0"/>
+                                    <Button Content="Import Settings" Command="{Binding ImportSettingsCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Height="32"/>
+                                </StackPanel>
 
                                 <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Margin="0,0,0,16"/>
 

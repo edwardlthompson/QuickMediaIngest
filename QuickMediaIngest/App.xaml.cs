@@ -1,8 +1,15 @@
 using System;
+using System.Net.Http;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using QuickMediaIngest.Core;
+using QuickMediaIngest.Core.Logging;
+using QuickMediaIngest.Data;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -10,10 +17,15 @@ namespace QuickMediaIngest
     public partial class App : Application
     {
         public static bool CurrentIsDarkTheme { get; private set; } = true;
+        private ServiceProvider? _serviceProvider;
+        private static ILogger<App>? _logger;
 
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            _serviceProvider = ConfigureServices();
+            _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+            _logger.LogInformation("Application startup initiated.");
 
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
@@ -21,7 +33,7 @@ namespace QuickMediaIngest
             var splash = new SplashWindow();
             splash.Show();
 
-            var mainWindow = new MainWindow();
+            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Hide();
 
             if (mainWindow.DataContext is MainViewModel vm)
@@ -34,6 +46,56 @@ namespace QuickMediaIngest
             MainWindow = mainWindow;
             mainWindow.Show();
             splash.Close();
+            _logger.LogInformation("Application startup completed.");
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _serviceProvider?.Dispose();
+            base.OnExit(e);
+        }
+
+        private static ServiceProvider ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            string logFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
+            string logPath = Path.Combine(logFolder, "quickmediaingest.log");
+
+            services.AddLogging(builder =>
+            {
+                builder.ClearProviders();
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddProvider(new FileLoggerProvider(logPath, LogLevel.Information));
+            });
+
+            services.AddSingleton<HttpClient>(_ =>
+            {
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("QuickMediaIngest-Updater");
+                return client;
+            });
+
+
+            services.AddSingleton<ILocalScanner, LocalScanner>();
+            services.AddSingleton<IFtpScanner, FtpScanner>();
+            services.AddSingleton<IThumbnailService, ThumbnailService>();
+            services.AddSingleton<IMetadataReader, MetadataReader>();
+            services.AddSingleton<IWhitelistFilter, WhitelistFilter>();
+            services.AddSingleton<IUpdateService, UpdateService>();
+            services.AddSingleton<IDatabaseService, DatabaseService>();
+            services.AddSingleton<IDeviceWatcher, DeviceWatcher>();
+            services.AddSingleton<IFileProviderFactory, FileProviderFactory>();
+            services.AddSingleton<IIngestEngineFactory, IngestEngineFactory>();
+            services.AddSingleton<GroupBuilder>();
+
+            // Register loggers for all file providers
+            services.AddSingleton(typeof(ILogger<AdbFileProvider>), sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger<AdbFileProvider>());
+
+            services.AddTransient<MainViewModel>();
+            services.AddTransient<MainWindow>();
+
+            return services.BuildServiceProvider();
         }
         
         /// <summary>
@@ -101,7 +163,7 @@ namespace QuickMediaIngest
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error applying theme: {ex.Message}");
+                _logger?.LogError(ex, "Error applying theme.");
             }
         }
     }

@@ -1,17 +1,21 @@
+#nullable enable
 namespace QuickMediaIngest.Data
 {
     using System;
     using System.Collections.Generic;
     using System.Data.SQLite;
     using System.IO;
+    using Microsoft.Extensions.Logging;
     using QuickMediaIngest.Data.Models;
 
-    public class DatabaseService
+    public class DatabaseService : IDatabaseService
     {
         private readonly string _dbPath;
+        private readonly ILogger<DatabaseService> _logger;
 
-        public DatabaseService()
+        public DatabaseService(ILogger<DatabaseService> logger)
         {
+            _logger = logger;
             // Store DB in AppData
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appData, "QuickMediaIngest");
@@ -22,6 +26,7 @@ namespace QuickMediaIngest.Data
 
         private void InitializeDatabase()
         {
+            _logger.LogInformation("Initializing database at {DatabasePath}.", _dbPath);
             string? dir = Path.GetDirectoryName(_dbPath);
             if (string.IsNullOrEmpty(dir))
             {
@@ -41,7 +46,7 @@ namespace QuickMediaIngest.Data
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
                 connection.Open();
-                
+
                 string createDevicesTable = @"
                     CREATE TABLE IF NOT EXISTS Devices (
                         Id TEXT PRIMARY KEY,
@@ -59,13 +64,35 @@ namespace QuickMediaIngest.Data
                         FOREIGN KEY(DeviceId) REFERENCES Devices(Id)
                     );";
 
+                string createWhitelistIndex = @"
+                    CREATE INDEX IF NOT EXISTS idx_whitelist_device_path ON Whitelist(DeviceId, Path);";
+
+                // New: ImportHistory table for imported files
+                string createImportHistoryTable = @"
+                    CREATE TABLE IF NOT EXISTS ImportHistory (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        DeviceId TEXT,
+                        Path TEXT,
+                        FileName TEXT,
+                        FileSize INTEGER,
+                        DateImported TEXT,
+                        UNIQUE(DeviceId, Path)
+                    );";
+
+                string createImportHistoryIndex = @"
+                    CREATE INDEX IF NOT EXISTS idx_importhistory_device_path ON ImportHistory(DeviceId, Path);";
+
                 using (var cmd = new SQLiteCommand(createDevicesTable, connection)) cmd.ExecuteNonQuery();
                 using (var cmd = new SQLiteCommand(createWhitelistTable, connection)) cmd.ExecuteNonQuery();
+                using (var cmd = new SQLiteCommand(createWhitelistIndex, connection)) cmd.ExecuteNonQuery();
+                using (var cmd = new SQLiteCommand(createImportHistoryTable, connection)) cmd.ExecuteNonQuery();
+                using (var cmd = new SQLiteCommand(createImportHistoryIndex, connection)) cmd.ExecuteNonQuery();
             }
         }
 
         public DeviceConfig? GetDeviceConfig(string id)
         {
+            _logger.LogInformation("Loading device config for {DeviceId}.", id);
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
                 connection.Open();
@@ -77,13 +104,12 @@ namespace QuickMediaIngest.Data
                     {
                         if (reader.Read())
                         {
-                            return new DeviceConfig
-                            {
-                                Id = reader["Id"].ToString() ?? string.Empty,
-                                DeviceName = reader["DeviceName"].ToString() ?? string.Empty,
-                                LastImportDate = reader["LastImportDate"].ToString() ?? string.Empty,
-                                AutoTrigger = Convert.ToInt32(reader["AutoTrigger"]) == 1
-                            };
+                            return new DeviceConfig(
+                                reader["Id"].ToString() ?? string.Empty,
+                                reader["DeviceName"].ToString() ?? string.Empty,
+                                reader["LastImportDate"].ToString() ?? string.Empty,
+                                Convert.ToInt32(reader["AutoTrigger"]) == 1
+                            );
                         }
                     }
                 }
@@ -93,6 +119,7 @@ namespace QuickMediaIngest.Data
 
         public void SaveDeviceConfig(DeviceConfig config)
         {
+            _logger.LogInformation("Saving device config for {DeviceId}.", config.Id);
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
                 connection.Open();
@@ -114,6 +141,7 @@ namespace QuickMediaIngest.Data
         public List<WhitelistRule> GetWhitelist(string deviceId)
         {
             var list = new List<WhitelistRule>();
+            _logger.LogInformation("Loading whitelist rules for {DeviceId}.", deviceId);
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
                 connection.Open();
@@ -125,13 +153,12 @@ namespace QuickMediaIngest.Data
                     {
                         while (reader.Read())
                         {
-                            list.Add(new WhitelistRule
-                            {
-                                Id = Convert.ToInt32(reader["Id"]),
-                                DeviceId = reader["DeviceId"].ToString() ?? string.Empty,
-                                Path = reader["Path"].ToString() ?? string.Empty,
-                                RuleType = reader["Type"].ToString() ?? string.Empty
-                            });
+                            list.Add(new WhitelistRule(
+                                Convert.ToInt32(reader["Id"]),
+                                reader["DeviceId"].ToString() ?? string.Empty,
+                                reader["Path"].ToString() ?? string.Empty,
+                                reader["Type"].ToString() ?? string.Empty
+                            ));
                         }
                     }
                 }
@@ -141,6 +168,7 @@ namespace QuickMediaIngest.Data
 
         public void AddWhitelistRule(WhitelistRule rule)
         {
+            _logger.LogInformation("Adding whitelist rule for {DeviceId} with path {RulePath}.", rule.DeviceId, rule.Path);
             using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
             {
                 connection.Open();

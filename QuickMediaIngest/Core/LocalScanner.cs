@@ -1,16 +1,41 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
 {
-    public class LocalScanner
+    /// <summary>
+    /// Scans local directories for importable media files.
+    /// </summary>
+    public class LocalScanner : ILocalScanner
     {
+        private readonly ILogger<LocalScanner> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LocalScanner"/> class.
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output.</param>
+        public LocalScanner(ILogger<LocalScanner> logger)
+        {
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Scans the specified source path for importable files, optionally including subfolders.
+        /// </summary>
+        /// <param name="sourcePath">Root directory to scan.</param>
+        /// <param name="includeSubfolders">Whether to include subfolders in the scan.</param>
+        /// <param name="folderProgressCallback">Optional callback for folder scan progress.</param>
+        /// <returns>List of discovered import items.</returns>
         public List<ImportItem> Scan(string sourcePath, bool includeSubfolders, Action<int, int>? folderProgressCallback = null)
         {
             var items = new List<ImportItem>();
+
+            _logger.LogInformation("Starting local scan for {SourcePath}. IncludeSubfolders={IncludeSubfolders}", sourcePath, includeSubfolders);
 
             if (!Directory.Exists(sourcePath))
             {
@@ -70,6 +95,7 @@ namespace QuickMediaIngest.Core
                 folderProgressCallback?.Invoke(scannedFolders, totalFolders);
             }
 
+            _logger.LogInformation("Completed local scan for {SourcePath}. MediaFiles={FileCount}", sourcePath, items.Count);
             return items;
         }
 

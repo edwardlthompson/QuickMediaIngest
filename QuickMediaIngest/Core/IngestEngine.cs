@@ -1,25 +1,50 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
 {
+    /// <summary>
+    /// Handles the ingestion of media files into the destination directory, raising progress events and logging results.
+    /// </summary>
     public class IngestEngine
     {
         // Event for UI progress monitoring (Percent, Status Message)
+        /// <summary>
+        /// Occurs when the ingest progress changes (percent complete and status message).
+        /// </summary>
         public event Action<int, string>? ProgressChanged;
+        /// <summary>
+        /// Occurs when an item is processed during ingest. Signature: public event Action<IngestProgressInfo>? ItemProcessed;
+        /// </summary>
         public event Action<IngestProgressInfo>? ItemProcessed;
 
         private readonly IFileProvider _provider;
+        private readonly ILogger<IngestEngine> _logger;
 
-        public IngestEngine(IFileProvider provider)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IngestEngine"/> class.
+        /// </summary>
+        /// <param name="provider">File provider for copy/delete operations.</param>
+        /// <param name="logger">Logger for diagnostic output.</param>
+        public IngestEngine(IFileProvider provider, ILogger<IngestEngine> logger)
         {
             _provider = provider;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Ingests all selected items in a group to the destination directory, applying the naming template.
+        /// </summary>
+        /// <param name="group">The group of items to ingest.</param>
+        /// <param name="destinationRoot">Root directory for output.</param>
+        /// <param name="namingTemplate">Naming template for output files.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken)
         {
             if (group == null || group.Items.Count == 0) return;
@@ -38,14 +63,21 @@ namespace QuickMediaIngest.Core
 
             int total = selectedItems.Count;
             int current = 0;
+            object progressLock = new object();
 
-            foreach (var item in selectedItems)
+            _logger.LogInformation("Starting ingest for group {GroupTitle} with {FileCount} selected files into {DestinationRoot}.", group.Title, total, destinationRoot);
+
+            await Parallel.ForEachAsync(selectedItems, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken }, async (item, ct) =>
             {
-                if (cancellationToken.IsCancellationRequested) break;
+                int itemIndex;
+                lock (progressLock)
+                {
+                    current++;
+                    itemIndex = current;
+                }
 
-                current++;
-                string status = $"Copying {item.FileName} ({current}/{total})";
-                ProgressChanged?.Invoke((current * 100) / total, status);
+                string status = $"Copying {item.FileName} ({itemIndex}/{total})";
+                ProgressChanged?.Invoke((itemIndex * 100) / total, status);
 
                 string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title);
                 string destPath = Path.Combine(targetDir, destFileName);
@@ -54,19 +86,20 @@ namespace QuickMediaIngest.Core
 
                 try
                 {
-                    await _provider.CopyAsync(item.SourcePath, destPath, cancellationToken);
+                    await _provider.CopyAsync(item.SourcePath, destPath, ct);
                     success = true;
+                    _logger.LogInformation("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
                 }
                 catch (Exception ex)
                 {
                     errorMessage = ex.Message;
-                    Console.WriteLine($"[Copy Error] {item.FileName}: {ex.Message}");
+                    _logger.LogError(ex, "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.", item.FileName, item.SourcePath, destPath);
                 }
 
                 ItemProcessed?.Invoke(new IngestProgressInfo
                 {
                     GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
-                    GroupCurrent = current,
+                    GroupCurrent = itemIndex,
                     GroupTotal = total,
                     SourcePath = item.SourcePath,
                     FileName = item.FileName,
@@ -74,9 +107,10 @@ namespace QuickMediaIngest.Core
                     Success = success,
                     ErrorMessage = errorMessage
                 });
-            }
+            });
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
+            _logger.LogInformation("Completed ingest for group {GroupTitle}.", group.Title);
         }
 
         private string GetTargetFolderName(ItemGroup group)
@@ -93,7 +127,15 @@ namespace QuickMediaIngest.Core
             return start == end ? $"{start}+{name}" : $"{start} to {end}+{name}";
         }
 
-        private string ResolveFileName(ImportItem item, string targetDir, string template, string shootName)
+        /// <summary>
+        /// Resolves the output file name for an import item using the specified template and group title.
+        /// </summary>
+        /// <param name="item">The import item.</param>
+        /// <param name="targetDir">The target directory.</param>
+        /// <param name="template">The naming template.</param>
+        /// <param name="shootName">The group/shoot name.</param>
+        /// <returns>The resolved file name.</returns>
+        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName)
         {
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;

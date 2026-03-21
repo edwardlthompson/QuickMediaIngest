@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,319 +12,306 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.ViewModels
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class AdbSourceItem
     {
-        private string _albumName = "New Album";
-        private string _statusMessage = "Ready";
-        private int _progressPercent = 0;
-        private int _totalFilesForImport = 0;
-        private int _currentFileBeingImported = 0;
-        private int _processedFilesForImport = 0;
-        private int _failedFilesForImport = 0;
-        private int _currentGroupFileBeingImported = 0;
-        private int _totalFilesInCurrentGroup = 0;
-        private int _currentGroupProgressPercent = 0;
-        private string _currentImportGroupTitle = string.Empty;
-        private string _importElapsedText = "00:00:00";
-        private string _importEtaText = "--:--:--";
-        private string _importDataRateText = "-- MB/s";
-        private DateTime _importStartedAtUtc = DateTime.MinValue;
-        private long _processedBytesForImport = 0;
-        private bool _showImportProgressDialog = false;
-        private bool _showScanProgressDialog = false;
-        private int _scanProgressPercent = 0;
-        private int _totalFoldersToScan = 0;
-        private int _scannedFolders = 0;
-        private int _totalFilesToScan = 0;
-        private int _scannedFiles = 0;
-        private string _scanDialogTitle = "Loading Import List...";
-        private string _scanProgressMessage = "Preparing scan...";
-                        private object? _selectedSource;
-        private string _destinationRoot = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
-        private bool _deleteAfterImport = false;
+        public string DeviceSerial { get; set; } = "default";
+        public override string ToString() => "Android (ADB)";
+    }
+    public partial class MainViewModel : ObservableObject
+    {
+        private bool _isUpdatingSelectAll = false;
+        // Fields required for select-all and import progress logic
         private bool _selectAll = true;
+        private long _processedBytesForImport = 0;
+        private DateTime _importStartedAtUtc = DateTime.MinValue;
+        // ...existing code...
 
-        private bool _showUpdateBanner = false;
-        private string _updateUrl = string.Empty;
-        private bool _showAboutDialog = false;
-        private int _updateIntervalHours = 24;
-        private string _updatePackageType = "Portable";
-        private string _namingTemplate = "[Date]_[Time]_[Original]";
-        private double _thumbnailSize = 120; 
-        private string _scanPath = string.Empty;
-        private bool _scanIncludeSubfolders = true;
-        private bool _isImporting = false;
-        private bool _showSuccessNotification = false;
-        private int _timeBetweenShootsHours = 4;
-        private bool _isBrowsingFtpFolders = false;
-        private string _selectedFtpPresetFolder = "/DCIM";
-        private FtpFolderOption? _selectedBrowsedFtpFolder;
-        private string _ftpDialogStatusMessage = "Enter your phone FTP details, then test or browse folders.";
-        private bool _limitFtpThumbnailLoad = false;
-        private int _ftpInitialThumbnailCount = 0;
-        private bool _showSkippedFoldersDialog = false;
-        private string _skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
-        private string _skippedFoldersReportText = string.Empty;
-        private bool _isUpdatingSelectAll;
-        private bool _isDarkTheme = true;
+        [RelayCommand]
+        private void ExportSettings()
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Export Settings",
+                    Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                    FileName = "QuickMediaIngest-settings.json"
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    string appConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
+                    if (File.Exists(appConfigPath))
+                    {
+                        StatusMessage = $"Settings exported to {dlg.FileName}";
+                        File.Copy(appConfigPath, dlg.FileName, overwrite: true);
+                    }
+                    else
+                    {
+                        StatusMessage = "No settings file found to export.";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Export failed: {ex.Message}";
+            }
+        }
 
-        private DeviceWatcher? _watcher;
-        private bool _startupInitialized;
-    private double _savedWindowWidth = 960;
-    private double _savedWindowHeight = 620;
-    private bool _savedWindowMaximized = false;
+        [RelayCommand]
+        private void ImportSettings()
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Import Settings",
+                    Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*"
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    string appConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
+                    File.Copy(dlg.FileName, appConfigPath, overwrite: true);
+                    LoadConfig();
+                    StatusMessage = $"Settings imported from {dlg.FileName}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Import failed: {ex.Message}";
+            }
+        }
 
-    private readonly LocalScanner _scanner;
+        // ...existing code...
+        // --- Advanced Filtering/Search ---
+        // --- Advanced Filtering/Search ---
+        [ObservableProperty] DateTime? filterStartDate = null;
+
+        [RelayCommand]
+        void DetectDuplicates()
+        {
+            // Build a dictionary of quick hashes to ImportItems
+            var hashDict = new Dictionary<string, List<ImportItem>>();
+            foreach (var group in Groups)
+            {
+                foreach (var item in group.Items)
+                {
+                    string hash = ComputeQuickHash(item);
+                    if (!hashDict.TryGetValue(hash, out var list))
+                    {
+                        list = new List<ImportItem>();
+                        hashDict[hash] = list;
+                    }
+                    list.Add(item);
+                }
+            }
+            // Mark duplicates
+            foreach (var list in hashDict.Values)
+            {
+                bool isDup = list.Count > 1;
+                foreach (var item in list)
+                    item.IsDuplicate = isDup;
+            }
+        }
+
+        string ComputeQuickHash(ImportItem item)
+        {
+            // Use file path + size as a quick hash (can be improved)
+            string input = item.SourcePath + ":" + item.FileSize;
+            using var sha1 = System.Security.Cryptography.SHA1.Create();
+            byte[] hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
+                [ObservableProperty] DateTime? filterEndDate = null;
+                [ObservableProperty] string filterFileType = string.Empty;
+                [ObservableProperty] string filterKeyword = string.Empty;
+
+                private System.ComponentModel.ICollectionView? _filteredItemsView;
+                public System.ComponentModel.ICollectionView? FilteredItemsView
+                {
+                    get => _filteredItemsView;
+                    private set => SetProperty(ref _filteredItemsView, value);
+                }
+
+                public ObservableCollection<string> AvailableFileTypes { get; } = new ObservableCollection<string>();
+
+                [RelayCommand]
+                public void ClearFilters()
+                {
+                    FilterStartDate = null;
+                    FilterEndDate = null;
+                    FilterFileType = string.Empty;
+                    FilterKeyword = string.Empty;
+                }
+
+        public MainViewModel(
+            ILocalScanner scanner,
+            IFtpScanner ftpScanner,
+            IThumbnailService thumbnailService,
+            IUpdateService updateService,
+            IDeviceWatcher deviceWatcher,
+            IFileProviderFactory fileProviderFactory,
+            IIngestEngineFactory ingestEngineFactory,
+            GroupBuilder groupBuilder,
+            ILogger<MainViewModel> logger)
+        {
+            _scanner = scanner;
+            _ftpScanner = ftpScanner;
+            _thumbnailService = thumbnailService;
+            _updateService = updateService;
+            _deviceWatcher = deviceWatcher;
+            _fileProviderFactory = fileProviderFactory;
+            _ingestEngineFactory = ingestEngineFactory;
+            _groupBuilder = groupBuilder;
+            _logger = logger;
+        }
+
+        // Observable properties (must be at class scope, after constructor)
+        [ObservableProperty] private string ftpHost = string.Empty;
+        [ObservableProperty] private int ftpPort = 21;
+        [ObservableProperty] private string ftpUser = string.Empty;
+        [ObservableProperty] private string ftpPass = string.Empty;
+        [ObservableProperty] private string ftpRemoteFolder = "/DCIM";
+        [ObservableProperty] private bool isTestingFtp = false;
+        [ObservableProperty] private bool showAddFtpDialog = false;
+        [ObservableProperty] private string albumName = "New Album";
+        [ObservableProperty] private string statusMessage = "Ready";
+        [ObservableProperty] private int progressPercent = 0;
+        [ObservableProperty] private int totalFilesForImport = 0;
+        [ObservableProperty] private int currentFileBeingImported = 0;
+        [ObservableProperty] private int processedFilesForImport = 0;
+        [ObservableProperty] private int failedFilesForImport = 0;
+        [ObservableProperty] private int currentGroupFileBeingImported = 0;
+        [ObservableProperty] private int totalFilesInCurrentGroup = 0;
+        [ObservableProperty] private int currentGroupProgressPercent = 0;
+        [ObservableProperty] private string currentImportGroupTitle = string.Empty;
+        [ObservableProperty] private string importElapsedText = "00:00:00";
+        [ObservableProperty] private string importEtaText = "--:--:--";
+        [ObservableProperty] private string importDataRateText = "-- MB/s";
+        [ObservableProperty] private DateTime importStartedAtUtc = DateTime.MinValue;
+        [ObservableProperty] private long processedBytesForImport = 0;
+        [ObservableProperty] private bool showImportProgressDialog = false;
+        [ObservableProperty] private bool showScanProgressDialog = false;
+        [ObservableProperty] private int scanProgressPercent = 0;
+        [ObservableProperty] private int totalFoldersToScan = 0;
+        [ObservableProperty] private int scannedFolders = 0;
+        [ObservableProperty] private int totalFilesToScan = 0;
+        [ObservableProperty] private int scannedFiles = 0;
+        [ObservableProperty] private string scanDialogTitle = "Loading Import List...";
+        [ObservableProperty] private string scanProgressMessage = "Preparing scan...";
+        [ObservableProperty] private object? selectedSource;
+        [ObservableProperty] private string destinationRoot = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+        [ObservableProperty] private bool deleteAfterImport = false;
+        [ObservableProperty] private bool selectAll = true;
+        [ObservableProperty] private bool showUpdateBanner = false;
+        [ObservableProperty] private string updateUrl = string.Empty;
+        [ObservableProperty] private bool showAboutDialog = false;
+        [ObservableProperty] private int updateIntervalHours = 24;
+        [ObservableProperty] private string updatePackageType = "Portable";
+        [ObservableProperty] private string namingTemplate = "[Date]_[Time]_[Original]";
+        [ObservableProperty] private double thumbnailSize = 120;
+        [ObservableProperty] private string scanPath = string.Empty;
+        [ObservableProperty] private bool scanIncludeSubfolders = true;
+        [ObservableProperty] private bool isImporting = false;
+        [ObservableProperty] private bool showSuccessNotification = false;
+        [ObservableProperty] private int timeBetweenShootsHours = 4;
+        [ObservableProperty] private bool isBrowsingFtpFolders = false;
+        [ObservableProperty] private string selectedFtpPresetFolder = "/DCIM";
+        [ObservableProperty] private FtpFolderOption? selectedBrowsedFtpFolder;
+        [ObservableProperty] private string ftpDialogStatusMessage = "Enter your phone FTP details, then test or browse folders.";
+        [ObservableProperty] private bool limitFtpThumbnailLoad = false;
+        [ObservableProperty] private int ftpInitialThumbnailCount = 0;
+        [ObservableProperty] private bool showSkippedFoldersDialog = false;
+        [ObservableProperty] private string skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
+        [ObservableProperty] private string skippedFoldersReportText = string.Empty;
+        [ObservableProperty] private bool isDarkTheme = true;
+
+        // Observable properties (must be at class scope, after constructor)
+        /// <summary>
+        /// Performs asynchronous initialization for the main view model at app startup.
+        /// </summary>
+        public async Task InitializeAsync()
+        {
+            if (_startupInitialized)
+                return;
+
+            // Load configuration and import history (sync, but could be made async if needed)
+            LoadConfig();
+            LoadImportHistory();
+
+            _startupInitialized = true;
+
+            await Task.CompletedTask;
+        }
+
+        // Observable properties (must be at class scope)
+        // Internal state fields
+        // Only remove truly unused fields to resolve warnings.
+        // The following fields are required for class functionality:
+        private readonly ILocalScanner _scanner;
+        private readonly IFtpScanner _ftpScanner;
+        private readonly IThumbnailService _thumbnailService;
+        private readonly IUpdateService _updateService;
+        private readonly IDeviceWatcher _deviceWatcher;
+        private readonly IFileProviderFactory _fileProviderFactory;
+        private readonly IIngestEngineFactory _ingestEngineFactory;
         private readonly GroupBuilder _groupBuilder;
-    private List<ImportItem> _currentSourceItems = new();
+        private readonly ILogger<MainViewModel> _logger;
+        private bool _startupInitialized;
+        private double _savedWindowWidth = 960;
+        private double _savedWindowHeight = 620;
+        private bool _savedWindowMaximized = false;
+        private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly UnifiedSourceItem _unifiedSource = new();
-                public string AlbumName
-        {
-            get => _albumName;
-            set { _albumName = value; OnPropertyChanged(); }
-        }
 
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
-
-        public int ProgressPercent
-        {
-            get => _progressPercent;
-            set { _progressPercent = value; OnPropertyChanged(); }
-        }
-
-        public int TotalFilesForImport
-        {
-            get => _totalFilesForImport;
-            set { _totalFilesForImport = value; OnPropertyChanged(); }
-        }
-
-        public int CurrentFileBeingImported
-        {
-            get => _currentFileBeingImported;
-            set { _currentFileBeingImported = value; OnPropertyChanged(); }
-        }
-
-        public int ProcessedFilesForImport
-        {
-            get => _processedFilesForImport;
-            set { _processedFilesForImport = value; OnPropertyChanged(); }
-        }
-
-        public int FailedFilesForImport
-        {
-            get => _failedFilesForImport;
-            set { _failedFilesForImport = value; OnPropertyChanged(); }
-        }
-
-        public int CurrentGroupFileBeingImported
-        {
-            get => _currentGroupFileBeingImported;
-            set { _currentGroupFileBeingImported = value; OnPropertyChanged(); }
-        }
-
-        public int TotalFilesInCurrentGroup
-        {
-            get => _totalFilesInCurrentGroup;
-            set { _totalFilesInCurrentGroup = value; OnPropertyChanged(); }
-        }
-
-        public int CurrentGroupProgressPercent
-        {
-            get => _currentGroupProgressPercent;
-            set { _currentGroupProgressPercent = value; OnPropertyChanged(); }
-        }
-
-        public string CurrentImportGroupTitle
-        {
-            get => _currentImportGroupTitle;
-            set { _currentImportGroupTitle = value; OnPropertyChanged(); }
-        }
-
-        public string ImportElapsedText
-        {
-            get => _importElapsedText;
-            set { _importElapsedText = value; OnPropertyChanged(); }
-        }
-
-        public string ImportEtaText
-        {
-            get => _importEtaText;
-            set { _importEtaText = value; OnPropertyChanged(); }
-        }
-
-        public string ImportDataRateText
-        {
-            get => _importDataRateText;
-            set { _importDataRateText = value; OnPropertyChanged(); }
-        }
-
-        public bool ShowImportProgressDialog
-        {
-            get => _showImportProgressDialog;
-            set { _showImportProgressDialog = value; OnPropertyChanged(); }
-        }
-
-        public bool ShowScanProgressDialog
-        {
-            get => _showScanProgressDialog;
-            set { _showScanProgressDialog = value; OnPropertyChanged(); }
-        }
-
-        public int ScanProgressPercent
-        {
-            get => _scanProgressPercent;
-            set { _scanProgressPercent = value; OnPropertyChanged(); }
-        }
-
-        public int TotalFoldersToScan
-        {
-            get => _totalFoldersToScan;
-            set { _totalFoldersToScan = value; OnPropertyChanged(); }
-        }
-
-        public int ScannedFolders
-        {
-            get => _scannedFolders;
-            set { _scannedFolders = value; OnPropertyChanged(); }
-        }
-
-        public int TotalFilesToScan
-        {
-            get => _totalFilesToScan;
-            set { _totalFilesToScan = value; OnPropertyChanged(); }
-        }
-
-        public int ScannedFiles
-        {
-            get => _scannedFiles;
-            set { _scannedFiles = value; OnPropertyChanged(); }
-        }
-
-        public string ScanProgressMessage
-        {
-            get => _scanProgressMessage;
-            set { _scanProgressMessage = value; OnPropertyChanged(); }
-        }
-
-        public string ScanDialogTitle
-        {
-            get => _scanDialogTitle;
-            set { _scanDialogTitle = value; OnPropertyChanged(); }
-        }
-
-        public object? SelectedSource
-        {
-            get => _selectedSource;
-            set 
-            { 
-                _selectedSource = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(HasSelectedSource));
-                OnPropertyChanged(nameof(IsLocalSourceSelected));
-                OnPropertyChanged(nameof(IsFtpSourceSelected));
-                OnPropertyChanged(nameof(IsUnifiedSourceSelected));
-
-                if (_selectedSource is string drive)
+        // Remove only these truly unused fields:
+        // private bool _isUpdatingSelectAll = false;
+        // private bool isUpdatingSelectAll;
+        // private IDeviceWatcher? _watcher;
+                partial void OnSelectedSourceChanged(object? value)
                 {
-                    ScanPath = drive;
-                }
-                else if (_selectedSource is FtpSourceItem ftp)
-                {
-                    ScanPath = NormalizeFtpPath(ftp.RemoteFolder);
-                }
-                else if (_selectedSource is UnifiedSourceItem)
-                {
-                    ScanPath = string.Empty;
+                    OnPropertyChanged(nameof(HasSelectedSource));
+                    OnPropertyChanged(nameof(IsLocalSourceSelected));
+                    OnPropertyChanged(nameof(IsFtpSourceSelected));
+                    OnPropertyChanged(nameof(IsUnifiedSourceSelected));
+
+                    if (value is string drive)
+                    {
+                        ScanPath = drive;
+                    }
+                    else if (value is FtpSourceItem ftp)
+                    {
+                        ScanPath = NormalizeFtpPath(ftp.RemoteFolder);
+                    }
+                    else if (value is UnifiedSourceItem)
+                    {
+                        ScanPath = string.Empty;
+                    }
+
+                    if (value != null)
+                    {
+                        LoadSourceItems(value);
+                    }
                 }
 
-                if (_selectedSource != null)
-                {
-                    LoadSourceItems(_selectedSource);
-                }
-            }
-        }
-
-        public string DestinationRoot
-        {
-            get => _destinationRoot;
-            set { _destinationRoot = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public bool DeleteAfterImport
-        {
-            get => _deleteAfterImport;
-            set { _deleteAfterImport = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public bool IsImporting
-        {
-            get => _isImporting;
-            set { _isImporting = value; OnPropertyChanged(); }
-        }
-
-        public bool ShowSuccessNotification
-        {
-            get => _showSuccessNotification;
-            set { _showSuccessNotification = value; OnPropertyChanged(); }
-        }
-
-        public bool IsBrowsingFtpFolders
-        {
-            get => _isBrowsingFtpFolders;
-            set { _isBrowsingFtpFolders = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsFtpBusy)); }
-        }
+        partial void OnDestinationRootChanged(string value) => SaveConfig();
+        partial void OnDeleteAfterImportChanged(bool value) => SaveConfig();
 
         public bool IsFtpBusy => IsTestingFtp || IsBrowsingFtpFolders;
+        partial void OnIsBrowsingFtpFoldersChanged(bool value) => OnPropertyChanged(nameof(IsFtpBusy));
 
-        public string FtpDialogStatusMessage
+        partial void OnLimitFtpThumbnailLoadChanged(bool value) => SaveConfig();
+        partial void OnFtpInitialThumbnailCountChanged(int value)
         {
-            get => _ftpDialogStatusMessage;
-            set { _ftpDialogStatusMessage = value; OnPropertyChanged(); }
-        }
-
-        public bool ShowSkippedFoldersDialog
-        {
-            get => _showSkippedFoldersDialog;
-            set { _showSkippedFoldersDialog = value; OnPropertyChanged(); }
-        }
-
-        public string SkippedFoldersReportTitle
-        {
-            get => _skippedFoldersReportTitle;
-            set { _skippedFoldersReportTitle = value; OnPropertyChanged(); }
-        }
-
-        public string SkippedFoldersReportText
-        {
-            get => _skippedFoldersReportText;
-            set { _skippedFoldersReportText = value; OnPropertyChanged(); }
-        }
-
-        public bool LimitFtpThumbnailLoad
-        {
-            get => _limitFtpThumbnailLoad;
-            set { _limitFtpThumbnailLoad = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public int FtpInitialThumbnailCount
-        {
-            get => _ftpInitialThumbnailCount;
-            set
-            {
-                _ftpInitialThumbnailCount = Math.Max(20, Math.Min(2000, value));
-                OnPropertyChanged();
-                SaveConfig();
-            }
+            if (value < 20) FtpInitialThumbnailCount = 20;
+            else if (value > 2000) FtpInitialThumbnailCount = 2000;
+            SaveConfig();
         }
 
         private List<string> _ribbonTileOrder = new();
@@ -351,171 +339,30 @@ namespace QuickMediaIngest.ViewModels
                 SaveConfig();
             }
 
-        public int TimeBetweenShootsHours
-        {
-            get => _timeBetweenShootsHours;
-            set
-            {
-                int clampedValue = Math.Clamp(value, 1, 24);
-                if (_timeBetweenShootsHours == clampedValue)
-                {
-                    return;
-                }
 
-                _timeBetweenShootsHours = clampedValue;
-                OnPropertyChanged();
-                SaveConfig();
-                RebuildGroupsFromCurrentItems();
-            }
+        [RelayCommand] private void ToggleAddFtp() => ShowAddFtpDialog = !ShowAddFtpDialog;
+        [RelayCommand] private void SaveFtp() => ExecuteSaveFtp();
+        [RelayCommand] private void TestFtpConnection() => ExecuteTestFtpConnection();
+        [RelayCommand] private void BrowseFtpFolders() => ExecuteBrowseFtpFolders();
+        [RelayCommand] private void UseBrowsedFtpFolder() => ExecuteUseBrowsedFtpFolder();
+        [RelayCommand] private void CopySkippedFoldersReport() => ExecuteCopySkippedFoldersReport();
+        [RelayCommand] private void CloseSkippedFoldersReport() => ExecuteCloseSkippedFoldersReport();
+
+        partial void OnUpdateIntervalHoursChanged(int value) { SaveConfig(); CheckUpdates(); }
+        partial void OnUpdatePackageTypeChanged(string value) => SaveConfig();
+        partial void OnNamingTemplateChanged(string value) => SaveConfig();
+        partial void OnThumbnailSizeChanged(double value) => SaveConfig();
+        partial void OnScanPathChanged(string value)
+        {
+            if (SelectedSource is FtpSourceItem ftp)
+                ftp.RemoteFolder = NormalizeFtpPath(value);
+            _sourceItemsCache.Clear();
+            SaveConfig();
         }
-
-        public bool SelectAll
+        partial void OnScanIncludeSubfoldersChanged(bool value)
         {
-            get => _selectAll;
-            set
-            {
-                _selectAll = value;
-                OnPropertyChanged();
-
-                if (_isUpdatingSelectAll)
-                {
-                    return;
-                }
-
-                foreach (var g in Groups)
-                {
-                    g.IsSelected = value;
-                }
-
-                SaveConfig();
-            }
-        }
-
-        public bool ShowUpdateBanner
-        {
-            get => _showUpdateBanner;
-            set { _showUpdateBanner = value; OnPropertyChanged(); }
-        }
-
-        public string UpdateUrl
-        {
-            get => _updateUrl;
-            set { _updateUrl = value; OnPropertyChanged(); }
-        }
-
-        public bool ShowAboutDialog
-        {
-            get => _showAboutDialog;
-            set { _showAboutDialog = value; OnPropertyChanged(); }
-        }
-
-        private bool _showAddFtpDialog = false;
-        public bool ShowAddFtpDialog
-        {
-            get => _showAddFtpDialog;
-            set { _showAddFtpDialog = value; OnPropertyChanged(); }
-        }
-
-        private bool _isTestingFtp = false;
-        public bool IsTestingFtp
-        {
-            get => _isTestingFtp;
-            set { _isTestingFtp = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsFtpBusy)); }
-        }
-
-        private string _ftpHost = "10.0.0.9";
-        public string FtpHost { get => _ftpHost; set { _ftpHost = value; OnPropertyChanged(); } }
-
-        private int _ftpPort = 1024;
-        public int FtpPort { get => _ftpPort; set { _ftpPort = value; OnPropertyChanged(); } }
-
-        private string _ftpUser = "android";
-        public string FtpUser { get => _ftpUser; set { _ftpUser = value; OnPropertyChanged(); } }
-
-        private string _ftpPass = "android";
-        public string FtpPass { get => _ftpPass; set { _ftpPass = value; OnPropertyChanged(); } }
-
-        private string _ftpRemoteFolder = "/DCIM";
-        public string FtpRemoteFolder { get => _ftpRemoteFolder; set { _ftpRemoteFolder = value; OnPropertyChanged(); } }
-
-        public string SelectedFtpPresetFolder
-        {
-            get => _selectedFtpPresetFolder;
-            set
-            {
-                _selectedFtpPresetFolder = value;
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    FtpRemoteFolder = value;
-                }
-                OnPropertyChanged();
-            }
-        }
-
-        public FtpFolderOption? SelectedBrowsedFtpFolder
-        {
-            get => _selectedBrowsedFtpFolder;
-            set { _selectedBrowsedFtpFolder = value; OnPropertyChanged(); }
-        }
-
-        public ICommand ToggleAddFtpCommand { get; }
-        public ICommand SaveFtpCommand { get; }
-        public ICommand TestFtpConnectionCommand { get; }
-        public ICommand BrowseFtpFoldersCommand { get; }
-        public ICommand UseBrowsedFtpFolderCommand { get; }
-        public ICommand CopySkippedFoldersReportCommand { get; }
-        public ICommand CloseSkippedFoldersReportCommand { get; }
-
-        public int UpdateIntervalHours
-        {
-            get => _updateIntervalHours;
-            set { _updateIntervalHours = value; OnPropertyChanged(); SaveConfig(); CheckUpdates(); }
-        }
-
-        public string UpdatePackageType
-        {
-            get => _updatePackageType;
-            set { _updatePackageType = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public string NamingTemplate
-        {
-            get => _namingTemplate;
-            set { _namingTemplate = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public double ThumbnailSize
-        {
-            get => _thumbnailSize;
-            set { _thumbnailSize = value; OnPropertyChanged(); SaveConfig(); }
-        }
-
-        public string ScanPath
-        {
-            get => _scanPath;
-            set
-            {
-                _scanPath = value;
-                if (SelectedSource is FtpSourceItem ftp)
-                {
-                    ftp.RemoteFolder = NormalizeFtpPath(value);
-                }
-                _sourceItemsCache.Clear();
-                OnPropertyChanged();
-                SaveConfig();
-            }
-        }
-
-        public bool ScanIncludeSubfolders
-        {
-            get => _scanIncludeSubfolders;
-            set
-            {
-                _scanIncludeSubfolders = value;
-                _sourceItemsCache.Clear();
-                OnPropertyChanged();
-                SaveConfig();
-            }
+            _sourceItemsCache.Clear();
+            SaveConfig();
         }
 
         public bool HasSelectedSource => SelectedSource != null;
@@ -525,20 +372,10 @@ namespace QuickMediaIngest.ViewModels
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
-        public bool IsDarkTheme
+        partial void OnIsDarkThemeChanged(bool value)
         {
-            get => _isDarkTheme;
-            set
-            {
-                if (_isDarkTheme != value)
-                {
-                    _isDarkTheme = value;
-                    OnPropertyChanged();
-                    // Apply the theme when changed
-                    App.ApplyTheme(!value);
-                    SaveConfig();
-                }
-            }
+            App.ApplyTheme(!value);
+            SaveConfig();
         }
 
         public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
@@ -575,106 +412,47 @@ namespace QuickMediaIngest.ViewModels
         
                 public void UpdateNamingFromTokens()
         {
-            _namingTemplate = string.Join("", SelectedTokens.Select(t => t.Value));
+            NamingTemplate = string.Join("", SelectedTokens.Select(t => t.Value));
             OnPropertyChanged("NamingTemplate");
             SaveConfig();
         }
        
-        public ICommand ImportCommand { get; }
-        public ICommand DownloadUpdateCommand { get; }
-        public ICommand ToggleAboutCommand { get; }
-        public ICommand OpenGitHubCommand { get; }
-        public ICommand RefreshUpdateCommand { get; }
-        public ICommand BrowseDestinationCommand { get; }
-        public ICommand RescanCommand { get; }
-        public ICommand BrowseScanPathCommand { get; }
-        public ICommand BuildSelectedPreviewsCommand { get; }
-        public ICommand SelectAllShootsCommand { get; }
-        public ICommand DeselectAllShootsCommand { get; }
+        [RelayCommand] private void Import() => ExecuteImport();
+        [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
+        [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
+        [RelayCommand] private void OpenGitHub() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest");
+        [RelayCommand] private void RefreshUpdate() => CheckUpdates(force: true);
+        [RelayCommand] private void BrowseDestination() => ExecuteBrowseDestination();
+        [RelayCommand] private void Rescan() => ScanDrives();
+        [RelayCommand] private void BrowseScanPath() => ExecuteBrowseScanPath();
+        [RelayCommand] private void BuildSelectedPreviews() => ExecuteBuildSelectedPreviews();
+        [RelayCommand] private void SelectAllShoots() => SetAllShootsSelected(true);
+        [RelayCommand] private void DeselectAllShoots() => SetAllShootsSelected(false);
 
-        public MainViewModel()
+        // Keyboard accelerator commands for UI
+        public ICommand SelectAllCommand => new RelayCommand(SelectAllShoots);
+        public ICommand CancelCommand => new RelayCommand(CloseSkippedFoldersReport);
+
+        partial void OnSelectedFtpPresetFolderChanged(string value)
         {
-            _scanner = new LocalScanner();
-            _groupBuilder = new GroupBuilder();
-            _isDarkTheme = App.CurrentIsDarkTheme;
-
-            Sources.Add(_unifiedSource);
-
-            ImportCommand = new RelayCommand(ExecuteImport);
-            DownloadUpdateCommand = new RelayCommand(ExecuteDownloadUpdate);
-            ToggleAboutCommand = new RelayCommand(() => ShowAboutDialog = !ShowAboutDialog);
-            OpenGitHubCommand = new RelayCommand(() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest"));
-            RefreshUpdateCommand = new RelayCommand(() => CheckUpdates(force: true));
-            BrowseDestinationCommand = new RelayCommand(ExecuteBrowseDestination);
-            RescanCommand = new RelayCommand(ScanDrives);
-            BrowseScanPathCommand = new RelayCommand(ExecuteBrowseScanPath);
-            BuildSelectedPreviewsCommand = new RelayCommand(ExecuteBuildSelectedPreviews);
-            SelectAllShootsCommand = new RelayCommand(() => SetAllShootsSelected(true));
-            DeselectAllShootsCommand = new RelayCommand(() => SetAllShootsSelected(false));
-            ToggleAddFtpCommand = new RelayCommand(() => ShowAddFtpDialog = !ShowAddFtpDialog);
-            SaveFtpCommand = new RelayCommand(ExecuteSaveFtp);
-            TestFtpConnectionCommand = new RelayCommand(ExecuteTestFtpConnection);
-            BrowseFtpFoldersCommand = new RelayCommand(ExecuteBrowseFtpFolders);
-            UseBrowsedFtpFolderCommand = new RelayCommand(ExecuteUseBrowsedFtpFolder);
-            CopySkippedFoldersReportCommand = new RelayCommand(ExecuteCopySkippedFoldersReport);
-            CloseSkippedFoldersReportCommand = new RelayCommand(ExecuteCloseSkippedFoldersReport);
+            if (!string.IsNullOrWhiteSpace(value))
+                FtpRemoteFolder = value;
         }
-
-        public async Task InitializeAsync()
+        partial void OnTimeBetweenShootsHoursChanged(int value)
         {
-            if (_startupInitialized)
-            {
-                return;
-            }
-
-            _startupInitialized = true;
-            await Task.Yield();
-
-            LoadConfig();
-            LoadImportHistory();
-            ScanDrives();
-
-            if (_watcher == null)
-            {
-                _watcher = new DeviceWatcher();
-                _watcher.DeviceConnected += (drive) =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (!Sources.Contains(drive)) Sources.Add(drive);
-                    });
-                };
-                _watcher.DeviceDisconnected += (drive) =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (Sources.Contains(drive))
-                        {
-                            Sources.Remove(drive);
-                            if (SelectedSource is string selectedDrive && string.Equals(selectedDrive, drive, StringComparison.Ordinal))
-                            {
-                                SelectedSource = null;
-                            }
-                        }
-                    });
-                };
-                _watcher.Start();
-            }
-
-            // Run update check shortly after startup work finishes.
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(TimeSpan.FromSeconds(2));
-                CheckUpdates();
-            });
+            int clamped = Math.Clamp(value, 1, 24);
+            if (timeBetweenShootsHours != clamped)
+                TimeBetweenShootsHours = clamped;
+            SaveConfig();
+            RebuildGroupsFromCurrentItems();
         }
 
         private void CheckUpdates(bool force = false)
         {
             System.Threading.Tasks.Task.Run(async () =>
             {
-                var updater = new UpdateService();
-                var url = await updater.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
+                _logger.LogInformation("Checking for updates from view model. Force={Force}", force);
+                var url = await _updateService.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
                 if (!string.IsNullOrEmpty(url))
                 {
                      Application.Current.Dispatcher.Invoke(() =>
@@ -696,6 +474,8 @@ namespace QuickMediaIngest.ViewModels
         private async void ExecuteDownloadUpdate()
         {
             if (string.IsNullOrEmpty(UpdateUrl)) return;
+
+            _logger.LogInformation("Starting update download from {UpdateUrl}.", UpdateUrl);
 
             if (UpdateUrl.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
             {
@@ -721,6 +501,7 @@ namespace QuickMediaIngest.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Installer update download failed.");
                     StatusMessage = $"Update download failed: {ex.Message}";
                     ShowUpdateBanner = true;
                 }
@@ -749,6 +530,7 @@ namespace QuickMediaIngest.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Portable update download failed.");
                     StatusMessage = $"Update download failed: {ex.Message}";
                     ShowUpdateBanner = true;
                 }
@@ -772,7 +554,7 @@ namespace QuickMediaIngest.ViewModels
         {
             if (string.IsNullOrEmpty(FtpHost)) return;
 
-                    string remoteFolder = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+            string remoteFolder = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
 
             var ftp = new FtpSourceItem
             {
@@ -780,7 +562,7 @@ namespace QuickMediaIngest.ViewModels
                 Port = FtpPort,
                 User = FtpUser,
                 Pass = FtpPass,
-                        RemoteFolder = remoteFolder
+                RemoteFolder = remoteFolder
             };
 
             bool exists = Sources.OfType<FtpSourceItem>().Any(f => f.Host == ftp.Host && f.RemoteFolder == ftp.RemoteFolder);
@@ -816,12 +598,13 @@ namespace QuickMediaIngest.ViewModels
             IsTestingFtp = true;
             StatusMessage = $"Testing FTP connection to {FtpHost}:{FtpPort}{remotePath}...";
             FtpDialogStatusMessage = StatusMessage;
+            _logger.LogInformation("Testing FTP connection to {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
 
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var result = await Task.Run(async () =>
-                    await new FtpScanner().TestConnectionAsync(
+                    await _ftpScanner.TestConnectionAsync(
                         FtpHost,
                         FtpPort,
                         FtpUser,
@@ -837,6 +620,7 @@ namespace QuickMediaIngest.ViewModels
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "FTP connection test failed for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
                 StatusMessage = $"FTP test failed. {ex.Message}";
                 FtpDialogStatusMessage = StatusMessage;
             }
@@ -871,12 +655,13 @@ namespace QuickMediaIngest.ViewModels
             IsBrowsingFtpFolders = true;
             StatusMessage = $"Browsing FTP folders at {FtpHost}:{FtpPort}{remotePath}...";
             FtpDialogStatusMessage = StatusMessage;
+            _logger.LogInformation("Browsing FTP folders at {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
 
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var folders = await Task.Run(async () =>
-                    await new FtpScanner().ListDirectoriesAsync(
+                    await _ftpScanner.ListDirectoriesAsync(
                         FtpHost,
                         FtpPort,
                         FtpUser,
@@ -910,11 +695,13 @@ namespace QuickMediaIngest.ViewModels
             }
             catch (OperationCanceledException)
             {
+                _logger.LogError("FTP browse timed out for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
                 StatusMessage = $"Connected to FTP, but browsing {remotePath} timed out. Try /DCIM or /DCIM/Camera.";
                 FtpDialogStatusMessage = StatusMessage;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "FTP folder browse failed for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
                 StatusMessage = $"FTP folder browse failed. {ex.Message}";
                 FtpDialogStatusMessage = StatusMessage;
             }
@@ -945,10 +732,10 @@ namespace QuickMediaIngest.ViewModels
                 existing.PropertyChanged -= Group_PropertyChanged;
             }
             Groups.Clear();
+            EnsureFilteredItemsViewSource();
 
-            if (source is UnifiedSourceItem)
+            if (_currentSourceItems.Count == 0)
             {
-                await LoadUnifiedSourceItemsAsync();
                 return;
             }
 
@@ -957,6 +744,7 @@ namespace QuickMediaIngest.ViewModels
             string sourceKey = string.Empty;
             try 
             {
+                _logger.LogInformation("Loading source items for {SourceLabel}.", sourceLabel);
                 List<QuickMediaIngest.Core.Models.ImportItem> items;
                 ShowScanProgressDialog = true;
                 ScanDialogTitle = "Loading Import List...";
@@ -987,7 +775,7 @@ namespace QuickMediaIngest.ViewModels
                     StatusMessage = $"Scanning FTP: {sourceLabel}...";
                     ScanProgressMessage = $"Scanning FTP folders in {remotePath}...";
 
-                    items = await new FtpScanner().ScanAsync(
+                    items = await _ftpScanner.ScanAsync(
                         ftp.Host,
                         ftp.Port,
                         ftp.User,
@@ -1089,10 +877,12 @@ BuildGroups:
             }
             catch (OperationCanceledException)
             {
+                _logger.LogError("Source scan was canceled for {SourceLabel}.", sourceLabel);
                 StatusMessage = $"FTP scan was canceled while scanning {sourceLabel}.";
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error scanning source {SourceLabel}.", sourceLabel);
                 StatusMessage = $"Error scanning {sourceLabel}: {ex.Message}";
             }
             finally
@@ -1120,7 +910,7 @@ BuildGroups:
             }
         }
 
-        private void Group_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void Group_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(ItemGroup.IsSelected))
             {
@@ -1160,14 +950,19 @@ BuildGroups:
                 existing.PropertyChanged -= Group_PropertyChanged;
             }
 
+
             Groups.Clear();
+            EnsureFilteredItemsViewSource();
+
 
             if (_currentSourceItems.Count == 0)
             {
                 return;
             }
 
+
             var groups = _groupBuilder.BuildGroups(_currentSourceItems, TimeSpan.FromHours(TimeBetweenShootsHours));
+
 
             foreach (var group in groups)
             {
@@ -1182,6 +977,7 @@ BuildGroups:
                 group.PropertyChanged += Group_PropertyChanged;
                 Groups.Add(group);
             }
+
 
             UpdateSelectAllFromGroups();
             StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
@@ -1207,6 +1003,45 @@ BuildGroups:
             SkippedFoldersReportText = message;
             ShowSkippedFoldersDialog = true;
         }
+
+        // Ensures the filtered items view source is set up and refreshed for filtering/search
+        private void EnsureFilteredItemsViewSource()
+        {
+            // Build a flat list of all ImportItems from all groups
+            var allItems = Groups.SelectMany(g => g.Items).ToList();
+
+            // Update AvailableFileTypes
+            var fileTypes = allItems.Select(i => i.FileType).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
+            AvailableFileTypes.Clear();
+            AvailableFileTypes.Add(""); // (All)
+            foreach (var t in fileTypes)
+                AvailableFileTypes.Add(t);
+
+            // Set up the CollectionView for filtering
+            var cvs = System.Windows.Data.CollectionViewSource.GetDefaultView(allItems);
+            cvs.Filter = o =>
+            {
+                if (o is not ImportItem item) return false;
+                // Date filter
+                if (FilterStartDate.HasValue && item.DateTaken < FilterStartDate.Value.Date)
+                    return false;
+                if (FilterEndDate.HasValue && item.DateTaken > FilterEndDate.Value.Date.AddDays(1).AddTicks(-1))
+                    return false;
+                // File type filter
+                if (!string.IsNullOrWhiteSpace(FilterFileType) && !string.Equals(item.FileType, FilterFileType, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                // Keyword filter (filename)
+                if (!string.IsNullOrWhiteSpace(FilterKeyword) && !item.FileName.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                return true;
+            };
+            FilteredItemsView = cvs;
+            cvs.Refresh();
+        }
+        partial void OnFilterStartDateChanged(DateTime? value) => EnsureFilteredItemsViewSource();
+        partial void OnFilterEndDateChanged(DateTime? value) => EnsureFilteredItemsViewSource();
+        partial void OnFilterFileTypeChanged(string value) => EnsureFilteredItemsViewSource();
+        partial void OnFilterKeywordChanged(string value) => EnsureFilteredItemsViewSource();
 
         private void ExecuteCopySkippedFoldersReport()
         {
@@ -1247,7 +1082,6 @@ BuildGroups:
 
             await Task.Run(() =>
             {
-                var thumbService = new ThumbnailService();
                 var allItems = groups.SelectMany(g => g.Items).Where(i => !i.IsVideo).ToList();
                 int total = allItems.Count;
 
@@ -1268,7 +1102,7 @@ BuildGroups:
                 // Load up to 4 thumbnails in parallel — safely bounded for SD card I/O.
                 Parallel.ForEach(allItems, new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
                 {
-                    var thumb = thumbService.GetThumbnail(item.SourcePath);
+                    var thumb = _thumbnailService.GetThumbnail(item.SourcePath);
                     int c = Interlocked.Increment(ref current);
 
                     Application.Current.Dispatcher.InvokeAsync(() =>
@@ -1345,7 +1179,6 @@ BuildGroups:
             string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
             Directory.CreateDirectory(tempDir);
 
-            var thumbService = new ThumbnailService();
             int loadedCount = 0;
             int skippedCount = 0;
             for (int i = 0; i < items.Count; i++)
@@ -1384,7 +1217,7 @@ BuildGroups:
                         continue;
                     }
 
-                    var thumb = await Task.Run(() => thumbService.GetThumbnail(tempPath));
+                    var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
                     if (thumb != null)
                     {
                         loadedCount++;
@@ -1552,7 +1385,7 @@ BuildGroups:
                         }
                         else
                         {
-                            sourceItems = await new FtpScanner().ScanAsync(
+                            sourceItems = await _ftpScanner.ScanAsync(
                                 ftp.Host,
                                 ftp.Port,
                                 ftp.User,
@@ -1638,7 +1471,6 @@ BuildGroups:
                 .OfType<FtpSourceItem>()
                 .ToDictionary(BuildSourceKey, ftp => ftp, StringComparer.OrdinalIgnoreCase);
 
-            var thumbService = new ThumbnailService();
             string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
             Directory.CreateDirectory(tempDir);
 
@@ -1661,7 +1493,7 @@ BuildGroups:
                             bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
                             if (downloaded)
                             {
-                                var thumb = await Task.Run(() => thumbService.GetThumbnail(tempPath));
+                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
                                 if (thumb != null)
                                 {
                                     item.Thumbnail = thumb;
@@ -1690,7 +1522,7 @@ BuildGroups:
                 }
                 else
                 {
-                    var thumb = await Task.Run(() => thumbService.GetThumbnail(item.SourcePath));
+                    var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(item.SourcePath));
                     if (thumb != null)
                     {
                         item.Thumbnail = thumb;
@@ -1803,6 +1635,7 @@ BuildGroups:
             }
 
             IsImporting = true;
+            _logger.LogInformation("Import started. SelectedGroups={GroupCount}, SelectedFiles={FileCount}", selectedGroups.Count, totalFiles);
             TotalFilesForImport = totalFiles;
             CurrentFileBeingImported = 0;
             ProcessedFilesForImport = 0;
@@ -1861,21 +1694,26 @@ BuildGroups:
 
             try
             {
+
                 if (SelectedSource is UnifiedSourceItem)
                 {
                     await ExecuteUnifiedImportAsync(selectedGroups, importCts.Token);
                 }
                 else
                 {
-                    IFileProvider provider = new LocalFileProvider();
+                    IFileProvider provider = _fileProviderFactory.CreateLocalProvider();
                     if (SelectedSource is FtpSourceItem ftp)
                     {
-                        provider = new FtpFileProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+                        provider = _fileProviderFactory.CreateFtpProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+                    }
+                    else if (SelectedSource is AdbSourceItem adb)
+                    {
+                        provider = _fileProviderFactory.CreateAdbProvider(adb.DeviceSerial);
                     }
 
                     try
                     {
-                        var engine = new IngestEngine(provider);
+                        var engine = _ingestEngineFactory.Create(provider);
 
                         engine.ProgressChanged += (percent, msg) =>
                         {
@@ -1972,6 +1810,88 @@ BuildGroups:
                     });
                 });
 
+                // --- Milestone 5: Post-import actions ---
+                try
+                {
+                    // 1. Auto-open destination folder
+                    if (!string.IsNullOrWhiteSpace(DestinationRoot) && Directory.Exists(DestinationRoot))
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = DestinationRoot,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+                catch { /* Ignore open errors */ }
+
+                try
+                {
+                    // 2. Eject/unmount source device if local drive
+                    if (SelectedSource is string drive && drive.Length >= 2 && drive[1] == ':')
+                    {
+                        // Use Windows Management Instrumentation (WMI) to eject
+                        var driveLetter = drive.TrimEnd('\\');
+                        var query = $"SELECT * FROM Win32_Volume WHERE DriveLetter = '{driveLetter}'";
+                        using var searcher = new System.Management.ManagementObjectSearcher(query);
+                        foreach (System.Management.ManagementObject volume in searcher.Get())
+                        {
+                            try { volume.InvokeMethod("Dismount", null); volume.InvokeMethod("Remove", null); } catch { }
+                        }
+                    }
+                }
+                catch { /* Ignore eject errors */ }
+
+                try
+                {
+                    // 3. Export sidecar album JSON and .xmp for each imported group
+                    foreach (var group in selectedGroups)
+                    {
+                        var selectedItems = group.Items.Where(i => i.IsSelected).ToList();
+                        if (selectedItems.Count == 0) continue;
+                        string folderName = _groupBuilder.GetTargetFolderName(group);
+                        string targetDir = Path.Combine(DestinationRoot, folderName);
+                        if (!Directory.Exists(targetDir)) continue;
+                        var album = new {
+                            GroupTitle = group.Title,
+                            StartDate = group.StartDate,
+                            EndDate = group.EndDate,
+                            Items = selectedItems.Select(i => new {
+                                i.FileName,
+                                i.SourcePath,
+                                i.FileSize,
+                                i.DateTaken
+                            }).ToList()
+                        };
+                        string json = System.Text.Json.JsonSerializer.Serialize(album, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                        File.WriteAllText(Path.Combine(targetDir, "album.json"), json);
+
+                        // Export a simple .xmp sidecar for each item
+                        foreach (var item in selectedItems)
+                        {
+                            string xmpPath = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(item.FileName) + ".xmp");
+                            string xmp = $@"<?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?>
+<x:xmpmeta xmlns:x='adobe:ns:meta/'>
+  <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+    <rdf:Description rdf:about=''
+      xmlns:dc='http://purl.org/dc/elements/1.1/'
+      xmlns:xmp='http://ns.adobe.com/xap/1.0/'
+      xmlns:photoshop='http://ns.adobe.com/photoshop/1.0/'>
+      <dc:title><rdf:Alt><rdf:li xml:lang='x-default'>{System.Security.SecurityElement.Escape(group.Title)}</rdf:li></rdf:Alt></dc:title>
+      <xmp:CreateDate>{item.DateTaken:yyyy-MM-ddTHH:mm:ssZ}</xmp:CreateDate>
+      <photoshop:DateCreated>{item.DateTaken:yyyy-MM-ddTHH:mm:ssZ}</photoshop:DateCreated>
+      <dc:format>{System.Security.SecurityElement.Escape(item.FileType)}</dc:format>
+      <dc:identifier>{System.Security.SecurityElement.Escape(item.FileName)}</dc:identifier>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end='w'?>";
+                            File.WriteAllText(xmpPath, xmp);
+                        }
+                    }
+                }
+                catch { /* Ignore album export errors */ }
+
                 // Clear the imported groups and refresh scan to show updated/deleted state
                 Groups.Clear();
                 _sourceItemsCache.Clear();
@@ -1982,6 +1902,7 @@ BuildGroups:
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Import failed.");
                 StatusMessage = $"Import failed: {ex.Message}";
             }
             finally
@@ -2000,13 +1921,14 @@ BuildGroups:
                 SystemSounds.Asterisk.Play();
                 IsImporting = false;
                 ShowImportProgressDialog = false;
+                _logger.LogInformation("Import finished. Imported={ImportedCount}, Failed={FailedCount}", CurrentFileBeingImported, FailedFilesForImport);
             }
         }
 
         private async Task ExecuteUnifiedImportAsync(List<ItemGroup> selectedGroups, CancellationToken cancellationToken)
         {
-            IFileProvider localProvider = new LocalFileProvider();
-            var ftpProviders = new Dictionary<string, FtpFileProvider>(StringComparer.OrdinalIgnoreCase);
+            IFileProvider localProvider = _fileProviderFactory.CreateLocalProvider();
+            var ftpProviders = new Dictionary<string, IFileProvider>(StringComparer.OrdinalIgnoreCase);
             var ftpSourcesByKey = Sources
                 .OfType<FtpSourceItem>()
                 .ToDictionary(BuildSourceKey, ftp => ftp, StringComparer.OrdinalIgnoreCase);
@@ -2044,7 +1966,7 @@ BuildGroups:
 
                         if (!ftpProviders.TryGetValue(ftpBatch.Key, out var ftpProvider))
                         {
-                            ftpProvider = new FtpFileProvider(ftpSource.Host, ftpSource.Port, ftpSource.User, ftpSource.Pass);
+                            ftpProvider = _fileProviderFactory.CreateFtpProvider(ftpSource.Host, ftpSource.Port, ftpSource.User, ftpSource.Pass);
                             ftpProviders[ftpBatch.Key] = ftpProvider;
                         }
 
@@ -2056,7 +1978,10 @@ BuildGroups:
             {
                 foreach (var provider in ftpProviders.Values)
                 {
-                    await provider.DisposeAsync();
+                    if (provider is IAsyncDisposable asyncDisposable)
+                    {
+                        await asyncDisposable.DisposeAsync();
+                    }
                 }
             }
         }
@@ -2078,7 +2003,7 @@ BuildGroups:
                 Items = items
             };
 
-            var engine = new IngestEngine(provider);
+            var engine = _ingestEngineFactory.Create(provider);
             engine.ProgressChanged += (percent, msg) =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -2266,7 +2191,8 @@ BuildGroups:
                     UpdatePackageType = UpdatePackageType,
                     WindowWidth = _savedWindowWidth,
                     WindowHeight = _savedWindowHeight,
-                    WindowMaximized = _savedWindowMaximized
+                    WindowMaximized = _savedWindowMaximized,
+                    IsFirstRun = this.IsFirstRun
                 };
                 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
@@ -2285,28 +2211,28 @@ BuildGroups:
                     var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(json);
                     if (config != null)
                     {
-                        _updateIntervalHours = config.UpdateIntervalHours;
-                        if (!string.IsNullOrEmpty(config.DestinationRoot)) _destinationRoot = config.DestinationRoot;
-                        _deleteAfterImport = config.DeleteAfterImport;
-                        if (!string.IsNullOrEmpty(config.NamingTemplate)) _namingTemplate = config.NamingTemplate;
-                        if (!string.IsNullOrWhiteSpace(config.ScanPath)) _scanPath = config.ScanPath;
-                        _selectAll = config.SelectAll;
+                        UpdateIntervalHours = config.UpdateIntervalHours;
+                        if (!string.IsNullOrEmpty(config.DestinationRoot)) DestinationRoot = config.DestinationRoot;
+                        DeleteAfterImport = config.DeleteAfterImport;
+                        if (!string.IsNullOrEmpty(config.NamingTemplate)) NamingTemplate = config.NamingTemplate;
+                        if (!string.IsNullOrWhiteSpace(config.ScanPath)) ScanPath = config.ScanPath;
+                        SelectAll = config.SelectAll;
                         if (config.IsDarkTheme.HasValue)
                         {
-                            _isDarkTheme = config.IsDarkTheme.Value;
-                            App.ApplyTheme(!_isDarkTheme);
+                            IsDarkTheme = config.IsDarkTheme.Value;
+                            App.ApplyTheme(!IsDarkTheme);
                         }
-                        if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
-                        _scanIncludeSubfolders = config.ScanIncludeSubfolders;
-                        _timeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
-                        _limitFtpThumbnailLoad = false;
-                        _ftpInitialThumbnailCount = 0;
+                        if (config.ThumbnailSize > 0) ThumbnailSize = config.ThumbnailSize;
+                        ScanIncludeSubfolders = config.ScanIncludeSubfolders;
+                        TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
+                        LimitFtpThumbnailLoad = false;
+                        FtpInitialThumbnailCount = 0;
                         if (config.RibbonTileOrder is { Count: > 0 })
                             _ribbonTileOrder = config.RibbonTileOrder;
-                        if (!string.IsNullOrEmpty(config.UpdatePackageType)) _updatePackageType = config.UpdatePackageType;
-                            if (config.WindowWidth >= 400) _savedWindowWidth = config.WindowWidth;
-                            if (config.WindowHeight >= 300) _savedWindowHeight = config.WindowHeight;
-                            _savedWindowMaximized = config.WindowMaximized;
+                        if (!string.IsNullOrEmpty(config.UpdatePackageType)) UpdatePackageType = config.UpdatePackageType;
+                        if (config.WindowWidth >= 400) _savedWindowWidth = config.WindowWidth;
+                        if (config.WindowHeight >= 300) _savedWindowHeight = config.WindowHeight;
+                        _savedWindowMaximized = config.WindowMaximized;
 
                         OnPropertyChanged("UpdateIntervalHours");
                         OnPropertyChanged("UpdatePackageType");
@@ -2321,14 +2247,15 @@ BuildGroups:
                         OnPropertyChanged("TimeBetweenShootsHours");
                         OnPropertyChanged("LimitFtpThumbnailLoad");
                         OnPropertyChanged("FtpInitialThumbnailCount");
+                        this.IsFirstRun = config.IsFirstRun;
 
                         // Parse NamingTemplate to SelectedTokens
                         Application.Current.Dispatcher.Invoke(() => {
                             SelectedTokens.Clear();
-                            if (!string.IsNullOrEmpty(_namingTemplate))
+                            if (!string.IsNullOrEmpty(NamingTemplate))
                             {
-                                var matches = System.Text.RegularExpressions.Regex.Matches(_namingTemplate, @"\[[^\]]+\]|[^\[\]]+");
-                                                                                                foreach (System.Text.RegularExpressions.Match m in matches)
+                                var matches = System.Text.RegularExpressions.Regex.Matches(NamingTemplate, @"\[[^\]]+\]|[^\[\]]+");
+                                foreach (System.Text.RegularExpressions.Match m in matches)
                                 {
                                     if (!string.IsNullOrEmpty(m.Value)) 
                                     {
@@ -2430,14 +2357,30 @@ BuildGroups:
             return Path.Combine(localRoot, trimmed.TrimStart('\\', '/'));
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        // Command for onboarding overlay button
+        private void DismissOnboarding()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            ShowOnboardingOverlay = false;
+            SaveConfig();
         }
+
+        public bool ShowOnboardingOverlay
+        {
+            get => IsFirstRun;
+            set
+            {
+                if (IsFirstRun != value)
+                {
+                    IsFirstRun = value;
+                    OnPropertyChanged(nameof(ShowOnboardingOverlay));
+                }
+            }
+        }
+
+        public bool IsFirstRun { get; set; } = true;
     }
 
-            public class FtpSourceItem
+    public class FtpSourceItem
     {
         public string Host { get; set; } = string.Empty;
         public int Port { get; set; } = 21;
@@ -2518,5 +2461,6 @@ BuildGroups:
             public double WindowWidth { get; set; } = 960;
             public double WindowHeight { get; set; } = 620;
             public bool WindowMaximized { get; set; } = false;
+            public bool IsFirstRun { get; set; } = true;
     }
 }
