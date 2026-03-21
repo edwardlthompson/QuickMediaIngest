@@ -81,6 +81,8 @@ namespace QuickMediaIngest.ViewModels
     private readonly LocalScanner _scanner;
         private readonly GroupBuilder _groupBuilder;
     private List<ImportItem> _currentSourceItems = new();
+        private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly UnifiedSourceItem _unifiedSource = new();
                 public string AlbumName
         {
             get => _albumName;
@@ -229,6 +231,7 @@ namespace QuickMediaIngest.ViewModels
                 OnPropertyChanged(nameof(HasSelectedSource));
                 OnPropertyChanged(nameof(IsLocalSourceSelected));
                 OnPropertyChanged(nameof(IsFtpSourceSelected));
+                OnPropertyChanged(nameof(IsUnifiedSourceSelected));
 
                 if (_selectedSource is string drive)
                 {
@@ -237,6 +240,10 @@ namespace QuickMediaIngest.ViewModels
                 else if (_selectedSource is FtpSourceItem ftp)
                 {
                     ScanPath = NormalizeFtpPath(ftp.RemoteFolder);
+                }
+                else if (_selectedSource is UnifiedSourceItem)
+                {
+                    ScanPath = string.Empty;
                 }
 
                 if (_selectedSource != null)
@@ -493,6 +500,7 @@ namespace QuickMediaIngest.ViewModels
                 {
                     ftp.RemoteFolder = NormalizeFtpPath(value);
                 }
+                _sourceItemsCache.Clear();
                 OnPropertyChanged();
                 SaveConfig();
             }
@@ -501,12 +509,19 @@ namespace QuickMediaIngest.ViewModels
         public bool ScanIncludeSubfolders
         {
             get => _scanIncludeSubfolders;
-            set { _scanIncludeSubfolders = value; OnPropertyChanged(); SaveConfig(); }
+            set
+            {
+                _scanIncludeSubfolders = value;
+                _sourceItemsCache.Clear();
+                OnPropertyChanged();
+                SaveConfig();
+            }
         }
 
         public bool HasSelectedSource => SelectedSource != null;
         public bool IsLocalSourceSelected => SelectedSource is string;
         public bool IsFtpSourceSelected => SelectedSource is FtpSourceItem;
+        public bool IsUnifiedSourceSelected => SelectedSource is UnifiedSourceItem;
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
@@ -582,6 +597,8 @@ namespace QuickMediaIngest.ViewModels
             _scanner = new LocalScanner();
             _groupBuilder = new GroupBuilder();
             _isDarkTheme = App.CurrentIsDarkTheme;
+
+            Sources.Add(_unifiedSource);
 
             ImportCommand = new RelayCommand(ExecuteImport);
             DownloadUpdateCommand = new RelayCommand(ExecuteDownloadUpdate);
@@ -928,8 +945,16 @@ namespace QuickMediaIngest.ViewModels
                 existing.PropertyChanged -= Group_PropertyChanged;
             }
             Groups.Clear();
+
+            if (source is UnifiedSourceItem)
+            {
+                await LoadUnifiedSourceItemsAsync();
+                return;
+            }
+
             string sourceLabel = source.ToString() ?? "source";
             var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string sourceKey = string.Empty;
             try 
             {
                 List<QuickMediaIngest.Core.Models.ImportItem> items;
@@ -947,6 +972,18 @@ namespace QuickMediaIngest.ViewModels
                     string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(ScanPath) ? ftp.RemoteFolder : ScanPath);
                     ftp.RemoteFolder = remotePath;
                     sourceLabel = $"{ftp.Host}{remotePath}";
+                    sourceKey = BuildSourceKey(ftp);
+
+                    if (_sourceItemsCache.TryGetValue(sourceKey, out var cachedFtpItems))
+                    {
+                        items = CloneItems(cachedFtpItems);
+                        ScanProgressMessage = "Loaded from cache.";
+                        ScannedFiles = items.Count;
+                        TotalFilesToScan = items.Count;
+                        ScanProgressPercent = 100;
+                        goto BuildGroups;
+                    }
+
                     StatusMessage = $"Scanning FTP: {sourceLabel}...";
                     ScanProgressMessage = $"Scanning FTP folders in {remotePath}...";
 
@@ -994,6 +1031,17 @@ namespace QuickMediaIngest.ViewModels
                 {
                     string localPath = ResolveLocalScanPath(drive, ScanPath);
                     sourceLabel = localPath;
+                    sourceKey = BuildSourceKey(localPath);
+
+                    if (_sourceItemsCache.TryGetValue(sourceKey, out var cachedLocalItems))
+                    {
+                        items = CloneItems(cachedLocalItems);
+                        ScanProgressMessage = "Loaded from cache.";
+                        ScannedFiles = items.Count;
+                        TotalFilesToScan = items.Count;
+                        ScanProgressPercent = 100;
+                        goto BuildGroups;
+                    }
 
                     if (!Directory.Exists(localPath))
                     {
@@ -1017,6 +1065,10 @@ namespace QuickMediaIngest.ViewModels
                     }));
                 }
                 else return;
+
+BuildGroups:
+                StampItems(items, sourceKey, source is FtpSourceItem);
+                _sourceItemsCache[sourceKey] = CloneItems(items);
 
                 _currentSourceItems = items;
                 RebuildGroupsFromCurrentItems();
@@ -1181,6 +1233,12 @@ namespace QuickMediaIngest.ViewModels
 
         private async Task LoadThumbnailsAsync(List<ItemGroup> groups, object source, string sourceLabel)
         {
+            if (source is UnifiedSourceItem)
+            {
+                await LoadUnifiedThumbnailsAsync(groups, sourceLabel);
+                return;
+            }
+
             if (source is FtpSourceItem ftp)
             {
                 await LoadFtpThumbnailsAsync(groups, ftp, sourceLabel, preferBackgroundBatch: false);
@@ -1429,6 +1487,261 @@ namespace QuickMediaIngest.ViewModels
             return new Uri(uriText);
         }
 
+        private async Task LoadUnifiedSourceItemsAsync()
+        {
+            var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var concreteSources = Sources
+                .Where(s => s is string || s is FtpSourceItem)
+                .ToList();
+
+            if (concreteSources.Count == 0)
+            {
+                _currentSourceItems = new List<ImportItem>();
+                StatusMessage = "No SD card or FTP sources available for Unified view.";
+                return;
+            }
+
+            try
+            {
+                ShowScanProgressDialog = true;
+                ScanDialogTitle = "Loading Unified Import List...";
+                ScanProgressPercent = 0;
+                ScannedFolders = 0;
+                TotalFoldersToScan = concreteSources.Count;
+                ScannedFiles = 0;
+                TotalFilesToScan = 0;
+                ScanProgressMessage = "Merging SD and FTP sources...";
+
+                var results = new List<List<ImportItem>>();
+
+                foreach (var src in concreteSources)
+                {
+                    List<ImportItem> sourceItems;
+
+                    if (src is string drive)
+                    {
+                        string localPath = drive;
+                        string localKey = BuildSourceKey(localPath);
+
+                        if (_sourceItemsCache.TryGetValue(localKey, out var cachedLocal))
+                        {
+                            sourceItems = CloneItems(cachedLocal);
+                        }
+                        else
+                        {
+                            if (!Directory.Exists(localPath))
+                            {
+                                sourceItems = new List<ImportItem>();
+                            }
+                            else
+                            {
+                                sourceItems = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders));
+                            }
+
+                            StampItems(sourceItems, localKey, false);
+                            _sourceItemsCache[localKey] = CloneItems(sourceItems);
+                        }
+                    }
+                    else if (src is FtpSourceItem ftp)
+                    {
+                        string ftpKey = BuildSourceKey(ftp);
+
+                        if (_sourceItemsCache.TryGetValue(ftpKey, out var cachedFtp))
+                        {
+                            sourceItems = CloneItems(cachedFtp);
+                        }
+                        else
+                        {
+                            sourceItems = await new FtpScanner().ScanAsync(
+                                ftp.Host,
+                                ftp.Port,
+                                ftp.User,
+                                ftp.Pass,
+                                NormalizeFtpPath(ftp.RemoteFolder),
+                                ScanIncludeSubfolders,
+                                120,
+                                CancellationToken.None,
+                                progress =>
+                                {
+                                    if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        lock (skippedFolderDetails)
+                                        {
+                                            skippedFolderDetails.Add($"{progress.CurrentFolder} - {progress.Note}");
+                                        }
+                                    }
+                                });
+
+                            StampItems(sourceItems, ftpKey, true);
+                            _sourceItemsCache[ftpKey] = CloneItems(sourceItems);
+                        }
+                    }
+                    else
+                    {
+                        sourceItems = new List<ImportItem>();
+                    }
+
+                    results.Add(sourceItems);
+                    ScannedFolders++;
+                    ScannedFiles = results.Sum(r => r.Count);
+                    TotalFilesToScan = ScannedFiles;
+                    ScanProgressPercent = TotalFoldersToScan > 0 ? (ScannedFolders * 100) / TotalFoldersToScan : 0;
+                    ScanProgressMessage = $"Merged {ScannedFolders}/{TotalFoldersToScan} sources...";
+                }
+
+                var unifiedItems = results.SelectMany(r => r).ToList();
+
+                _currentSourceItems = unifiedItems;
+                RebuildGroupsFromCurrentItems();
+
+                if (Groups.Count > 0)
+                {
+                    await LoadThumbnailsAsync(Groups.ToList(), _unifiedSource, "Unified");
+                }
+                else
+                {
+                    StatusMessage = "Unified view contains no media files.";
+                }
+
+                if (skippedFolderDetails.Count > 0)
+                {
+                    ShowSkippedFoldersReport("Unified", skippedFolderDetails);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading Unified sources: {ex.Message}";
+            }
+            finally
+            {
+                ShowScanProgressDialog = false;
+            }
+        }
+
+        private async Task LoadUnifiedThumbnailsAsync(List<ItemGroup> groups, string sourceLabel)
+        {
+            var allItems = groups
+                .SelectMany(g => g.Items)
+                .Where(i => !i.IsVideo)
+                .ToList();
+
+            if (allItems.Count == 0)
+            {
+                StatusMessage = $"Scanning {sourceLabel} complete. No previewable images found.";
+                return;
+            }
+
+            int total = allItems.Count;
+            int processed = 0;
+
+            var ftpSourcesByKey = Sources
+                .OfType<FtpSourceItem>()
+                .ToDictionary(BuildSourceKey, ftp => ftp, StringComparer.OrdinalIgnoreCase);
+
+            var thumbService = new ThumbnailService();
+            string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
+            Directory.CreateDirectory(tempDir);
+
+            foreach (var item in allItems)
+            {
+                if (item.IsFtpSource)
+                {
+                    if (ftpSourcesByKey.TryGetValue(item.SourceId, out var ftp))
+                    {
+                        string ext = Path.GetExtension(item.FileName);
+                        if (string.IsNullOrWhiteSpace(ext))
+                        {
+                            ext = ".jpg";
+                        }
+
+                        string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
+
+                        try
+                        {
+                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
+                            if (downloaded)
+                            {
+                                var thumb = await Task.Run(() => thumbService.GetThumbnail(tempPath));
+                                if (thumb != null)
+                                {
+                                    item.Thumbnail = thumb;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore thumbnail failures in unified mode.
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                if (File.Exists(tempPath))
+                                {
+                                    File.Delete(tempPath);
+                                }
+                            }
+                            catch
+                            {
+                                // Ignore temp cleanup failures.
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var thumb = await Task.Run(() => thumbService.GetThumbnail(item.SourcePath));
+                    if (thumb != null)
+                    {
+                        item.Thumbnail = thumb;
+                    }
+                }
+
+                processed++;
+                ScannedFiles = processed;
+                TotalFilesToScan = total;
+                ScanProgressPercent = total > 0 ? (processed * 100) / total : 0;
+                ScanProgressMessage = $"Loading Unified previews: {processed}/{total}";
+            }
+
+            StatusMessage = $"Scanning {sourceLabel} complete. Loaded unified previews automatically.";
+        }
+
+        private static void StampItems(List<ImportItem> items, string sourceId, bool isFtp)
+        {
+            foreach (var item in items)
+            {
+                item.SourceId = sourceId;
+                item.IsFtpSource = isFtp;
+            }
+        }
+
+        private static List<ImportItem> CloneItems(List<ImportItem> items)
+        {
+            return items.Select(i => new ImportItem
+            {
+                SourcePath = i.SourcePath,
+                SourceId = i.SourceId,
+                IsFtpSource = i.IsFtpSource,
+                FileName = i.FileName,
+                FileSize = i.FileSize,
+                DateTaken = i.DateTaken,
+                IsVideo = i.IsVideo,
+                FileType = i.FileType,
+                IsSelected = i.IsSelected
+            }).ToList();
+        }
+
+        private static string BuildSourceKey(FtpSourceItem ftp)
+        {
+            return $"ftp|{ftp.Host}|{ftp.Port}|{NormalizeFtpPath(ftp.RemoteFolder)}";
+        }
+
+        private static string BuildSourceKey(string localPath)
+        {
+            return $"local|{localPath}";
+        }
+
         private async void ExecuteBuildSelectedPreviews()
         {
             if (SelectedSource == null || Groups.Count == 0)
@@ -1548,78 +1861,85 @@ namespace QuickMediaIngest.ViewModels
 
             try
             {
-                IFileProvider provider = new LocalFileProvider();
-                if (SelectedSource is FtpSourceItem ftp)
+                if (SelectedSource is UnifiedSourceItem)
                 {
-                    provider = new FtpFileProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+                    await ExecuteUnifiedImportAsync(selectedGroups, importCts.Token);
                 }
-
-                try
+                else
                 {
-                    var engine = new IngestEngine(provider);
-
-                    engine.ProgressChanged += (percent, msg) =>
+                    IFileProvider provider = new LocalFileProvider();
+                    if (SelectedSource is FtpSourceItem ftp)
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            StatusMessage = msg;
-                        });
-                    };
+                        provider = new FtpFileProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+                    }
 
-                    engine.ItemProcessed += progress =>
+                    try
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        var engine = new IngestEngine(provider);
+
+                        engine.ProgressChanged += (percent, msg) =>
                         {
-                            ProcessedFilesForImport++;
-                            if (!progress.Success)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                FailedFilesForImport++;
-                            }
-                            else
-                            {
-                                _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
-                            }
+                                StatusMessage = msg;
+                            });
+                        };
 
-                            CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
-                            CurrentGroupFileBeingImported = progress.GroupCurrent;
-                            TotalFilesInCurrentGroup = progress.GroupTotal;
-                            CurrentGroupProgressPercent = progress.GroupTotal > 0 ? (progress.GroupCurrent * 100) / progress.GroupTotal : 0;
-                            CurrentImportGroupTitle = progress.GroupTitle;
-                            ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
-
-                            string state = progress.Success ? "Copying" : "Failed";
-                            StatusMessage = $"{state} {progress.FileName} | overall {ProcessedFilesForImport}/{TotalFilesForImport} | group {progress.GroupCurrent}/{progress.GroupTotal}";
-                        });
-                    };
-
-                    await System.Threading.Tasks.Task.Run(async () =>
-                    {
-                        foreach (var group in selectedGroups)
+                        engine.ItemProcessed += progress =>
                         {
-                            await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token);
-
-                            if (DeleteAfterImport)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                foreach (var item in group.Items.Where(i => i.IsSelected))
+                                ProcessedFilesForImport++;
+                                if (!progress.Success)
                                 {
-                                    try
+                                    FailedFilesForImport++;
+                                }
+                                else
+                                {
+                                    _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
+                                }
+
+                                CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
+                                CurrentGroupFileBeingImported = progress.GroupCurrent;
+                                TotalFilesInCurrentGroup = progress.GroupTotal;
+                                CurrentGroupProgressPercent = progress.GroupTotal > 0 ? (progress.GroupCurrent * 100) / progress.GroupTotal : 0;
+                                CurrentImportGroupTitle = progress.GroupTitle;
+                                ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
+
+                                string state = progress.Success ? "Copying" : "Failed";
+                                StatusMessage = $"{state} {progress.FileName} | overall {ProcessedFilesForImport}/{TotalFilesForImport} | group {progress.GroupCurrent}/{progress.GroupTotal}";
+                            });
+                        };
+
+                        await System.Threading.Tasks.Task.Run(async () =>
+                        {
+                            foreach (var group in selectedGroups)
+                            {
+                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token);
+
+                                if (DeleteAfterImport)
+                                {
+                                    foreach (var item in group.Items.Where(i => i.IsSelected))
                                     {
-                                        await provider.DeleteAsync(item.SourcePath, importCts.Token);
-                                    }
-                                    catch
-                                    {
-                                        // Ignore source-delete failures so import completion is not blocked.
+                                        try
+                                        {
+                                            await provider.DeleteAsync(item.SourcePath, importCts.Token);
+                                        }
+                                        catch
+                                        {
+                                            // Ignore source-delete failures so import completion is not blocked.
+                                        }
                                     }
                                 }
                             }
-                        }
-                    });
-                }
-                finally
-                {
-                    if (provider is IAsyncDisposable asyncDisposable)
+                        });
+                    }
+                    finally
                     {
-                        await asyncDisposable.DisposeAsync();
+                        if (provider is IAsyncDisposable asyncDisposable)
+                        {
+                            await asyncDisposable.DisposeAsync();
+                        }
                     }
                 }
 
@@ -1654,6 +1974,7 @@ namespace QuickMediaIngest.ViewModels
 
                 // Clear the imported groups and refresh scan to show updated/deleted state
                 Groups.Clear();
+                _sourceItemsCache.Clear();
                 if (SelectedSource != null)
                 {
                     LoadSourceItems(SelectedSource);
@@ -1679,6 +2000,136 @@ namespace QuickMediaIngest.ViewModels
                 SystemSounds.Asterisk.Play();
                 IsImporting = false;
                 ShowImportProgressDialog = false;
+            }
+        }
+
+        private async Task ExecuteUnifiedImportAsync(List<ItemGroup> selectedGroups, CancellationToken cancellationToken)
+        {
+            IFileProvider localProvider = new LocalFileProvider();
+            var ftpProviders = new Dictionary<string, FtpFileProvider>(StringComparer.OrdinalIgnoreCase);
+            var ftpSourcesByKey = Sources
+                .OfType<FtpSourceItem>()
+                .ToDictionary(BuildSourceKey, ftp => ftp, StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                foreach (var group in selectedGroups)
+                {
+                    var localItems = group.Items.Where(i => i.IsSelected && !i.IsFtpSource).ToList();
+                    if (localItems.Count > 0)
+                    {
+                        await ImportUnifiedSubsetAsync(group, localItems, localProvider, cancellationToken);
+                    }
+
+                    var ftpBatches = group.Items
+                        .Where(i => i.IsSelected && i.IsFtpSource)
+                        .GroupBy(i => i.SourceId, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    foreach (var ftpBatch in ftpBatches)
+                    {
+                        if (!ftpSourcesByKey.TryGetValue(ftpBatch.Key, out var ftpSource))
+                        {
+                            foreach (var item in ftpBatch)
+                            {
+                                ProcessedFilesForImport++;
+                                FailedFilesForImport++;
+                                CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
+                                ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
+                                StatusMessage = $"Failed {item.FileName} | missing FTP source configuration.";
+                            }
+
+                            continue;
+                        }
+
+                        if (!ftpProviders.TryGetValue(ftpBatch.Key, out var ftpProvider))
+                        {
+                            ftpProvider = new FtpFileProvider(ftpSource.Host, ftpSource.Port, ftpSource.User, ftpSource.Pass);
+                            ftpProviders[ftpBatch.Key] = ftpProvider;
+                        }
+
+                        await ImportUnifiedSubsetAsync(group, ftpBatch.ToList(), ftpProvider, cancellationToken);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var provider in ftpProviders.Values)
+                {
+                    await provider.DisposeAsync();
+                }
+            }
+        }
+
+        private async Task ImportUnifiedSubsetAsync(ItemGroup group, List<ImportItem> items, IFileProvider provider, CancellationToken cancellationToken)
+        {
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            var subsetGroup = new ItemGroup
+            {
+                Title = group.Title,
+                StartDate = group.StartDate,
+                EndDate = group.EndDate,
+                AlbumName = group.AlbumName,
+                FolderPath = group.FolderPath,
+                Items = items
+            };
+
+            var engine = new IngestEngine(provider);
+            engine.ProgressChanged += (percent, msg) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StatusMessage = msg;
+                });
+            };
+
+            engine.ItemProcessed += progress =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProcessedFilesForImport++;
+                    if (!progress.Success)
+                    {
+                        FailedFilesForImport++;
+                    }
+                    else
+                    {
+                        _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
+                    }
+
+                    CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
+                    CurrentGroupFileBeingImported = progress.GroupCurrent;
+                    TotalFilesInCurrentGroup = progress.GroupTotal;
+                    CurrentGroupProgressPercent = progress.GroupTotal > 0 ? (progress.GroupCurrent * 100) / progress.GroupTotal : 0;
+                    CurrentImportGroupTitle = progress.GroupTitle;
+                    ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
+
+                    string state = progress.Success ? "Copying" : "Failed";
+                    StatusMessage = $"{state} {progress.FileName} | overall {ProcessedFilesForImport}/{TotalFilesForImport} | group {progress.GroupCurrent}/{progress.GroupTotal}";
+                });
+            };
+
+            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken);
+
+            if (!DeleteAfterImport)
+            {
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                try
+                {
+                    await provider.DeleteAsync(item.SourcePath, cancellationToken);
+                }
+                catch
+                {
+                    // Ignore source-delete failures so import completion is not blocked.
+                }
             }
         }
 
@@ -1899,6 +2350,8 @@ namespace QuickMediaIngest.ViewModels
         {
             try
             {
+                        _sourceItemsCache.Clear();
+
                 var activeDrives = System.IO.DriveInfo.GetDrives()
                     .Where(d => d.DriveType == System.IO.DriveType.Removable && d.IsReady)
                     .Select(d => d.Name)
@@ -1922,6 +2375,11 @@ namespace QuickMediaIngest.ViewModels
                     {
                         Sources.Add(drive);
                     }
+                }
+
+                if (!Sources.Contains(_unifiedSource))
+                {
+                    Sources.Insert(0, _unifiedSource);
                 }
             } catch { }
         }
@@ -1988,6 +2446,11 @@ namespace QuickMediaIngest.ViewModels
         public string RemoteFolder { get; set; } = "/DCIM";
 
         public override string ToString() => $"FTP: {Host} ({RemoteFolder})";
+    }
+
+    public class UnifiedSourceItem
+    {
+        public override string ToString() => "Unified (SD + FTP)";
     }
 
     public class FtpFolderOption

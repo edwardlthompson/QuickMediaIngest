@@ -6,6 +6,12 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 
 ---
 
+## 🆕 What's New in v1.1.4
+
+* **🧩 Unified Source View**: Added a new `Unified` source that merges SD-card/local and saved FTP media into one combined view.
+* **⚡ Cached Unified Scanning**: Source scans are cached per source so reopening the unified view can reuse results instead of rescanning immediately.
+* **🛠️ Source-Aware Unified Import**: Mixed local and FTP groups now import through the correct provider automatically, including delete-after-import handling.
+
 ## 🆕 What's New in v1.1.2
 
 * **✨ Startup Splash Screen**: Added a startup splash window so users get immediate visual feedback while the app initializes.
@@ -19,6 +25,7 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 
 * **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.
 * **📂 Unified Scanner (Local & FTP)**: Selecting a source (SD/local/FTP) automatically scans and groups media.
+* **🧭 Unified Source (SD + FTP)**: A dedicated `Unified` sidebar source can merge all available SD/local and saved FTP sources into one grouped import view.
 * **🖼️ Auto Preview Loading**: Thumbnails are loaded automatically during scan (including FTP) with no manual preview pass required.
 * **🚀 Faster SD Preview Pipeline**: Local preview loading now prioritizes embedded EXIF thumbnails and uses bounded parallel thumbnail generation for much faster SD-card ingest preparation.
 * **📷 RAW/Modern Format Support**: Includes DNG, HEIC/HEIF, CR2/CR3, NEF, ARW, RAF, ORF, RW2, SRW plus common photo/video types.
@@ -34,7 +41,7 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 ## 🛠️ Usage
 
 1. **Insert Device**: Plug in your SD card or connect your Phone's FTP.
-2. **Select Source**: Click your SD/local/FTP source; scan starts automatically.
+2. **Select Source**: Click your SD/local/FTP source, or choose `Unified` to merge them; scan starts automatically.
 3. **Select Shoots**: Use checkboxes or All/None to pick what you want.
 4. **Import**: Click `Import` and monitor overall + per-shoot progress.
 5. **Review Refresh**: After import, the source list refreshes automatically so deleted/new files are reflected.

@@ -7,6 +7,8 @@ namespace QuickMediaIngest.Core.Models
     public class ImportItem : INotifyPropertyChanged
     {
         public string SourcePath { get; set; } = string.Empty; // Local "E:\DCIM\Image.jpg" OR FTP "/DCIM/Image.jpg"
+        public string SourceId { get; set; } = string.Empty; // Stable source key used for unified view/import routing
+        public bool IsFtpSource { get; set; }
         public string FileName { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public DateTime DateTaken { get; set; }
