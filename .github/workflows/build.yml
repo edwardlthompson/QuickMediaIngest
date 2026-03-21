@@ -32,36 +32,23 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Determine Release Status
+    - name: Determine Release Tag
       shell: pwsh
       run: |
         $tag = "v${{ env.VERSION }}"
         git fetch --tags --force
         $existingTag = git tag -l $tag
         $tagExists = -not [string]::IsNullOrWhiteSpace($existingTag)
-
-        # Check whether a GitHub Release already exists for this tag.
-        gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
-        $releaseExists = $LASTEXITCODE -eq 0
-
         $shouldCreateTag = -not $tagExists
-        $shouldCreateRelease = -not $releaseExists
 
         echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
         echo "SHOULD_CREATE_TAG=$($shouldCreateTag.ToString().ToLower())" >> $env:GITHUB_ENV
-        echo "SHOULD_CREATE_RELEASE=$($shouldCreateRelease.ToString().ToLower())" >> $env:GITHUB_ENV
 
-        if (-not $tagExists -and -not $releaseExists) {
-          Write-Host "No existing tag or release found for $tag. Tag and release will be created."
-        }
-        elseif ($tagExists -and -not $releaseExists) {
-          Write-Host "Tag $tag exists but release is missing. A release will be created."
-        }
-        elseif ($tagExists -and $releaseExists) {
-          Write-Host "Tag and release for $tag already exist. Release creation will be skipped."
+        if ($shouldCreateTag) {
+          Write-Host "No existing tag found for $tag. Tag will be created."
         }
         else {
-          Write-Host "Release for $tag already exists. Tag will be created and release step skipped."
+          Write-Host "Tag $tag already exists."
         }
 
     - name: Restore Dependencies
@@ -96,7 +83,6 @@ jobs:
         git push origin ${{ env.RELEASE_TAG }}
 
     - name: Upload Build Artifacts
-      if: env.SHOULD_CREATE_RELEASE == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: QuickMediaIngest-Build-${{ env.VERSION }}
@@ -104,15 +90,34 @@ jobs:
           ./publish/QuickMediaIngest-Portable.zip
           ./publish/QuickMediaIngest.msi
 
-    - name: Create Release
-      if: env.SHOULD_CREATE_RELEASE == 'true'
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        name: Release ${{ env.RELEASE_TAG }}
-        files: |
-          ./publish/QuickMediaIngest-Portable.zip
-          ./publish/QuickMediaIngest.msi
+    - name: Ensure Release Exists
+      shell: pwsh
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $tag = "${{ env.RELEASE_TAG }}"
+        $repo = "$env:GITHUB_REPOSITORY"
+
+        $ErrorActionPreference = "Continue"
+        $PSNativeCommandUseErrorActionPreference = $false
+
+        gh release view $tag --repo $repo *> $null
+        if ($LASTEXITCODE -ne 0) {
+          gh release create $tag --repo $repo --title "Release $tag" --notes "Automated release for $tag"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create release for $tag"
+          }
+        }
+
+    - name: Upload Release Assets
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $tag = "${{ env.RELEASE_TAG }}"
+        $repo = "$env:GITHUB_REPOSITORY"
+
+        gh release upload $tag ./publish/QuickMediaIngest-Portable.zip ./publish/QuickMediaIngest.msi --repo $repo --clobber
+        if ($LASTEXITCODE -ne 0) {
+          throw "Failed to upload release assets for $tag"
+        }
