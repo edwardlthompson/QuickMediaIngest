@@ -87,6 +87,7 @@ jobs:
       with:
         name: QuickMediaIngest-Build-${{ env.VERSION }}
         path: |
+          ./publish/portable/QuickMediaIngest.exe
           ./publish/QuickMediaIngest-Portable.zip
           ./publish/QuickMediaIngest.msi
 
@@ -117,7 +118,7 @@ jobs:
         $tag = "${{ env.RELEASE_TAG }}"
         $repo = "$env:GITHUB_REPOSITORY"
 
-        gh release upload $tag ./publish/QuickMediaIngest-Portable.zip ./publish/QuickMediaIngest.msi --repo $repo --clobber
+        gh release upload $tag ./publish/portable/QuickMediaIngest.exe ./publish/QuickMediaIngest-Portable.zip ./publish/QuickMediaIngest.msi --repo $repo --clobber
         if ($LASTEXITCODE -ne 0) {
           throw "Failed to upload release assets for $tag"
         }
