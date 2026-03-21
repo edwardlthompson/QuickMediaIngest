@@ -259,11 +259,31 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <materialDesign:PackIcon Grid.Column="0" Kind="Clock" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource AppAccentBrush}"/>
                                     <TextBlock Grid.Column="1" Text="Hours Between Shoots" TextWrapping="NoWrap" VerticalAlignment="Center" Foreground="{DynamicResource AppAccentBrush}" FontSize="13" Margin="0,0,8,0"/>
-                                    <TextBox Grid.Column="2" Text="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}" Width="44" VerticalAlignment="Center" FontSize="13" Style="{StaticResource MaterialDesignOutlinedTextBox}" IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
-                                    <Border Grid.Column="3" Style="{StaticResource RibbonTileHandleStyle}" PreviewMouseLeftButtonDown="RibbonTileHandle_PreviewMouseLeftButtonDown" PreviewMouseMove="RibbonTileHandle_PreviewMouseMove">
+                                    <Slider Grid.Column="2"
+                                            Minimum="1"
+                                            Maximum="24"
+                                            Ticks="1,3,6,9,12,15,18,21,24"
+                                            TickPlacement="BottomRight"
+                                            IsSnapToTickEnabled="False"
+                                            AutoToolTipPlacement="BottomRight"
+                                            AutoToolTipPrecision="0"
+                                            Value="{Binding TimeBetweenShootsHours, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="140"
+                                            Margin="0,0,8,0"
+                                            VerticalAlignment="Center"
+                                            Style="{StaticResource MaterialDesignSlider}"
+                                            IsEnabled="{Binding IsImporting, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding TimeBetweenShootsHours, StringFormat='{}{0}h'}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AppAccentBrush}"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,8,0"/>
+                                    <Border Grid.Column="4" Style="{StaticResource RibbonTileHandleStyle}" PreviewMouseLeftButtonDown="RibbonTileHandle_PreviewMouseLeftButtonDown" PreviewMouseMove="RibbonTileHandle_PreviewMouseMove">
                                         <materialDesign:PackIcon Kind="DragVertical" Width="28" Height="28" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
                                     </Border>
                                 </Grid>

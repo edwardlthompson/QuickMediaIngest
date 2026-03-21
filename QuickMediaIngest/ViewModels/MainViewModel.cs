@@ -80,6 +80,7 @@ namespace QuickMediaIngest.ViewModels
 
     private readonly LocalScanner _scanner;
         private readonly GroupBuilder _groupBuilder;
+    private List<ImportItem> _currentSourceItems = new();
                 public string AlbumName
         {
             get => _albumName;
@@ -346,7 +347,19 @@ namespace QuickMediaIngest.ViewModels
         public int TimeBetweenShootsHours
         {
             get => _timeBetweenShootsHours;
-            set { _timeBetweenShootsHours = value; OnPropertyChanged(); SaveConfig(); }
+            set
+            {
+                int clampedValue = Math.Clamp(value, 1, 24);
+                if (_timeBetweenShootsHours == clampedValue)
+                {
+                    return;
+                }
+
+                _timeBetweenShootsHours = clampedValue;
+                OnPropertyChanged();
+                SaveConfig();
+                RebuildGroupsFromCurrentItems();
+            }
         }
 
         public bool SelectAll
@@ -1005,22 +1018,12 @@ namespace QuickMediaIngest.ViewModels
                 }
                 else return;
 
-                var groups = _groupBuilder.BuildGroups(items, TimeSpan.FromHours(TimeBetweenShootsHours));
+                _currentSourceItems = items;
+                RebuildGroupsFromCurrentItems();
 
-                foreach (var g in groups)
+                if (Groups.Count > 0)
                 {
-                    if (g.Items.Count == 0) continue;
-                    g.AlbumName = AlbumName;
-                    if (g.Items.Count > 0) g.FolderPath = Path.GetDirectoryName(g.Items[0].SourcePath) ?? string.Empty;
-                    g.PropertyChanged += Group_PropertyChanged;
-                    Groups.Add(g);
-                }
-
-                UpdateSelectAllFromGroups();
-
-                if (groups.Count > 0)
-                {
-                    await LoadThumbnailsAsync(groups, source, sourceLabel);
+                    await LoadThumbnailsAsync(Groups.ToList(), source, sourceLabel);
                 }
                 else
                 {
@@ -1096,6 +1099,40 @@ namespace QuickMediaIngest.ViewModels
             {
                 _isUpdatingSelectAll = false;
             }
+        }
+
+        private void RebuildGroupsFromCurrentItems()
+        {
+            foreach (var existing in Groups)
+            {
+                existing.PropertyChanged -= Group_PropertyChanged;
+            }
+
+            Groups.Clear();
+
+            if (_currentSourceItems.Count == 0)
+            {
+                return;
+            }
+
+            var groups = _groupBuilder.BuildGroups(_currentSourceItems, TimeSpan.FromHours(TimeBetweenShootsHours));
+
+            foreach (var group in groups)
+            {
+                if (group.Items.Count == 0)
+                {
+                    continue;
+                }
+
+                group.AlbumName = AlbumName;
+                group.FolderPath = Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty;
+                group.SyncSelectionFromItems();
+                group.PropertyChanged += Group_PropertyChanged;
+                Groups.Add(group);
+            }
+
+            UpdateSelectAllFromGroups();
+            StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
         }
 
         private void ShowSkippedFoldersReport(string sourceLabel, HashSet<string> skippedFolderDetails)
@@ -1810,7 +1847,7 @@ namespace QuickMediaIngest.ViewModels
                         }
                         if (config.ThumbnailSize > 0) _thumbnailSize = config.ThumbnailSize;
                         _scanIncludeSubfolders = config.ScanIncludeSubfolders;
-                        if (config.TimeBetweenShootsHours > 0) _timeBetweenShootsHours = config.TimeBetweenShootsHours;
+                        _timeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
                         _limitFtpThumbnailLoad = false;
                         _ftpInitialThumbnailCount = 0;
                         if (config.RibbonTileOrder is { Count: > 0 })

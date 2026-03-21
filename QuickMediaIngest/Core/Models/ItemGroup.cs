@@ -37,6 +37,12 @@ namespace QuickMediaIngest.Core.Models
             }
         }
 
+        public void SyncSelectionFromItems()
+        {
+            _isSelected = Items.Count > 0 && Items.All(i => i.IsSelected);
+            OnPropertyChanged(nameof(IsSelected));
+        }
+
         public long TotalSize => Items.FindAll(i => i.IsSelected).ConvertAll(i => i.FileSize).Sum();
 
         public event PropertyChangedEventHandler? PropertyChanged;
