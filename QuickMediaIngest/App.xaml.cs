@@ -14,8 +14,49 @@ using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
 {
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
+        public App()
+        {
+            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
+
+            private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+            {
+                try
+                {
+                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                        string logsDir = Path.Combine(baseDir, "Logs");
+                        Directory.CreateDirectory(logsDir);
+                        string fatalPath = Path.Combine(baseDir, "fatal.log");
+                        File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
+                        // Also write a timestamped crash file for easier collection
+                        string crashFile = Path.Combine(logsDir, $"crash-ui-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n");
+                }
+                catch { }
+                MessageBox.Show($"A fatal error occurred:\n{e.Exception}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                e.Handled = true;
+            }
+
+            private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
+            {
+                try
+                {
+                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                        string logsDir = Path.Combine(baseDir, "Logs");
+                        Directory.CreateDirectory(logsDir);
+                        string fatalPath = Path.Combine(baseDir, "fatal.log");
+                        File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
+                        string crashFile = Path.Combine(logsDir, $"crash-domain-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n");
+                }
+                catch { }
+                MessageBox.Show($"A fatal error occurred:\n{e.ExceptionObject}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
         public static bool CurrentIsDarkTheme { get; private set; } = true;
         private ServiceProvider? _serviceProvider;
         private static ILogger<App>? _logger;
@@ -29,6 +70,18 @@ namespace QuickMediaIngest
 
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
+
+            // Allow forcing a controlled test crash by creating a file named 'qmi_force_crash.txt' in the temp folder.
+            // Useful for verifying the unhandled-exception logging behavior during manual tests.
+            try
+            {
+                string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
+                if (File.Exists(crashMarker))
+                {
+                    throw new Exception("Forced test crash for verification (qmi_force_crash.txt present)");
+                }
+            }
+            catch { }
 
             var splash = new SplashWindow();
             splash.Show();

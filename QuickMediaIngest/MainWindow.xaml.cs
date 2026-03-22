@@ -1,4 +1,11 @@
+using System;
+using System.IO;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using DragEventArgs = System.Windows.DragEventArgs;
+using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Data;
@@ -6,6 +13,7 @@ using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media.Animation;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.ViewModels;
 
@@ -30,6 +38,49 @@ namespace QuickMediaIngest
             DataContext = viewModel;
             _logger = logger;
             _logger.LogInformation("Main window initialized.");
+
+            // Initialize theme toggle state
+            try
+            {
+                if (ThemeToggle != null)
+                {
+                    ThemeToggle.IsChecked = App.CurrentIsDarkTheme;
+                }
+            }
+            catch { }
+
+            // Loaded += MainWindow_Loaded;
+            try
+            {
+                var showOnLaunch = Environment.GetEnvironmentVariable("QMI_SHOW_FTP_ON_LAUNCH");
+                if (!string.IsNullOrEmpty(showOnLaunch) && showOnLaunch == "1" && DataContext is MainViewModel vm)
+                {
+                    vm.ShowAddFtpDialog = true;
+                    _logger.LogInformation("Debug: showing Add FTP dialog on launch due to QMI_SHOW_FTP_ON_LAUNCH=1");
+                    try
+                    {
+                        // Force the overlay visible in case binding/visual tree timing prevents it from showing
+                        AddFtpOverlay.Visibility = System.Windows.Visibility.Visible;
+                        AddFtpOverlay.BringIntoView();
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // OnboardingDialog removed
+        }
+
+        private void AddFtpOverlay_Loaded(object sender, RoutedEventArgs e)
+        {
+            _logger?.LogInformation("AddFtpOverlay loaded on thread {ThreadId}.", Thread.CurrentThread.ManagedThreadId);
+        }
+
+        private void AddFtpOverlay_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _logger?.LogInformation("AddFtpOverlay unloaded on thread {ThreadId}.", Thread.CurrentThread.ManagedThreadId);
         }
 
         public void ApplyWindowStateFromViewModel()
@@ -557,6 +608,130 @@ namespace QuickMediaIngest
                 e.Handled = true;
                 textBox.Focus();
             }
+        }
+
+        private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && sender is PasswordBox pb)
+            {
+                // Keep the viewmodel in sync with password box securely
+                vm.FtpPass = pb.Password;
+            }
+        }
+
+        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            // Checked == Dark mode
+            App.ApplyTheme(false); // false => use dark (ApplyTheme param is useLightTheme)
+        }
+
+        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            // Unchecked == Light mode
+            App.ApplyTheme(true);
+        }
+
+        private void Settings_BrowseDestination(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (DataContext is MainViewModel vm)
+                {
+                    string initial = vm.DestinationRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                    Process.Start(new ProcessStartInfo("explorer.exe", initial) { UseShellExecute = true });
+                    MessageBox.Show("Folder picker is unavailable in this build. Explorer opened — navigate to the folder and paste its path into the Destination field.", "Select Folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch { }
+        }
+
+        private void Settings_MoveTokenUp(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.SelectedTokens.Count > 0)
+            {
+                var lb = FindVisualChild<System.Windows.Controls.ListBox>(this, "");
+                // Fallback: move first selected token up; if none selected, do nothing
+                var token = vm.SelectedTokens.FirstOrDefault();
+                if (token != null)
+                {
+                    int idx = vm.SelectedTokens.IndexOf(token);
+                    if (idx > 0)
+                    {
+                        vm.SelectedTokens.Move(idx, idx - 1);
+                        vm.UpdateNamingFromTokens();
+                    }
+                }
+            }
+        }
+
+        private void Settings_MoveTokenDown(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.SelectedTokens.Count > 0)
+            {
+                var token = vm.SelectedTokens.FirstOrDefault();
+                if (token != null)
+                {
+                    int idx = vm.SelectedTokens.IndexOf(token);
+                    if (idx < vm.SelectedTokens.Count - 1)
+                    {
+                        vm.SelectedTokens.Move(idx, idx + 1);
+                        vm.UpdateNamingFromTokens();
+                    }
+                }
+            }
+        }
+
+        private void Settings_Save(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.SaveConfig();
+                vm.ShowSettingsDialog = false;
+            }
+        }
+
+        private void Settings_Close(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.ShowSettingsDialog = false;
+            }
+        }
+
+        private void OpenCrashLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string logsDir = Path.Combine(appData, "QuickMediaIngest", "Logs");
+                if (!Directory.Exists(logsDir))
+                {
+                    Directory.CreateDirectory(logsDir);
+                }
+                Process.Start(new ProcessStartInfo("explorer.exe", logsDir) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to open crash logs folder.");
+                MessageBox.Show("Unable to open crash logs folder." + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject depObj, string name) where T : DependencyObject
+        {
+            if (depObj == null) return null;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+            {
+                var child = VisualTreeHelper.GetChild(depObj, i);
+                if (child is T t)
+                {
+                    return t;
+                }
+
+                var result = FindVisualChild<T>(child, name);
+                if (result != null) return result;
+            }
+            return null;
         }
 
         private sealed record TokenDragPayload(string Token, bool FromSelected);

@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
-using MetadataExtractor;
-using MetadataExtractor.Formats.Exif;
+// Removed MetadataExtractor using to avoid ambiguous 'Directory' symbol
 
 namespace QuickMediaIngest.Core
 {
@@ -121,42 +120,148 @@ namespace QuickMediaIngest.Core
 
         private static BitmapSource? TryGetExifThumbnail(string filePath)
         {
-            var directories = ImageMetadataReader.ReadMetadata(filePath);
-                var thumbDir = directories.OfType<ExifThumbnailDirectory>().FirstOrDefault();
-            if (thumbDir == null) return null;
-
-            const int TagThumbnailOffset = 513; // 0x0201
-            const int TagThumbnailLength = 514; // 0x0202
-
-            if (!thumbDir.ContainsTag(TagThumbnailOffset) || !thumbDir.ContainsTag(TagThumbnailLength))
-                return null;
-
-            int offset = thumbDir.GetInt32(TagThumbnailOffset);
-            int length = thumbDir.GetInt32(TagThumbnailLength);
-            if (length <= 0) return null;
-
-            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            try
             {
-                fs.Seek(offset, SeekOrigin.Begin);
-                byte[] thumbBytes = new byte[length];
-                int read = fs.Read(thumbBytes, 0, length);
+                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var br = new BinaryReader(fs);
 
-                if (read > 4 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8) // Valid JPEG header
+                // Scan JPEG segments for APP1 Exif marker (0xFFE1) which starts with "Exif\0\0"
+                if (br.ReadByte() != 0xFF || br.ReadByte() != 0xD8) return null; // Not a JPEG
+
+                while (fs.Position < fs.Length)
                 {
-                    using (var ms = new MemoryStream(thumbBytes))
+                    int markerPrefix = br.ReadByte();
+                    if (markerPrefix != 0xFF) break;
+                    int marker = br.ReadByte();
+                    int segLen = (int)ReadUInt16BE(br); // big-endian length
+                    if (marker == 0xE1) // APP1
                     {
-                        var bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.StreamSource = ms;
-                        bitmap.EndInit();
-                        bitmap.Freeze();
-                        return bitmap;
+                        long segStart = fs.Position;
+                        byte[] header = br.ReadBytes(6);
+                        if (header.Length == 6 && header[0] == (byte)'E' && header[1] == (byte)'x' && header[2] == (byte)'i' && header[3] == (byte)'f' && header[4] == 0 && header[5] == 0)
+                        {
+                            long tiffStart = segStart + 6;
+                            fs.Position = tiffStart;
+
+                            // Read TIFF header
+                            bool littleEndian = false;
+                            ushort endianMark = ReadUInt16BE(br);
+                            if (endianMark == 0x4949) littleEndian = true;
+                            else if (endianMark == 0x4D4D) littleEndian = false;
+                            else return null;
+
+                            ushort magic = ReadUInt16(br, littleEndian);
+                            if (magic != 0x002A) return null;
+
+                            uint ifd0Offset = ReadUInt32(br, littleEndian);
+                            long ifd0Pos = tiffStart + ifd0Offset;
+                            if (ifd0Pos >= fs.Length) return null;
+
+                            // Read IFD0 entries and then follow pointer to IFD1 (thumbnail IFD)
+                            fs.Position = ifd0Pos;
+                            ushort entryCount = ReadUInt16(br, littleEndian);
+                            fs.Position += entryCount * 12; // skip entries
+                            uint nextIfdOffset = ReadUInt32(br, littleEndian);
+                            if (nextIfdOffset == 0) return null;
+
+                            long ifd1Pos = tiffStart + nextIfdOffset;
+                            if (ifd1Pos >= fs.Length) return null;
+
+                            fs.Position = ifd1Pos;
+                            ushort ifd1Count = ReadUInt16(br, littleEndian);
+                            for (int i = 0; i < ifd1Count; i++)
+                            {
+                                long entryPos = fs.Position + i * 12;
+                                fs.Position = entryPos;
+                                ushort tag = ReadUInt16(br, littleEndian);
+                                ushort type = ReadUInt16(br, littleEndian);
+                                uint count = ReadUInt32(br, littleEndian);
+                                uint valueOffset = ReadUInt32(br, littleEndian);
+
+                                const ushort TagThumbnailOffset = 0x0201;
+                                const ushort TagThumbnailLength = 0x0202;
+
+                                if (tag == TagThumbnailOffset)
+                                {
+                                    uint thumbOffset = valueOffset;
+                                    // find length from tag 0x0202
+                                    // search entries again for length
+                                    fs.Position = ifd1Pos + 2;
+                                    int thumbLen = 0;
+                                    for (int j = 0; j < ifd1Count; j++)
+                                    {
+                                        long ePos = fs.Position + j * 12;
+                                        fs.Position = ePos;
+                                        ushort t = ReadUInt16(br, littleEndian);
+                                        fs.Position += 2; // skip type
+                                        uint c = ReadUInt32(br, littleEndian);
+                                        uint vo = ReadUInt32(br, littleEndian);
+                                        if (t == TagThumbnailLength)
+                                        {
+                                            thumbLen = (int)vo;
+                                            break;
+                                        }
+                                    }
+
+                                    if (thumbLen <= 0) return null;
+                                    long thumbDataPos = tiffStart + thumbOffset;
+                                    if (thumbDataPos + thumbLen > fs.Length) return null;
+                                    fs.Position = thumbDataPos;
+                                    byte[] thumbBytes = br.ReadBytes(thumbLen);
+                                    if (thumbBytes.Length >= 2 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8)
+                                    {
+                                        using var ms = new MemoryStream(thumbBytes);
+                                        var bitmap = new BitmapImage();
+                                        bitmap.BeginInit();
+                                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                                        bitmap.StreamSource = ms;
+                                        bitmap.EndInit();
+                                        bitmap.Freeze();
+                                        return bitmap;
+                                    }
+                                }
+                            }
+                        }
+                        // advance to next segment
+                        fs.Position = segStart + segLen - 2;
+                    }
+                    else
+                    {
+                        // skip this segment
+                        fs.Position += segLen - 2;
                     }
                 }
             }
+            catch { }
 
             return null;
+        }
+
+        private static ushort ReadUInt16(BinaryReader br, bool littleEndian)
+        {
+            var data = br.ReadBytes(2);
+            if (data.Length < 2) return 0;
+            if (BitConverter.IsLittleEndian == littleEndian) return BitConverter.ToUInt16(data, 0);
+            Array.Reverse(data);
+            return BitConverter.ToUInt16(data, 0);
+        }
+
+        private static ushort ReadUInt16BE(BinaryReader br)
+        {
+            var data = br.ReadBytes(2);
+            if (data.Length < 2) return 0;
+            if (!BitConverter.IsLittleEndian) return BitConverter.ToUInt16(data, 0);
+            Array.Reverse(data);
+            return BitConverter.ToUInt16(data, 0);
+        }
+
+        private static uint ReadUInt32(BinaryReader br, bool littleEndian)
+        {
+            var data = br.ReadBytes(4);
+            if (data.Length < 4) return 0u;
+            if (BitConverter.IsLittleEndian == littleEndian) return BitConverter.ToUInt32(data, 0);
+            Array.Reverse(data);
+            return BitConverter.ToUInt32(data, 0);
         }
 
         private BitmapImage CreateResizedThumbnail(BitmapFrame frame)

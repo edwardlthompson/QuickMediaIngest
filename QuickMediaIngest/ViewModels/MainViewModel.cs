@@ -11,86 +11,114 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Application = System.Windows.Application;
+using Clipboard = System.Windows.Clipboard;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 
+
 namespace QuickMediaIngest.ViewModels
 {
+    
+    public class SidebarOption
+    {
+        public string Label { get; set; } = string.Empty;
+        public ICommand? Command { get; set; }
+    }
+
+    public class SidebarSection : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
+    {
+        public string Title { get; set; } = string.Empty;
+        public ObservableCollection<SidebarOption> Options { get; set; } = new();
+        private bool _isExpanded;
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set => SetProperty(ref _isExpanded, value);
+        }
+    }
+
     public class AdbSourceItem
     {
         public string DeviceSerial { get; set; } = "default";
         public override string ToString() => "Android (ADB)";
     }
+
     public partial class MainViewModel : ObservableObject
     {
+        [ObservableProperty] private bool showSettingsDialog = false;
+
+        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = !ShowSettingsDialog;
+
+        // --- Sidebar and import progress fields ---
         private bool _isUpdatingSelectAll = false;
-        // Fields required for select-all and import progress logic
         private bool _selectAll = true;
         private long _processedBytesForImport = 0;
         private DateTime _importStartedAtUtc = DateTime.MinValue;
-        // ...existing code...
+        // Sidebar sections for expandable menu
+        public ObservableCollection<SidebarSection> SidebarSections { get; } = new();
 
-        [RelayCommand]
-        private void ExportSettings()
+        private void InitializeSidebarSections()
         {
-            try
+            SidebarSections.Clear();
+            SidebarSections.Add(new SidebarSection
             {
-                var dlg = new Microsoft.Win32.SaveFileDialog
+                Title = "Import",
+                IsExpanded = true,
+                Options =
                 {
-                    Title = "Export Settings",
-                    Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
-                    FileName = "QuickMediaIngest-settings.json"
-                };
-                if (dlg.ShowDialog() == true)
-                {
-                    string appConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
-                    if (File.Exists(appConfigPath))
-                    {
-                        StatusMessage = $"Settings exported to {dlg.FileName}";
-                        File.Copy(appConfigPath, dlg.FileName, overwrite: true);
-                    }
-                    else
-                    {
-                        StatusMessage = "No settings file found to export.";
-                    }
+                    new SidebarOption { Label = "Start Import", Command = ImportCommand },
+                    new SidebarOption { Label = "Select All", Command = SelectAllCommand },
+                    new SidebarOption { Label = "Deselect All", Command = new RelayCommand(DeselectAllShoots) },
                 }
-            }
-            catch (Exception ex)
+            });
+            SidebarSections.Add(new SidebarSection
             {
-                StatusMessage = $"Export failed: {ex.Message}";
-            }
+                Title = "Sources",
+                Options =
+                {
+                    new SidebarOption { Label = "Add FTP Source", Command = ToggleAddFtpCommand },
+                    new SidebarOption { Label = "Rescan Drives", Command = RescanCommand },
+                }
+            });
+            SidebarSections.Add(new SidebarSection
+            {
+                Title = "Settings",
+                Options =
+                {
+                    new SidebarOption { Label = "Settings", Command = ToggleSettingsCommand },
+                    new SidebarOption { Label = "Theme: Toggle Dark/Light", Command = new RelayCommand(() => IsDarkTheme = !IsDarkTheme) },
+                }
+            });
+            // Note: About is now exposed as the top-level "About & Updates" button in the sidebar.
         }
 
-        [RelayCommand]
-        private void ImportSettings()
-        {
-            try
-            {
-                var dlg = new Microsoft.Win32.OpenFileDialog
-                {
-                    Title = "Import Settings",
-                    Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*"
-                };
-                if (dlg.ShowDialog() == true)
-                {
-                    string appConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
-                    File.Copy(dlg.FileName, appConfigPath, overwrite: true);
-                    LoadConfig();
-                    StatusMessage = $"Settings imported from {dlg.FileName}";
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Import failed: {ex.Message}";
-            }
-        }
-
-        // ...existing code...
-        // --- Advanced Filtering/Search ---
-        // --- Advanced Filtering/Search ---
+        // Call this in constructor or initialization
+        // ... rest of MainViewModel ...
         [ObservableProperty] DateTime? filterStartDate = null;
+        [ObservableProperty] DateTime? filterEndDate = null;
+        [ObservableProperty] string filterFileType = string.Empty;
+        [ObservableProperty] string filterKeyword = string.Empty;
+
+        private System.ComponentModel.ICollectionView? _filteredItemsView;
+        public System.ComponentModel.ICollectionView? FilteredItemsView
+        {
+            get => _filteredItemsView;
+            private set => SetProperty(ref _filteredItemsView, value);
+        }
+
+        public ObservableCollection<string> AvailableFileTypes { get; } = new ObservableCollection<string>();
+
+        [RelayCommand]
+        public void ClearFilters()
+        {
+            FilterStartDate = null;
+            FilterEndDate = null;
+            FilterFileType = string.Empty;
+            FilterKeyword = string.Empty;
+        }
 
         [RelayCommand]
         void DetectDuplicates()
@@ -127,27 +155,6 @@ namespace QuickMediaIngest.ViewModels
             byte[] hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
             return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         }
-                [ObservableProperty] DateTime? filterEndDate = null;
-                [ObservableProperty] string filterFileType = string.Empty;
-                [ObservableProperty] string filterKeyword = string.Empty;
-
-                private System.ComponentModel.ICollectionView? _filteredItemsView;
-                public System.ComponentModel.ICollectionView? FilteredItemsView
-                {
-                    get => _filteredItemsView;
-                    private set => SetProperty(ref _filteredItemsView, value);
-                }
-
-                public ObservableCollection<string> AvailableFileTypes { get; } = new ObservableCollection<string>();
-
-                [RelayCommand]
-                public void ClearFilters()
-                {
-                    FilterStartDate = null;
-                    FilterEndDate = null;
-                    FilterFileType = string.Empty;
-                    FilterKeyword = string.Empty;
-                }
 
         public MainViewModel(
             ILocalScanner scanner,
@@ -169,6 +176,8 @@ namespace QuickMediaIngest.ViewModels
             _ingestEngineFactory = ingestEngineFactory;
             _groupBuilder = groupBuilder;
             _logger = logger;
+
+            InitializeSidebarSections();
         }
 
         // Observable properties (must be at class scope, after constructor)
@@ -211,6 +220,13 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool showUpdateBanner = false;
         [ObservableProperty] private string updateUrl = string.Empty;
         [ObservableProperty] private bool showAboutDialog = false;
+        [ObservableProperty] private bool isUpdateAvailable = false;
+        [ObservableProperty] private double updateProgress = 0.0;
+        [ObservableProperty] private string updateStatus = string.Empty;
+        [ObservableProperty] private bool isDownloadingUpdate = false;
+        [ObservableProperty] private string updateDownloadSpeedText = "-- MB/s";
+        [ObservableProperty] private string updateDownloadEtaText = "--:--:--";
+        [ObservableProperty] private bool isCheckingForUpdate = false;
         [ObservableProperty] private int updateIntervalHours = 24;
         [ObservableProperty] private string updatePackageType = "Portable";
         [ObservableProperty] private string namingTemplate = "[Date]_[Time]_[Original]";
@@ -243,6 +259,41 @@ namespace QuickMediaIngest.ViewModels
             // Load configuration and import history (sync, but could be made async if needed)
             LoadConfig();
             LoadImportHistory();
+            // Initial population of sidebar sources (drives + saved FTP)
+            try
+            {
+                ScanDrives();
+                // Start watching for device connect/disconnect events
+                try
+                {
+                    _deviceWatcher.DeviceConnected += (drive) =>
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (!Sources.Contains(drive)) Sources.Add(drive);
+                        });
+                    };
+                    _deviceWatcher.DeviceDisconnected += (drive) =>
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            // Remove string drives that match the drive letter
+                            for (int i = Sources.Count - 1; i >= 0; i--)
+                            {
+                                if (Sources[i] is string s && string.Equals(s, drive, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    Sources.RemoveAt(i);
+                                }
+                            }
+                            if (SelectedSource is string ss && string.Equals(ss, drive, StringComparison.OrdinalIgnoreCase))
+                                SelectedSource = null;
+                        });
+                    };
+                    _deviceWatcher.Start();
+                }
+                catch { }
+            }
+            catch { }
 
             _startupInitialized = true;
 
@@ -252,7 +303,8 @@ namespace QuickMediaIngest.ViewModels
         // Observable properties (must be at class scope)
         // Internal state fields
         // Only remove truly unused fields to resolve warnings.
-        // The following fields are required for class functionality:
+        // The following fields are required for class functionality and are
+        // initialized in the constructor.
         private readonly ILocalScanner _scanner;
         private readonly IFtpScanner _ftpScanner;
         private readonly IThumbnailService _thumbnailService;
@@ -262,7 +314,7 @@ namespace QuickMediaIngest.ViewModels
         private readonly IIngestEngineFactory _ingestEngineFactory;
         private readonly GroupBuilder _groupBuilder;
         private readonly ILogger<MainViewModel> _logger;
-        private bool _startupInitialized;
+        private bool _startupInitialized = false;
         private double _savedWindowWidth = 960;
         private double _savedWindowHeight = 620;
         private bool _savedWindowMaximized = false;
@@ -340,7 +392,14 @@ namespace QuickMediaIngest.ViewModels
             }
 
 
-        [RelayCommand] private void ToggleAddFtp() => ShowAddFtpDialog = !ShowAddFtpDialog;
+        [RelayCommand] private async Task ToggleAddFtp()
+        {
+            bool newState = !ShowAddFtpDialog;
+            _logger.LogDebug("ToggleAddFtp requested. NewState={NewState}", newState);
+            ShowAddFtpDialog = newState;
+            await Task.Yield();
+            _logger.LogDebug("ToggleAddFtp completed. ShowAddFtpDialog={ShowAddFtpDialog}", ShowAddFtpDialog);
+        }
         [RelayCommand] private void SaveFtp() => ExecuteSaveFtp();
         [RelayCommand] private void TestFtpConnection() => ExecuteTestFtpConnection();
         [RelayCommand] private void BrowseFtpFolders() => ExecuteBrowseFtpFolders();
@@ -420,9 +479,26 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand] private void Import() => ExecuteImport();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
         [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
-        [RelayCommand] private void OpenGitHub() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest");
+        [RelayCommand] private void OpenGitHub()
+        {
+            const string repo = "https://github.com/edwardlthompson/QuickMediaIngest";
+            try
+            {
+                if (!string.IsNullOrEmpty(AppVersion))
+                {
+                    // Prefer opening the release/tag that matches the running version
+                    string tag = AppVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? AppVersion : "v" + AppVersion;
+                    string releaseUrl = $"{repo}/releases/tag/{tag}";
+                    OpenUrl(releaseUrl);
+                    return;
+                }
+            }
+            catch { }
+
+            OpenUrl(repo);
+        }
         [RelayCommand] private void RefreshUpdate() => CheckUpdates(force: true);
-        [RelayCommand] private void BrowseDestination() => ExecuteBrowseDestination();
+        // BrowseDestination command removed; UI entry deleted.
         [RelayCommand] private void Rescan() => ScanDrives();
         [RelayCommand] private void BrowseScanPath() => ExecuteBrowseScanPath();
         [RelayCommand] private void BuildSelectedPreviews() => ExecuteBuildSelectedPreviews();
@@ -452,13 +528,24 @@ namespace QuickMediaIngest.ViewModels
             System.Threading.Tasks.Task.Run(async () =>
             {
                 _logger.LogInformation("Checking for updates from view model. Force={Force}", force);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    IsCheckingForUpdate = true;
+                    UpdateStatus = "Checking for updates...";
+                    UpdateProgress = 0.0;
+                });
+
                 var url = await _updateService.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
+
                 if (!string.IsNullOrEmpty(url))
                 {
                      Application.Current.Dispatcher.Invoke(() =>
                      {
                          UpdateUrl = url;
                          ShowUpdateBanner = true;
+                         IsUpdateAvailable = true;
+                         UpdateStatus = "Update available";
+                         UpdateProgress = 0.0;
                      });
                 }
                 else if (force)
@@ -466,8 +553,12 @@ namespace QuickMediaIngest.ViewModels
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                          StatusMessage = "No updates found. App is up to date.";
-                    });
+                         UpdateStatus = "No updates found.";
+                         IsUpdateAvailable = false;
+                     });
                 }
+
+                Application.Current.Dispatcher.Invoke(() => IsCheckingForUpdate = false);
             });
         }
 
@@ -477,67 +568,93 @@ namespace QuickMediaIngest.ViewModels
 
             _logger.LogInformation("Starting update download from {UpdateUrl}.", UpdateUrl);
 
-            if (UpdateUrl.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+            IsDownloadingUpdate = true;
+            UpdateProgress = 0.0;
+            UpdateStatus = "Starting download...";
+            ShowUpdateBanner = false;
+
+            try
             {
-                StatusMessage = "Downloading update installer (Auto)...";
-                ShowUpdateBanner = false;
+                string ext = Path.GetExtension(UpdateUrl).ToLowerInvariant();
+                string fileName = ext == ".msi" ? "QuickMediaIngest_Update.msi" : ext == ".exe" ? "QuickMediaIngest_Update.exe" : null;
 
-                try
+                if (fileName != null)
                 {
-                    string tempPath = Path.Combine(Path.GetTempPath(), "QuickMediaIngest_Update.msi");
+                    string tempPath = Path.Combine(Path.GetTempPath(), fileName);
 
-                    using (var client = new System.Net.Http.HttpClient())
-                    {
-                        var response = await client.GetAsync(UpdateUrl);
-                        using (var fs = new FileStream(tempPath, FileMode.Create))
+                    using var client = new System.Net.Http.HttpClient();
+                    using var response = await client.GetAsync(UpdateUrl, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+
+                    var contentLength = response.Content.Headers.ContentLength;
+                    using var contentStream = await response.Content.ReadAsStreamAsync();
+                    using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                        var buffer = new byte[81920];
+                        long totalRead = 0;
+                        int read;
+                        var sw = Stopwatch.StartNew();
+                        while ((read = await contentStream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
                         {
-                            await response.Content.CopyToAsync(fs);
-                        }
-                    }
+                            await fs.WriteAsync(buffer.AsMemory(0, read));
+                            totalRead += read;
 
-                    StatusMessage = "Installing update... App will close for restart.";
-                    Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
-                    Application.Current.Shutdown();
+                            // Compute progress, speed and ETA
+                            double percent = 0.0;
+                            if (contentLength.HasValue && contentLength.Value > 0)
+                            {
+                                percent = Math.Round((double)totalRead / contentLength.Value * 100.0, 1);
+                            }
+
+                            double bytesPerSecond = sw.Elapsed.TotalSeconds > 0 ? totalRead / sw.Elapsed.TotalSeconds : 0;
+                            string speedText = bytesPerSecond > 0 ? $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s" : "-- MB/s";
+                            string etaText = "--:--:--";
+                            if (contentLength.HasValue && bytesPerSecond > 0)
+                            {
+                                double remaining = Math.Max(0, contentLength.Value - totalRead);
+                                etaText = TimeSpan.FromSeconds(remaining / bytesPerSecond).ToString(@"hh\:mm\:ss");
+                            }
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                UpdateProgress = percent;
+                                UpdateStatus = contentLength.HasValue ? $"Downloading update... {percent}%" : $"Downloading... {totalRead / 1024:N0} KB";
+                                UpdateDownloadSpeedText = speedText;
+                                UpdateDownloadEtaText = etaText;
+                            });
+                        }
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        UpdateProgress = 100.0;
+                        UpdateStatus = "Download complete. Launching installer...";
+                    });
+
+                    if (ext == ".msi" || ext == ".exe")
+                    {
+                        Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+                        Application.Current.Shutdown();
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Installer update download failed.");
-                    StatusMessage = $"Update download failed: {ex.Message}";
-                    ShowUpdateBanner = true;
+                    // Non-executable update: open in browser
+                    OpenUrl(UpdateUrl);
+                    Application.Current.Dispatcher.Invoke(() => UpdateStatus = "Opened update URL in browser.");
                 }
             }
-            else if (UpdateUrl.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            catch (Exception ex)
             {
-                StatusMessage = "Downloading update...";
-                ShowUpdateBanner = false;
-
-                try
+                _logger.LogError(ex, "Update download failed.");
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    string tempPath = Path.Combine(Path.GetTempPath(), "QuickMediaIngest_Update.exe");
-
-                    using (var client = new System.Net.Http.HttpClient())
-                    {
-                        var response = await client.GetAsync(UpdateUrl);
-                        using (var fs = new FileStream(tempPath, FileMode.Create))
-                        {
-                            await response.Content.CopyToAsync(fs);
-                        }
-                    }
-
-                    StatusMessage = "Launching updated version... App will close.";
-                    Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
-                    Application.Current.Shutdown();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Portable update download failed.");
-                    StatusMessage = $"Update download failed: {ex.Message}";
+                    UpdateStatus = $"Update download failed: {ex.Message}";
+                    IsUpdateAvailable = true;
                     ShowUpdateBanner = true;
-                }
+                });
             }
-            else
+            finally
             {
-                OpenUrl(UpdateUrl);
+                IsDownloadingUpdate = false;
             }
         }
 
@@ -914,6 +1031,7 @@ BuildGroups:
         {
             if (e.PropertyName == nameof(ItemGroup.IsSelected))
             {
+                if (_isUpdatingSelectAll) return;
                 UpdateSelectAllFromGroups();
             }
         }
@@ -2058,20 +2176,7 @@ BuildGroups:
             }
         }
 
-        private void ExecuteBrowseDestination()
-        {
-            var dialog = new Microsoft.Win32.OpenFolderDialog
-            {
-                Title = "Select Destination Folder",
-                InitialDirectory = DestinationRoot
-            };
-            
-            if (dialog.ShowDialog() == true)
-            {
-                DestinationRoot = dialog.FolderName;
-                SaveConfig();
-            }
-        }
+        // ExecuteBrowseDestination removed along with its UI entry.
 
         private void ExecuteBrowseScanPath()
         {
@@ -2165,7 +2270,7 @@ BuildGroups:
             return Path.Combine(folder, "import-history.json");
         }
 
-        private void SaveConfig()
+        public void SaveConfig()
         {
             try
             {
@@ -2357,27 +2462,17 @@ BuildGroups:
             return Path.Combine(localRoot, trimmed.TrimStart('\\', '/'));
         }
 
-        // Command for onboarding overlay button
-        private void DismissOnboarding()
-        {
-            ShowOnboardingOverlay = false;
-            SaveConfig();
-        }
+        public bool IsFirstRun { get; set; } = true;
 
-        public bool ShowOnboardingOverlay
+        public void ShowOnboarding(Window owner, bool markNotFirstRun = true)
         {
-            get => IsFirstRun;
-            set
+            var dialog = new OnboardingDialog { Owner = owner };
+            if (dialog.ShowDialog() == true && markNotFirstRun)
             {
-                if (IsFirstRun != value)
-                {
-                    IsFirstRun = value;
-                    OnPropertyChanged(nameof(ShowOnboardingOverlay));
-                }
+                IsFirstRun = false;
+                SaveConfig();
             }
         }
-
-        public bool IsFirstRun { get; set; } = true;
     }
 
     public class FtpSourceItem

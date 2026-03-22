@@ -6,10 +6,20 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Blue" SecondaryColor="Blue" />
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Yellow" SecondaryColor="Yellow" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <SolidColorBrush x:Key="AppAccentBrush" Color="#FFEB3B" />
+            <!-- Accent and sidebar colors for dark/light -->
+            <SolidColorBrush x:Key="AppAccentBrush" Color="#FFEB3B" /> <!-- Yellow for dark -->
+            <SolidColorBrush x:Key="SidebarBackground" Color="#232323" />
+            <SolidColorBrush x:Key="SidebarTitle" Color="#FFFDEB" />
+            <SolidColorBrush x:Key="SidebarMenuItem" Color="#FFEB3B" />
+            <SolidColorBrush x:Key="SidebarVersion" Color="#888" />
+            <!-- Light theme overrides (to be toggled in code) -->
+            <SolidColorBrush x:Key="SidebarBackgroundLight" Color="#F5F5F5" />
+            <SolidColorBrush x:Key="SidebarTitleLight" Color="#222" />
+            <SolidColorBrush x:Key="SidebarMenuItemLight" Color="#2962FF" /> <!-- Cobalt blue for light -->
+            <SolidColorBrush x:Key="SidebarVersionLight" Color="#888" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
