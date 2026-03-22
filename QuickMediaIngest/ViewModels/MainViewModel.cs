@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Media;
 using System.Net;
@@ -48,6 +49,21 @@ namespace QuickMediaIngest.ViewModels
 
     public partial class MainViewModel : ObservableObject
     {
+        [RelayCommand]
+        private void OpenImportHistory()
+        {
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var w = new QuickMediaIngest.ImportHistoryWindow();
+                    w.Owner = Application.Current.MainWindow;
+                    w.DataContext = this;
+                    w.Show();
+                });
+            }
+            catch { }
+        }
         [ObservableProperty] private bool showSettingsDialog = false;
 
         [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = !ShowSettingsDialog;
@@ -70,6 +86,7 @@ namespace QuickMediaIngest.ViewModels
                 Options =
                 {
                     new SidebarOption { Label = "Start Import", Command = ImportCommand },
+                    new SidebarOption { Label = "Import History", Command = OpenImportHistoryCommand },
                     new SidebarOption { Label = "Select All", Command = SelectAllCommand },
                     new SidebarOption { Label = "Deselect All", Command = new RelayCommand(DeselectAllShoots) },
                 }
@@ -440,6 +457,79 @@ namespace QuickMediaIngest.ViewModels
         public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
         public ObservableCollection<ImportHistoryRecord> ImportHistoryRecords { get; } = new ObservableCollection<ImportHistoryRecord>();
+
+        [RelayCommand]
+        private void ClearImportHistory()
+        {
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() => ImportHistoryRecords.Clear());
+                string path = GetImportHistoryPath();
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch { }
+        }
+
+        [RelayCommand]
+        private void ExportImportHistory()
+        {
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var dlg = new Microsoft.Win32.SaveFileDialog()
+                    {
+                        Title = "Export Import History",
+                        Filter = "JSON files (*.json)|*.json|CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                        FileName = "import-history.json"
+                    };
+
+                    bool? result = dlg.ShowDialog();
+                    if (result == true && !string.IsNullOrEmpty(dlg.FileName))
+                    {
+                        string file = dlg.FileName;
+                        if (file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Export CSV with proper escaping and UTF8 encoding
+                            var sb = new StringBuilder();
+                            string EscapeCsv(string? s)
+                            {
+                                if (string.IsNullOrEmpty(s)) return string.Empty;
+                                if (s.Contains('"')) s = s.Replace("\"", "\"\"");
+                                if (s.Contains(',') || s.Contains('"') || s.Contains('\n') || s.Contains('\r'))
+                                    return $"\"{s}\"";
+                                return s;
+                            }
+
+                            sb.AppendLine("StartedAt,DurationSeconds,FilesSelected,FilesImported,FailedFiles,Source,Destination");
+                            foreach (var r in ImportHistoryRecords)
+                            {
+                                var fields = new[]
+                                {
+                                    EscapeCsv(r.StartedAtLocal.ToString("yyyy-MM-dd HH:mm:ss")),
+                                    EscapeCsv(r.DurationSeconds.ToString()),
+                                    EscapeCsv(r.FilesSelected.ToString()),
+                                    EscapeCsv(r.FilesImported.ToString()),
+                                    EscapeCsv(r.FailedFiles.ToString()),
+                                    EscapeCsv(r.Source ?? string.Empty),
+                                    EscapeCsv(r.Destination ?? string.Empty)
+                                };
+                                sb.AppendLine(string.Join(',', fields));
+                            }
+
+                            File.WriteAllText(file, sb.ToString(), Encoding.UTF8);
+                        }
+                        else
+                        {
+                            // Default: JSON
+                            string json = System.Text.Json.JsonSerializer.Serialize(ImportHistoryRecords.ToList(), new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                            File.WriteAllText(file, json);
+                        }
+                    }
+                });
+            }
+            catch { }
+        }
         public ObservableCollection<string> CommonFtpFolders { get; } = new ObservableCollection<string>
         {
             "/DCIM",
@@ -2500,6 +2590,73 @@ BuildGroups:
     public class TokenItem
     {
         public string Value { get; set; } = string.Empty;
+    }
+
+    public class TokenInsertPayload
+    {
+        public string Token { get; set; } = string.Empty;
+        public int Index { get; set; } = -1;
+        public bool FromSelected { get; set; } = false;
+    }
+
+    public partial class MainViewModel : ObservableObject
+    {
+        [RelayCommand]
+        private void RemoveToken(TokenItem? item)
+        {
+            if (item == null) return;
+            if (SelectedTokens.Contains(item))
+            {
+                SelectedTokens.Remove(item);
+                UpdateNamingFromTokens();
+
+                if (item.Value.StartsWith("[") && item.Value.EndsWith("]") && !AvailableTokens.Contains(item.Value))
+                {
+                    AvailableTokens.Add(item.Value);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void InsertToken(TokenInsertPayload? payload)
+        {
+            if (payload == null || string.IsNullOrEmpty(payload.Token)) return;
+
+            int insertIndex = payload.Index;
+            if (insertIndex < 0 || insertIndex > SelectedTokens.Count) insertIndex = SelectedTokens.Count;
+
+            if (payload.FromSelected)
+            {
+                int existingIndex = SelectedTokens.Select((item, index) => new { item, index })
+                    .FirstOrDefault(x => x.item.Value == payload.Token)?.index ?? -1;
+
+                if (existingIndex >= 0)
+                {
+                    var movingItem = SelectedTokens[existingIndex];
+                    SelectedTokens.RemoveAt(existingIndex);
+                    if (existingIndex < insertIndex) insertIndex--;
+                    if (insertIndex < 0) insertIndex = 0;
+                    if (insertIndex > SelectedTokens.Count) insertIndex = SelectedTokens.Count;
+                    SelectedTokens.Insert(insertIndex, movingItem);
+                    UpdateNamingFromTokens();
+                }
+                return;
+            }
+
+            // Prevent duplicate placeholders
+            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]") && SelectedTokens.Any(t => t.Value == payload.Token))
+            {
+                return;
+            }
+
+            SelectedTokens.Insert(insertIndex, new TokenItem { Value = payload.Token });
+            UpdateNamingFromTokens();
+
+            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]") && AvailableTokens.Contains(payload.Token))
+            {
+                AvailableTokens.Remove(payload.Token);
+            }
+        }
     }
 
     public class ImportHistoryRecord
