@@ -37,7 +37,7 @@ namespace QuickMediaIngest
                         File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n");
                 }
                 catch { }
-                MessageBox.Show($"A fatal error occurred:\n{e.Exception}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"A fatal error occurred:\n{e.Exception}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Handled = true;
             }
 
@@ -55,7 +55,7 @@ namespace QuickMediaIngest
                         File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n");
                 }
                 catch { }
-                MessageBox.Show($"A fatal error occurred:\n{e.ExceptionObject}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"A fatal error occurred:\n{e.ExceptionObject}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
         public static bool CurrentIsDarkTheme { get; private set; } = true;
         private ServiceProvider? _serviceProvider;
@@ -205,14 +205,23 @@ namespace QuickMediaIngest
                 theme.SetBaseTheme(useLightTheme ? Theme.Light : Theme.Dark);
 
                 // Dark mode uses classic yellow accents, light mode uses blue accents.
-                Color accentColor = (Color)ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
+                System.Windows.Media.Color accentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
                 theme.SetPrimaryColor(accentColor);
                 theme.SetSecondaryColor(accentColor);
 
                 paletteHelper.SetTheme(theme);
                 CurrentIsDarkTheme = !useLightTheme;
 
-                Current.Resources["AppAccentBrush"] = new SolidColorBrush(accentColor);
+                System.Windows.Application.Current.Resources["AppAccentBrush"] = new System.Windows.Media.SolidColorBrush(accentColor);
+                // Update menu brushes to ensure visibility when switching themes
+                System.Windows.Media.SolidColorBrush menuForeground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1A1A1A")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                System.Windows.Media.SolidColorBrush menuBackground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E1E1E"));
+                try
+                {
+                    System.Windows.Application.Current.Resources["MenuForegroundBrush"] = menuForeground;
+                    System.Windows.Application.Current.Resources["MenuBackgroundBrush"] = menuBackground;
+                }
+                catch { }
             }
             catch (Exception ex)
             {

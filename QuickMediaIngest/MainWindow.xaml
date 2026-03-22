@@ -95,12 +95,53 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="120" />
                             </Grid.ColumnDefinitions>
-                            <ListBox ItemsSource="{Binding SelectedTokens}" DisplayMemberPath="Value" Grid.Column="0" Height="140" />
+
+                            <!-- Selected tokens displayed as draggable token "bubbles" -->
+                            <Border Grid.Column="0" Padding="6" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="6" Background="{DynamicResource MaterialDesignPaper}">
+                                <ScrollViewer Height="140" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding SelectedTokens}" AllowDrop="True" Drop="Token_Drop" DragOver="Token_DragOver">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel IsItemsHost="True" Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="4" Padding="6,4" Background="#EEE" CornerRadius="16" PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown" PreviewMouseMove="Token_PreviewMouseMove">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Value}" Margin="0,0,8,0" />
+                                                        <Button Content="✕" Width="20" Height="20" Click="Token_DeleteClick" Style="{StaticResource MaterialDesignFlatButton}" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Controls column: keep up/down buttons for accessibility -->
                             <StackPanel Grid.Column="1" VerticalAlignment="Top">
                                 <Button Content="Move Up" Click="Settings_MoveTokenUp" Margin="0,0,0,6" Style="{StaticResource MaterialDesignOutlinedButton}" />
                                 <Button Content="Move Down" Click="Settings_MoveTokenDown" Style="{StaticResource MaterialDesignOutlinedButton}" />
                             </StackPanel>
                         </Grid>
+
+                        <!-- Available tokens (drag from here into selected tokens) -->
+                        <TextBlock Text="Available tokens:" FontSize="12" Margin="0,8,0,4" />
+                        <ItemsControl ItemsSource="{Binding AvailableTokens}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="4" Padding="6,4" Background="#F3F3F3" CornerRadius="12" PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown" PreviewMouseMove="Token_PreviewMouseMove">
+                                        <TextBlock Text="{Binding}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <TextBlock Text="Preview:" FontWeight="SemiBold" Margin="0,8,0,4" />
                         <TextBlock Text="{Binding NamingTemplate}" FontFamily="Consolas" Background="#F6F6F6" Padding="8" />
@@ -204,38 +245,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Quick Media Ingest" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource SidebarTitle}"/>
+                            <TextBlock Text="Quick Media Ingest" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource MenuForegroundBrush}"/>
                             <TextBlock Text="{Binding AppVersion, StringFormat='v{0}'}" FontSize="12" Foreground="{DynamicResource SidebarVersion}" Margin="0,4,0,0" />
                         </StackPanel>
-                        <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Width="68" Height="30" Margin="8,0,0,0" VerticalAlignment="Top" Checked="ThemeToggle_Checked" Unchecked="ThemeToggle_Unchecked">
-                            <ToggleButton.Template>
-                                <ControlTemplate TargetType="ToggleButton">
-                                    <Border CornerRadius="16" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Padding="4">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <materialDesign:PackIcon Grid.Column="0" Kind="WhiteBalanceSunny" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Gold" Width="16" Height="16"/>
-                                            <materialDesign:PackIcon Grid.Column="1" Kind="WeatherNight" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="LightGray" Width="16" Height="16"/>
-                                            <Ellipse x:Name="Thumb" Width="22" Height="22" Fill="White" Stroke="#DDD" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0,0,0" />
-                                        </Grid>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
-                                            <Setter Property="Background" Value="#333" />
-                                            <Setter Property="BorderBrush" Value="#444" />
-                                        </Trigger>
-                                        <Trigger Property="IsChecked" Value="False">
-                                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Left" />
-                                            <Setter Property="Background" Value="#EEE" />
-                                            <Setter Property="BorderBrush" Value="#DDD" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </ToggleButton.Template>
-                        </ToggleButton>
+                        <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Top" Style="{StaticResource PillToggleStyle}" Checked="PillToggle_Toggled" Unchecked="PillToggle_Toggled" />
                     </Grid>
                     <!-- Top-level About/Update button -->
                     <Button Content="About &amp; Updates" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="16,6,16,12"/>
@@ -261,7 +274,7 @@
                             <DataTemplate>
                                 <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Background="Transparent" BorderThickness="0" >
                                     <Expander.Header>
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15" Foreground="{DynamicResource SidebarMenuItem}"/>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15" Foreground="{DynamicResource MenuForegroundBrush}"/>
                                     </Expander.Header>
                                     <ItemsControl ItemsSource="{Binding Options}">
                                         <ItemsControl.ItemTemplate>
