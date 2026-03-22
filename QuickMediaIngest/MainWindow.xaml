@@ -11,6 +11,7 @@
     FontFamily="{materialDesign:MaterialDesignFont}"
     Background="{DynamicResource MaterialDesignPaper}"
     PreviewMouseWheel="Window_PreviewMouseWheel"
+    PreviewKeyDown="Window_PreviewKeyDown"
     SizeChanged="Window_SizeChanged"
     StateChanged="Window_StateChanged">
     <Window.InputBindings>
@@ -77,94 +78,33 @@
                 </Border>
             </Grid>
         </Grid>
-        <!-- Settings overlay -->
-        <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="910">
-            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Border Width="700" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <TextBlock Text="Save destination:" Width="120" VerticalAlignment="Center" />
-                            <TextBox Text="{Binding DestinationRoot, UpdateSourceTrigger=PropertyChanged}" Width="420" />
-                            <Button Content="Browse" Margin="8,0,0,0" Click="Settings_BrowseDestination" Style="{StaticResource MaterialDesignRaisedButton}" />
-                        </StackPanel>
+        <!-- Settings overlay (modal) -->
+        <Grid x:Name="SettingsOverlay" Grid.ColumnSpan="2" Background="#80000000" Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="910">
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center" 
+                    Background="{DynamicResource MaterialDesignPaper}" 
+                    CornerRadius="12" Padding="20" Width="500">
+                <StackPanel>
+                    <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
+                    
+                    <TextBlock Text="Save Destination" FontWeight="SemiBold"/>
+                    <DockPanel Margin="0,5,0,15">
+                        <Button x:Name="SettingsBrowseBtn" Content="Browse" DockPanel.Dock="Right" Click="Browse_Click"/>
+                        <TextBox x:Name="DestPathDisplay" Text="{Binding DestinationRoot, UpdateSourceTrigger=PropertyChanged}" />
+                    </DockPanel>
 
-                        <TextBlock Text="Naming scheme (reorder tokens):" FontWeight="SemiBold" Margin="0,8,0,6" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="120" />
-                            </Grid.ColumnDefinitions>
+                    <TextBlock Text="File Naming Scheme" FontWeight="SemiBold"/>
+                    <WrapPanel x:Name="NamingBubblesContainer" Margin="0,5">
+                    </WrapPanel>
+                    
+                    <TextBlock x:Name="NamingPreview" Text="Preview: 2026-03-22_MyShoot_001.jpg" 
+                               FontStyle="Italic" Opacity="0.7" Margin="0,5,0,15"/>
 
-                            <!-- Selected tokens displayed as draggable token "bubbles" -->
-                            <Border Grid.Column="0" Padding="6" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="6" Background="{DynamicResource MaterialDesignPaper}">
-                                <ScrollViewer Height="140" VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl ItemsSource="{Binding SelectedTokens}" AllowDrop="True" Drop="Token_Drop" DragOver="Token_DragOver">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel IsItemsHost="True" Orientation="Horizontal" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Margin="4" Padding="6,4" Background="#EEE" CornerRadius="16" PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown" PreviewMouseMove="Token_PreviewMouseMove">
-                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Value}" Margin="0,0,8,0" />
-                                                        <Button Content="✕" Width="20" Height="20" Click="Token_DeleteClick" Style="{StaticResource MaterialDesignFlatButton}" />
-                                                    </StackPanel>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-                            </Border>
+                    <TextBlock Text="Recent Imports (Last 7)" FontWeight="SemiBold"/>
+                    <ListBox x:Name="ImportHistoryList" ItemsSource="{Binding RecentImportHistory}" Height="120" Margin="0,5,0,15"/>
 
-                            <!-- Controls column: keep up/down buttons for accessibility -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                                <Button Content="Move Up" Click="Settings_MoveTokenUp" Margin="0,0,0,6" Style="{StaticResource MaterialDesignOutlinedButton}" />
-                                <Button Content="Move Down" Click="Settings_MoveTokenDown" Style="{StaticResource MaterialDesignOutlinedButton}" />
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- Available tokens (drag from here into selected tokens) -->
-                        <TextBlock Text="Available tokens:" FontSize="12" Margin="0,8,0,4" />
-                        <ItemsControl ItemsSource="{Binding AvailableTokens}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="4" Padding="6,4" Background="#F3F3F3" CornerRadius="12" PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown" PreviewMouseMove="Token_PreviewMouseMove">
-                                        <TextBlock Text="{Binding}" />
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <TextBlock Text="Preview:" FontWeight="SemiBold" Margin="0,8,0,4" />
-                        <TextBlock Text="{Binding NamingTemplate}" FontFamily="Consolas" Background="#F6F6F6" Padding="8" />
-
-                        <TextBlock Text="Recent imports:" FontWeight="SemiBold" Margin="0,12,0,6" />
-                        <ListBox ItemsSource="{Binding ImportHistoryRecords}" Height="120">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Timestamp, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="140" />
-                                        <TextBlock Text="{Binding FileName}" Width="420" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                            <Button Content="Save" Click="Settings_Save" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0" />
-                            <Button Content="Close" Click="Settings_Close" Style="{StaticResource MaterialDesignFlatButton}" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
+                    <Button Content="Close" HorizontalAlignment="Right" Width="80" Click="CloseSettings_Click"/>
+                </StackPanel>
+            </Border>
         </Grid>
         <Grid Grid.ColumnSpan="2" Background="#AA000000" Visibility="{Binding ShowScanProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
             <!-- ...existing Scan Progress dialog content... -->

@@ -651,6 +651,32 @@ namespace QuickMediaIngest
             catch { }
         }
 
+        private void Browse_Click(object sender, RoutedEventArgs e)
+        {
+            // Reuse existing explorer-fallback browse logic
+            Settings_BrowseDestination(sender, e);
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+            {
+                vm.ShowSettingsDialog = false;
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                if (DataContext is ViewModels.MainViewModel vm && vm.ShowSettingsDialog)
+                {
+                    vm.ShowSettingsDialog = false;
+                    e.Handled = true;
+                }
+            }
+        }
+
         private void Settings_MoveTokenUp(object sender, RoutedEventArgs e)
         {
             if (DataContext is MainViewModel vm && vm.SelectedTokens.Count > 0)

@@ -66,7 +66,9 @@ namespace QuickMediaIngest.ViewModels
         }
         [ObservableProperty] private bool showSettingsDialog = false;
 
-        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = !ShowSettingsDialog;
+        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = true;
+
+        public IEnumerable<ImportHistoryRecord> RecentImportHistory => ImportHistoryRecords.Take(7);
 
         // --- Sidebar and import progress fields ---
         private bool _isUpdatingSelectAll = false;
@@ -195,6 +197,7 @@ namespace QuickMediaIngest.ViewModels
             _logger = logger;
 
             InitializeSidebarSections();
+            ImportHistoryRecords.CollectionChanged += (s, e) => OnPropertyChanged(nameof(RecentImportHistory));
         }
 
         // Observable properties (must be at class scope, after constructor)
