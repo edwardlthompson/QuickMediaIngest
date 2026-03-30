@@ -39,7 +39,7 @@
 
     <Grid>
         <!-- Overlays (dialogs, notifications) -->
-        <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" Loaded="AddFtpOverlay_Loaded" Unloaded="AddFtpOverlay_Unloaded">
+        <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" Loaded="AddFtpOverlay_Loaded" Unloaded="AddFtpOverlay_Unloaded">
             <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border Width="560" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                     <StackPanel>
@@ -78,45 +78,18 @@
                 </Border>
             </Grid>
         </Grid>
-        <!-- Settings overlay (modal) -->
-        <Grid x:Name="SettingsOverlay" Grid.ColumnSpan="2" Background="#80000000" Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="910">
-            <Border VerticalAlignment="Center" HorizontalAlignment="Center" 
-                    Background="{DynamicResource MaterialDesignPaper}" 
-                    CornerRadius="12" Padding="20" Width="500">
-                <StackPanel>
-                    <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
-                    
-                    <TextBlock Text="Save Destination" FontWeight="SemiBold"/>
-                    <DockPanel Margin="0,5,0,15">
-                        <Button x:Name="SettingsBrowseBtn" Content="Browse" DockPanel.Dock="Right" Click="Browse_Click"/>
-                        <TextBox x:Name="DestPathDisplay" Text="{Binding DestinationRoot, UpdateSourceTrigger=PropertyChanged}" />
-                    </DockPanel>
-
-                    <TextBlock Text="File Naming Scheme" FontWeight="SemiBold"/>
-                    <WrapPanel x:Name="NamingBubblesContainer" Margin="0,5">
-                    </WrapPanel>
-                    
-                    <TextBlock x:Name="NamingPreview" Text="Preview: 2026-03-22_MyShoot_001.jpg" 
-                               FontStyle="Italic" Opacity="0.7" Margin="0,5,0,15"/>
-
-                    <TextBlock Text="Recent Imports (Last 7)" FontWeight="SemiBold"/>
-                    <ListBox x:Name="ImportHistoryList" ItemsSource="{Binding RecentImportHistory}" Height="120" Margin="0,5,0,15"/>
-
-                    <Button Content="Close" HorizontalAlignment="Right" Width="80" Click="CloseSettings_Click"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-        <Grid Grid.ColumnSpan="2" Background="#AA000000" Visibility="{Binding ShowScanProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
+        <!-- Settings overlay placeholder moved to end of root Grid (render on top) -->
+        <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowScanProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
             <!-- ...existing Scan Progress dialog content... -->
         </Grid>
-        <Grid Grid.ColumnSpan="2" Background="#AA000000" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
+        <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
             <!-- ...existing Import Progress dialog content... -->
         </Grid>
-        <Grid Grid.ColumnSpan="2" Background="#AA000000" Visibility="{Binding ShowSkippedFoldersDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
+        <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowSkippedFoldersDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
             <!-- ...existing Skipped Folders dialog content... -->
         </Grid>
         <!-- About dialog overlay (includes update checking) -->
-        <Grid Grid.ColumnSpan="2" Background="#DD000000" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="950">
+        <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="950">
             <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border Width="640" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                     <StackPanel>
@@ -153,18 +126,29 @@
                                 <TextBlock Text="{Binding UpdateDownloadEtaText}" />
                             </StackPanel>
                         </StackPanel>
+                        <Separator Margin="0,12,0,12" />
+                        <TextBlock Text="Diagnostics" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
+                            <Button Content="📂 Open Logs Folder" Click="OpenLogs_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
+                            <Button Content="🐛 Report a Bug" Click="ReportBug_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Version:" FontWeight="SemiBold" Width="80"/>
+                            <TextBlock Text="{Binding AppVersion}" Width="120"/>
+                            <TextBlock Text="Build Date:" FontWeight="SemiBold" Width="80"/>
+                            <TextBlock Text="{Binding BuildDate}" Width="120"/>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Open Crash Logs" Click="OpenCrashLogs_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
                             <Button Content="Close" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
         </Grid>
-        <Border Background="#4CAF50" Padding="6" CornerRadius="4" Margin="16,16,16,8" Visibility="{Binding ShowSuccessNotification, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="950">
+        <Border Background="{DynamicResource Theme.Success.Brush}" Padding="6" CornerRadius="4" Margin="16,16,16,8" Visibility="{Binding ShowSuccessNotification, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="950">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="White"/>
-                <TextBlock Text="Import successful! Files have been added to your destination folder." VerticalAlignment="Center" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Theme.TextPrimary.Brush}"/>
+                <TextBlock Text="Import successful! Files have been added to your destination folder." VerticalAlignment="Center" Foreground="{DynamicResource Theme.TextPrimary.Brush}" FontWeight="Bold" FontSize="12"/>
             </StackPanel>
         </Border>
 
@@ -198,7 +182,7 @@
                         <!-- Example tiles (replace with actual tiles as needed) -->
                     </StackPanel>
                     <!-- Sources list: drives, FTP entries, unified -->
-                    <ListBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" Margin="12,8,12,8" Height="160">
+                    <ListBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" Margin="12,8,12,8" Height="160" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Margin="4">
@@ -219,7 +203,8 @@
                                     <ItemsControl ItemsSource="{Binding Options}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Button Content="{Binding Label}" Command="{Binding Command}" Margin="8,2,0,2" Style="{StaticResource MaterialDesignFlatButton}"/>
+                                                <Button Content="{Binding Label}" Margin="8,2,0,2" Style="{StaticResource MaterialDesignFlatButton}"
+                                                    Click="SidebarMenuButton_Click"/>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -237,14 +222,45 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
+                <!-- Photo Viewer Toolbar -->
+                <Border Background="{DynamicResource MenuBackgroundBrush}" 
+                        BorderBrush="{DynamicResource MenuForegroundBrush}" 
+                        BorderThickness="0,0,0,1" Padding="10,5">
+                    <DockPanel LastChildFill="False">
+                        <CheckBox x:Name="SelectAllCheckBox" Content="Select All" 
+                                  VerticalAlignment="Center" Margin="0,0,20,0"
+                                  Checked="SelectAllCheckBox_Checked"/>
+                        <CheckBox x:Name="DeleteAfterImportCheckBox" Content="Delete After Import" 
+                                  VerticalAlignment="Center" Foreground="Red" FontWeight="SemiBold"
+                                  IsChecked="{Binding DeleteAfterImport, Mode=TwoWay}"
+                                  Checked="DeleteAfterImportCheckBox_Checked"/>
+                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Group by:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <Slider x:Name="HourIntervalSlider" Minimum="1" Maximum="24" Width="100" 
+                                    Value="{Binding GroupingHours, Mode=TwoWay}" SmallChange="1" IsSnapToTickEnabled="True"
+                                    ValueChanged="HourIntervalSlider_ValueChanged"/>
+                            <Border Background="{DynamicResource MenuForegroundBrush}" CornerRadius="4" Margin="5,0" Padding="5,2">
+                                <TextBlock Text="{Binding ElementName=HourIntervalSlider, Path=Value, StringFormat={}{0}h}" 
+                                           Foreground="{DynamicResource MenuBackgroundBrush}" FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="zoom_out_icon.png" Width="16" Height="16" Opacity="0.6"/>
+                                <Slider x:Name="ThumbnailZoomSlider" Minimum="50" Maximum="300" Width="120" 
+                                    Value="{Binding ThumbnailSize, Mode=TwoWay}" Margin="5,0"/>
+                            <Image Source="zoom_in_icon.png" Width="16" Height="16" Opacity="0.6"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
                 <!-- Grouped Import Items List -->
-                    <ListView ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" Margin="24,24,24,8" Name="GroupsListView">
+                    <ListView ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" Margin="24" Name="GroupsListView" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,8" Padding="12" Background="{DynamicResource MaterialDesignPaper}" CornerRadius="6" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="15"/>
-                                    <TextBlock Text="{Binding AlbumName}" FontSize="12" Foreground="#888"/>
+                                    <TextBlock Text="{Binding AlbumName}" FontSize="12" Foreground="{DynamicResource Theme.TextTertiary.Brush}"/>
                                     <TextBlock Text="{Binding StartDate, StringFormat='Start: {0:yyyy-MM-dd HH:mm}'}" FontSize="12"/>
                                     <TextBlock Text="{Binding EndDate, StringFormat='End: {0:yyyy-MM-dd HH:mm}'}" FontSize="12"/>
                                     <TextBlock Text="{Binding Items.Count, StringFormat='Files: {0}'}" FontSize="12"/>
@@ -272,6 +288,53 @@
                     </StackPanel>
                 </Border>
             </Grid>
+        <!-- Settings Overlay (inserted last so it renders above other content) -->
+        <Grid x:Name="SettingsOverlay" Visibility="Collapsed" Panel.ZIndex="995">
+            <Border Background="{DynamicResource Theme.Hover.Brush}" MouseDown="CloseSettings_Click"/>
+            
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center" 
+                    Background="{DynamicResource MenuBackgroundBrush}" 
+                    CornerRadius="15" Padding="25" Width="550"
+                    BorderBrush="{DynamicResource MenuForegroundBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Settings" FontSize="22" FontWeight="Bold" Margin="0,0,0,20" 
+                               Foreground="{DynamicResource MenuForegroundBrush}"/>
+                    
+                    <TextBlock Text="Save Destination" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <DockPanel Margin="0,0,0,20">
+                        <Button x:Name="SettingsBrowseBtn" Content="Browse" DockPanel.Dock="Right" 
+                                Padding="10,5" Click="Browse_Click"/>
+                        <TextBox x:Name="DestPathDisplay" IsReadOnly="True" Margin="0,0,10,0"
+                                 Text="{Binding DestinationRoot, Mode=TwoWay}"/>
+                    </DockPanel>
+
+                    <TextBlock Text="File Naming Scheme" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <ItemsControl x:Name="NamingBubblesItemsControl">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ToggleButton Content="Date" Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}" Margin="2" Click="NamingBubble_Click"/>
+                        <ToggleButton Content="Time" IsChecked="True" Margin="2" Click="NamingBubble_Click"/>
+                        <ToggleButton Content="Shoot Name" Margin="2" Click="NamingBubble_Click"/>
+                        <ToggleButton Content="Sequence" IsChecked="True" Margin="2" Click="NamingBubble_Click"/>
+                    </ItemsControl>
+                    
+                    <Border Background="{DynamicResource Theme.Hover.Brush}" CornerRadius="5" Padding="10" Margin="0,10,0,20">
+                        <TextBlock x:Name="NamingPreview" Text="Preview: 2026-03-29_001.jpg" 
+                                   HorizontalAlignment="Center" FontWeight="Light"/>
+                    </Border>
+
+                    <TextBlock Text="Last 7 Imports" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <ListBox x:Name="ImportHistoryList" Height="100" Margin="0,0,0,20" 
+                             ItemsSource="{Binding RecentImportHistory}"/>
+
+                        <Button Content="Save &amp; Close" HorizontalAlignment="Right" 
+                            Width="120" Click="CloseSettings_Click" IsDefault="True"/>
+                </StackPanel>
+            </Border>
+        </Grid>
         </Grid>
     </Grid>
 </Window>

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.Net.Http;
 using System.IO;
@@ -16,47 +17,70 @@ namespace QuickMediaIngest
 {
     public partial class App : System.Windows.Application
     {
+
         public App()
         {
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         }
 
-            private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-            {
-                try
-                {
-                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
-                        string logsDir = Path.Combine(baseDir, "Logs");
-                        Directory.CreateDirectory(logsDir);
-                        string fatalPath = Path.Combine(baseDir, "fatal.log");
-                        File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
-                        // Also write a timestamped crash file for easier collection
-                        string crashFile = Path.Combine(logsDir, $"crash-ui-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n");
-                }
-                catch { }
-                System.Windows.MessageBox.Show($"A fatal error occurred:\n{e.Exception}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                e.Handled = true;
-            }
 
-            private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            System.Threading.Tasks.Task.Run(() =>
             {
                 try
                 {
-                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
-                        string logsDir = Path.Combine(baseDir, "Logs");
-                        Directory.CreateDirectory(logsDir);
-                        string fatalPath = Path.Combine(baseDir, "fatal.log");
-                        File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
-                        string crashFile = Path.Combine(logsDir, $"crash-domain-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n");
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                    string logsDir = Path.Combine(baseDir, "logs");
+                    Directory.CreateDirectory(logsDir);
+                    string fatalPath = Path.Combine(baseDir, "fatal.log");
+                    File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
+                    string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    string configDump = TryGetAppConfigDump();
+                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n\nAppConfig:\n{configDump}\n");
                 }
                 catch { }
-                System.Windows.MessageBox.Show($"A fatal error occurred:\n{e.ExceptionObject}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            });
+            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
+        }
+
+
+        private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
+        {
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                    string logsDir = Path.Combine(baseDir, "logs");
+                    Directory.CreateDirectory(logsDir);
+                    string fatalPath = Path.Combine(baseDir, "fatal.log");
+                    File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
+                    string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    string configDump = TryGetAppConfigDump();
+                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n\nAppConfig:\n{configDump}\n");
                 }
+                catch { }
+            });
+            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private static string TryGetAppConfigDump()
+        {
+            try
+            {
+                // Try to get the current AppConfig state from the ViewModel or static config
+                // (This is a placeholder; replace with actual config serialization if available)
+                return File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
+                    ? File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
+                    : "(No config file found)";
+            }
+            catch { return "(Failed to read AppConfig)"; }
+        }
         public static bool CurrentIsDarkTheme { get; private set; } = true;
         private ServiceProvider? _serviceProvider;
         private static ILogger<App>? _logger;
@@ -68,11 +92,19 @@ namespace QuickMediaIngest
             _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
             _logger.LogInformation("Application startup initiated.");
 
+            // Health check: detect previous crash
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string baseDir = Path.Combine(appData, "QuickMediaIngest");
+            string runMarker = Path.Combine(baseDir, "last_run.tmp");
+            string logsDir = Path.Combine(baseDir, "logs");
+            bool crashed = File.Exists(runMarker);
+            // Mark this run as started
+            try { Directory.CreateDirectory(baseDir); File.WriteAllText(runMarker, DateTime.Now.ToString("O")); } catch { }
+
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
 
             // Allow forcing a controlled test crash by creating a file named 'qmi_force_crash.txt' in the temp folder.
-            // Useful for verifying the unhandled-exception logging behavior during manual tests.
             try
             {
                 string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
@@ -91,7 +123,6 @@ namespace QuickMediaIngest
 
             if (mainWindow.DataContext is MainViewModel vm)
             {
-                // Complete startup work while splash is visible.
                 await vm.InitializeAsync();
                 mainWindow.ApplyWindowStateFromViewModel();
             }
@@ -100,10 +131,35 @@ namespace QuickMediaIngest
             mainWindow.Show();
             splash.Close();
             _logger.LogInformation("Application startup completed.");
+
+            // If previous run crashed, prompt user
+            if (crashed)
+            {
+                string logMsg = "It looks like the app closed unexpectedly last time. Would you like to view the error log?";
+                if (MessageBox.Show(logMsg, "Crash Detected", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        string logPath = logsDir;
+                        if (!Directory.Exists(logPath)) Directory.CreateDirectory(logPath);
+                        Process.Start(new ProcessStartInfo("explorer.exe", logPath) { UseShellExecute = true });
+                    }
+                    catch { }
+                }
+            }
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // Remove run marker to indicate clean exit
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                string runMarker = Path.Combine(baseDir, "last_run.tmp");
+                if (File.Exists(runMarker)) File.Delete(runMarker);
+            }
+            catch { }
             _serviceProvider?.Dispose();
             base.OnExit(e);
         }

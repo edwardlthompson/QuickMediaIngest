@@ -45,7 +45,7 @@ namespace QuickMediaIngest.Core
         /// <param name="destinationRoot">Root directory for output.</param>
         /// <param name="namingTemplate">Naming template for output files.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken)
+        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken, bool deleteAfterImport = false)
         {
             if (group == null || group.Items.Count == 0) return;
 
@@ -89,13 +89,35 @@ namespace QuickMediaIngest.Core
                     await _provider.CopyAsync(item.SourcePath, destPath, ct);
                     success = true;
                     _logger.LogInformation("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
+
+                    // If delete-after-import is enabled, verify hash and size before deleting
+                    if (deleteAfterImport && success && File.Exists(destPath))
+                    {
+                        try
+                        {
+                            var srcInfo = new FileInfo(item.SourcePath);
+                            var destInfo = new FileInfo(destPath);
+                            if (srcInfo.Length == destInfo.Length && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath))
+                            {
+                                await _provider.DeleteAsync(item.SourcePath, ct);
+                                _logger.LogInformation("Deleted source file {SourcePath} after successful import and verification.", item.SourcePath);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Source and destination file mismatch (hash or size) for {FileName}. Skipping delete.", item.FileName);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", item.SourcePath);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     errorMessage = ex.Message;
                     _logger.LogError(ex, "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.", item.FileName, item.SourcePath, destPath);
                 }
-
                 ItemProcessed?.Invoke(new IngestProgressInfo
                 {
                     GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
@@ -107,10 +129,19 @@ namespace QuickMediaIngest.Core
                     Success = success,
                     ErrorMessage = errorMessage
                 });
-            });
+            }); // End of Parallel.ForEachAsync
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
             _logger.LogInformation("Completed ingest for group {GroupTitle}.", group.Title);
+        }
+
+        // Computes SHA256 hash of a file
+        private static string ComputeSHA256(string filePath)
+        {
+            using var stream = File.OpenRead(filePath);
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var hash = sha.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
 
         private string GetTargetFolderName(ItemGroup group)
