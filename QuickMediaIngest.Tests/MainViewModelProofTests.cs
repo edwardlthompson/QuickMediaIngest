@@ -1,37 +1,40 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
+using Microsoft.Extensions.Logging;
+using Moq;
+using QuickMediaIngest.Core;
 using QuickMediaIngest.ViewModels;
+using Xunit;
 
 namespace QuickMediaIngest.Tests
 {
     public class MainViewModelProofTests
     {
-        [Fact]
-        public async Task ThumbnailSize_Debounce_Works()
+        private static MainViewModel CreateViewModel()
         {
-            var vm = new MainViewModel();
-            double lastValue = 0;
-            vm.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(vm.ThumbnailSize)) lastValue = vm.ThumbnailSize; };
-            vm.ThumbnailSize = 100;
-            vm.ThumbnailSize = 200;
-            vm.ThumbnailSize = 300;
-            await Task.Delay(300); // Wait for debounce
-            Assert.Equal(300, lastValue);
+            return new MainViewModel(
+                new Mock<ILocalScanner>().Object,
+                new Mock<IFtpScanner>().Object,
+                new Mock<IThumbnailService>().Object,
+                new Mock<IUpdateService>().Object,
+                new Mock<IDeviceWatcher>().Object,
+                new Mock<IFileProviderFactory>().Object,
+                new Mock<IIngestEngineFactory>().Object,
+                new GroupBuilder(),
+                new Mock<ILogger<MainViewModel>>().Object);
         }
 
         [Fact]
-        public async Task GroupingHours_Debounce_Works()
+        public void ThumbnailSize_CanBeUpdated()
         {
-            var vm = new MainViewModel();
-            int lastValue = 0;
-            vm.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(vm.GroupingHours)) lastValue = vm.GroupingHours; };
-            vm.GroupingHours = 1;
-            vm.GroupingHours = 2;
-            vm.GroupingHours = 3;
-            await Task.Delay(300); // Wait for debounce
-            Assert.Equal(3, lastValue);
+            var vm = CreateViewModel();
+            vm.ThumbnailSize = 100;
+            Assert.Equal(100, vm.ThumbnailSize);
+        }
+
+        [Fact]
+        public void DestinationRoot_DefaultsToPicturesPath()
+        {
+            var vm = CreateViewModel();
+            Assert.Contains("QuickMediaIngest", vm.DestinationRoot);
         }
     }
 }

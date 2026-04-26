@@ -79,7 +79,7 @@ namespace QuickMediaIngest.Core
                 string status = $"Copying {item.FileName} ({itemIndex}/{total})";
                 ProgressChanged?.Invoke((itemIndex * 100) / total, status);
 
-                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title);
+                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title, itemIndex);
                 string destPath = Path.Combine(targetDir, destFileName);
                 bool success = false;
                 string errorMessage = string.Empty;
@@ -166,7 +166,7 @@ namespace QuickMediaIngest.Core
         /// <param name="template">The naming template.</param>
         /// <param name="shootName">The group/shoot name.</param>
         /// <returns>The resolved file name.</returns>
-        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName)
+        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName, int sequenceNumber = 1)
         {
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;
@@ -180,14 +180,17 @@ namespace QuickMediaIngest.Core
                         // Replace Tokens
             outputName = outputName.Replace("[Date]", item.DateTaken.ToString("yyyy-MM-dd"));
             outputName = outputName.Replace("[Time]", item.DateTaken.ToString("HH-mm-ss"));
+            outputName = outputName.Replace("[TimeMs]", item.DateTaken.ToString("HH-mm-ss-fff"));
             outputName = outputName.Replace("[YYYY]", item.DateTaken.ToString("yyyy"));
             outputName = outputName.Replace("[MM]", item.DateTaken.ToString("MM"));
             outputName = outputName.Replace("[DD]", item.DateTaken.ToString("dd"));
             outputName = outputName.Replace("[HH]", item.DateTaken.ToString("HH"));
             outputName = outputName.Replace("[mm]", item.DateTaken.ToString("mm"));
             outputName = outputName.Replace("[ss]", item.DateTaken.ToString("ss"));
+            outputName = outputName.Replace("[fff]", item.DateTaken.ToString("fff"));
             outputName = outputName.Replace("[ShootName]", safeShootName);
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
+            outputName = outputName.Replace("[Sequence]", sequenceNumber.ToString("D4"));
             outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
 
             string destFileName = $"{outputName}{ext}";

@@ -92,12 +92,10 @@ namespace QuickMediaIngest
             _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
             _logger.LogInformation("Application startup initiated.");
 
-            // Health check: detect previous crash
+            // Run marker for clean shutdown (marker removed on normal exit)
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string baseDir = Path.Combine(appData, "QuickMediaIngest");
             string runMarker = Path.Combine(baseDir, "last_run.tmp");
-            string logsDir = Path.Combine(baseDir, "logs");
-            bool crashed = File.Exists(runMarker);
             // Mark this run as started
             try { Directory.CreateDirectory(baseDir); File.WriteAllText(runMarker, DateTime.Now.ToString("O")); } catch { }
 
@@ -131,22 +129,6 @@ namespace QuickMediaIngest
             mainWindow.Show();
             splash.Close();
             _logger.LogInformation("Application startup completed.");
-
-            // If previous run crashed, prompt user
-            if (crashed)
-            {
-                string logMsg = "It looks like the app closed unexpectedly last time. Would you like to view the error log?";
-                if (MessageBox.Show(logMsg, "Crash Detected", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        string logPath = logsDir;
-                        if (!Directory.Exists(logPath)) Directory.CreateDirectory(logPath);
-                        Process.Start(new ProcessStartInfo("explorer.exe", logPath) { UseShellExecute = true });
-                    }
-                    catch { }
-                }
-            }
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -278,10 +260,89 @@ namespace QuickMediaIngest
                     System.Windows.Application.Current.Resources["MenuBackgroundBrush"] = menuBackground;
                 }
                 catch { }
+
+                ApplyChromePalette(useLightTheme);
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error applying theme.");
+            }
+        }
+
+        /// <summary>
+        /// Updates sidebar and Theme.* palette so chrome inverts with light/dark mode
+        /// (MaterialDesign paper alone does not drive SidebarBackground or custom Theme keys).
+        /// </summary>
+        private static void ApplyChromePalette(bool useLightTheme)
+        {
+            if (Application.Current == null)
+            {
+                return;
+            }
+
+            var res = Application.Current.Resources;
+
+            static void SetBrushColor(ResourceDictionary rd, string key, System.Windows.Media.Color c)
+            {
+                if (rd[key] is SolidColorBrush existing && !existing.IsFrozen)
+                {
+                    existing.Color = c;
+                }
+                else
+                {
+                    rd[key] = new SolidColorBrush(c);
+                }
+            }
+
+            static void SetThemeColor(ResourceDictionary rd, string key, System.Windows.Media.Color c)
+            {
+                rd[key] = c;
+            }
+
+            if (useLightTheme)
+            {
+                // Sidebar: slightly darker than main paper so layout reads clearly
+                SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#E8EAED"));
+                SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#5F6368"));
+
+                SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                SetThemeColor(res, "Theme.BarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                SetThemeColor(res, "Theme.CardBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FAFAFA"));
+                SetThemeColor(res, "Theme.TextPrimary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#212121"));
+                SetThemeColor(res, "Theme.TextSecondary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#424242"));
+                SetThemeColor(res, "Theme.TextTertiary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#5F6368"));
+                SetThemeColor(res, "Theme.Accent", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#0078D4"));
+                SetThemeColor(res, "Theme.AccentLight", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#42A5F5"));
+                SetThemeColor(res, "Theme.Divider", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#BDBDBD"));
+                SetThemeColor(res, "Theme.Hover", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#EEEEEE"));
+                SetThemeColor(res, "Theme.Border", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#CCCCCC"));
+                SetThemeColor(res, "Theme.Success", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#4CAF50"));
+                SetThemeColor(res, "Theme.Warning", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFA500"));
+                SetThemeColor(res, "Theme.Error", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F44336"));
+                SetThemeColor(res, "Theme.ExcelYellow", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFD700"));
+            }
+            else
+            {
+                SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#232323"));
+                SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#9E9E9E"));
+
+                SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1E1E1E"));
+                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
+                SetThemeColor(res, "Theme.BarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
+                SetThemeColor(res, "Theme.CardBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#252526"));
+                SetThemeColor(res, "Theme.TextPrimary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                SetThemeColor(res, "Theme.TextSecondary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#E0E0E0"));
+                SetThemeColor(res, "Theme.TextTertiary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#B0BEC5"));
+                SetThemeColor(res, "Theme.Accent", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#007ACC"));
+                SetThemeColor(res, "Theme.AccentLight", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1084D7"));
+                SetThemeColor(res, "Theme.Divider", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3F3F46"));
+                SetThemeColor(res, "Theme.Hover", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3E3E42"));
+                SetThemeColor(res, "Theme.Border", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3F3F46"));
+                SetThemeColor(res, "Theme.Success", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#4CAF50"));
+                SetThemeColor(res, "Theme.Warning", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFA500"));
+                SetThemeColor(res, "Theme.Error", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F44336"));
+                SetThemeColor(res, "Theme.ExcelYellow", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFEB3B"));
             }
         }
     }

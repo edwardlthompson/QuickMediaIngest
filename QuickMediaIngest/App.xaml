@@ -8,6 +8,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Yellow" SecondaryColor="Yellow" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <!-- App Theme.* colors + brushes (updated at runtime when switching light/dark) -->
+                <ResourceDictionary Source="/Themes/Brushes.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <!-- Accent and sidebar colors for dark/light -->
             <SolidColorBrush x:Key="AppAccentBrush" Color="#FFEB3B" /> <!-- Yellow for dark -->
@@ -31,15 +33,27 @@
             <Style TargetType="MenuItem">
                 <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
             </Style>
+            <Style TargetType="ContextMenu">
+                <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+            </Style>
+            <Style TargetType="ToolTip">
+                <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+            </Style>
             <!-- Pill toggle brushes and style -->
-            <SolidColorBrush x:Key="PillToggleOnBrush" Color="{DynamicResource Theme.Accent}" />
-            <SolidColorBrush x:Key="PillToggleOffBrush" Color="{DynamicResource Theme.AccentLight}" />
+            <SolidColorBrush x:Key="PillToggleOnBrush" Color="#FF263238" />
+            <SolidColorBrush x:Key="PillToggleOffBrush" Color="#FFF4C542" />
             <SolidColorBrush x:Key="PillToggleThumbBrush" Color="White" />
             <SolidColorBrush x:Key="PillToggleThumbStroke" Color="#DDDDDD" />
+            <SolidColorBrush x:Key="PillToggleGlowBrush" Color="#55FFEB3B" />
 
             <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
-                <Setter Property="Width" Value="68" />
+                <Setter Property="Width" Value="62" />
                 <Setter Property="Height" Value="30" />
+                <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Background" Value="{StaticResource PillToggleOffBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource PillToggleOffBrush}" />
                 <Setter Property="Template">
@@ -47,17 +61,17 @@
                         <ControlTemplate TargetType="ToggleButton">
                             <Border x:Name="Bd" CornerRadius="16" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Padding="4">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <materialDesign:PackIcon x:Name="SunIcon" Grid.Column="0" Kind="WhiteBalanceSunny" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Gold" Width="16" Height="16" Opacity="1" />
-                                    <materialDesign:PackIcon x:Name="MoonIcon" Grid.Column="1" Kind="WeatherNight" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="LightGray" Width="16" Height="16" Opacity="0.55" />
-                                    <Ellipse x:Name="Thumb" Width="22" Height="22" Fill="{StaticResource PillToggleThumbBrush}" Stroke="{StaticResource PillToggleThumbStroke}" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform x:Name="ThumbTransform" X="0" />
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
+                                    <Border x:Name="Thumb" Width="22" Height="22" CornerRadius="11"
+                                            Background="{StaticResource PillToggleThumbBrush}" BorderBrush="{StaticResource PillToggleThumbStroke}"
+                                            BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <Border.RenderTransform>
+                                            <TranslateTransform x:Name="ThumbMoveTransform" X="0" />
+                                        </Border.RenderTransform>
+                                        <materialDesign:PackIcon x:Name="ThemeGlyph" Kind="WeatherNight" Width="12" Height="12"
+                                                                 Foreground="#FF546E7A" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Ellipse x:Name="Glow" Width="18" Height="18" Fill="{StaticResource PillToggleGlowBrush}" Opacity="0"
+                                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -65,27 +79,32 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ThumbTransform" Storyboard.TargetProperty="X" To="38" Duration="0:0:0.16" />
+                                                <DoubleAnimation Storyboard.TargetName="ThumbMoveTransform" Storyboard.TargetProperty="X" To="30" Duration="0:0:0.16" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
                                     <Setter TargetName="Bd" Property="Background" Value="{StaticResource PillToggleOnBrush}" />
                                     <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PillToggleOnBrush}" />
-                                    <Setter TargetName="SunIcon" Property="Opacity" Value="0.5" />
-                                    <Setter TargetName="MoonIcon" Property="Opacity" Value="1" />
+                                    <Setter TargetName="ThemeGlyph" Property="Kind" Value="WeatherNight" />
+                                    <Setter TargetName="ThemeGlyph" Property="Foreground" Value="#FF546E7A" />
+                                    <Setter TargetName="Glow" Property="Opacity" Value="0.35" />
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ThumbTransform" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.16" />
+                                                <DoubleAnimation Storyboard.TargetName="ThumbMoveTransform" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.16" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
                                     <Setter TargetName="Bd" Property="Background" Value="{StaticResource PillToggleOffBrush}" />
                                     <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PillToggleOffBrush}" />
-                                    <Setter TargetName="SunIcon" Property="Opacity" Value="1" />
-                                    <Setter TargetName="MoonIcon" Property="Opacity" Value="0.55" />
+                                    <Setter TargetName="ThemeGlyph" Property="Kind" Value="WhiteBalanceSunny" />
+                                    <Setter TargetName="ThemeGlyph" Property="Foreground" Value="#FFE09A00" />
+                                    <Setter TargetName="Glow" Property="Opacity" Value="0" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.95" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

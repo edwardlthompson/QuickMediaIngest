@@ -60,6 +60,23 @@ namespace QuickMediaIngest.Core.Models
             set { _isSelected = value; OnPropertyChanged(); } 
         }
 
+        private bool _isPreviewVisible = true;
+        public bool IsPreviewVisible
+        {
+            get => _isPreviewVisible;
+            set { _isPreviewVisible = value; OnPropertyChanged(); }
+        }
+
+        private string _previewLabel = string.Empty;
+        public string PreviewLabel
+        {
+            get => string.IsNullOrWhiteSpace(_previewLabel) ? FileName : _previewLabel;
+            set { _previewLabel = value; OnPropertyChanged(); }
+        }
+
+        public string StackKey { get; set; } = string.Empty;
+        public bool IsStackRepresentative { get; set; } = true;
+
         private object? _thumbnail;
         /// <summary>
         /// The thumbnail image for the item (UI-bound).
