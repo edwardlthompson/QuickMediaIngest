@@ -12,9 +12,8 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <Resource Include="QuickMediaIngest.ico" />
-    <Content Include="Assets\icon.svg">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="Assets\AppIcon.png" />
+    <None Include="Assets\AppIcon.source.png" />
     <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />

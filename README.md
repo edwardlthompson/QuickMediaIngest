@@ -1,4 +1,8 @@
-# ⚡ Quick Media Ingest
+<p align="center">
+  <img src="QuickMediaIngest/Assets/AppIcon.png" alt="Quick Media Ingest icon" width="160" height="160">
+</p>
+
+<h1 align="center">⚡ Quick Media Ingest</h1>
 
 **Quick Media Ingest** is a lightning-fast, open-source media importer built for photographers and videographers. It is designed to rapidly ingest photos and videos from SD cards, local drives, and **Android FTP Servers** into structured, customized folder hierarchies.
 
