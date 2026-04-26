@@ -9,3 +9,4 @@
 - Ingest options: add duplicate handling policies (`Suffix`, `Skip`, `OverwriteIfNewer`) and verification modes (`Fast`, `Strict`)
 - Naming reliability: improve millisecond handling via EXIF subsecond parsing and non-zero fallback when metadata precision is second-level
 - UX/settings: add stack compare toggle, preset save/load, and top-bar filtering controls
+- Updates: switch to external updater handoff that waits for app exit before applying MSI/EXE updates, preventing in-use install failures
