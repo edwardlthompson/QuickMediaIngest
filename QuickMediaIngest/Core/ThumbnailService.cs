@@ -69,7 +69,8 @@ namespace QuickMediaIngest.Core
                 catch { }
             }
 
-            // 1b. For RAW/DNG, ask the Windows shell first (usually uses embedded preview).
+            // 1b. For RAW/DNG, ask the Windows shell preview first (more consistent
+            // than thumbnail-only for many camera codecs).
             if (thumb == null && isRaw)
             {
                 // Best-practice fallback: if companion rendered file exists (JPG/HEIC),
@@ -93,11 +94,11 @@ namespace QuickMediaIngest.Core
 
                 try
                 {
-                    thumb = TryGetShellThumbnail(filePath, 320);
+                    thumb = TryGetShellImage(filePath, 512, thumbnailOnly: false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "RAW shell thumbnail extraction failed for {FilePath}.", filePath);
+                    _logger.LogDebug(ex, "RAW shell preview extraction failed for {FilePath}.", filePath);
                 }
             }
 
@@ -123,7 +124,7 @@ namespace QuickMediaIngest.Core
             {
                 try
                 {
-                    thumb = TryGetShellThumbnail(filePath, isRaw ? 320 : 240);
+                    thumb = TryGetShellImage(filePath, isRaw ? 512 : 240, thumbnailOnly: true);
                 }
                 catch (Exception ex)
                 {
@@ -190,7 +191,7 @@ namespace QuickMediaIngest.Core
         private static string GetCacheKey(string filePath)
         {
             // Use SourcePath + LastWriteTime as cache key for uniqueness
-            const string cacheVersion = "thumb-v3";
+            const string cacheVersion = "thumb-v4";
             string input = cacheVersion + "|" + filePath + "|" + File.GetLastWriteTimeUtc(filePath).Ticks.ToString();
             using (var sha1 = System.Security.Cryptography.SHA1.Create())
             {
@@ -364,7 +365,7 @@ namespace QuickMediaIngest.Core
             return bitmap;
         }
 
-        private static BitmapSource? TryGetShellThumbnail(string filePath, int size)
+        private static BitmapSource? TryGetShellImage(string filePath, int size, bool thumbnailOnly)
         {
             Guid shellItemImageFactoryGuid = new("BCC18B79-BA16-442F-80C4-8A59C30C463B");
             SHCreateItemFromParsingName(filePath, IntPtr.Zero, ref shellItemImageFactoryGuid, out IShellItemImageFactory imageFactory);
@@ -372,13 +373,25 @@ namespace QuickMediaIngest.Core
             IntPtr hBitmap = IntPtr.Zero;
             try
             {
-                imageFactory.GetImage(new NativeSize(size, size), ShellItemImageFactoryFlags.BiggerSizeOk | ShellItemImageFactoryFlags.ThumbnailOnly, out hBitmap);
+                ShellItemImageFactoryFlags flags = ShellItemImageFactoryFlags.BiggerSizeOk;
+                if (thumbnailOnly)
+                {
+                    flags |= ShellItemImageFactoryFlags.ThumbnailOnly;
+                }
+
+                imageFactory.GetImage(new NativeSize(size, size), flags, out hBitmap);
                 if (hBitmap == IntPtr.Zero)
                 {
                     return null;
                 }
 
-                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromWidthAndHeight(size, size));
+                // Keep the shell-provided bitmap dimensions/aspect ratio.
+                // Forcing square dimensions here can distort RAW previews.
+                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
+                    hBitmap,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
                 bitmapSource.Freeze();
                 return bitmapSource;
             }
