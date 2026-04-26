@@ -26,8 +26,10 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **🧷 Duplicate + Verification Policies**: Choose duplicate handling (`Suffix`, `Skip`, `OverwriteIfNewer`) and verification mode (`Fast` size-check or `Strict` hash verification).
 * **🎛️ Presets + Live Filters**: Save/load workflow presets and filter preview surfaces by keyword/type while reviewing.
 * **💾 Persistent App State**: Remembers theme, settings menu expansion, window size/position/state, thumbnail zoom, naming options, and FTP reconnect preferences.
+* **🧾 Build Metadata in About**: About dialog surfaces app version and build date from the deployed executable.
+* **📝 In-App Changelog + Release Links**: About dialog includes one-click access to GitHub changelog and release pages.
 * **🌐 FTP Reconnect on Startup**: Attempts non-blocking reconnect to the last FTP source and reports unobtrusively if unavailable.
-* **⬆️ Flexible Updates**: In-app updater supports both **Portable (.exe)** and **Installer (.msi)** channels with selectable check intervals and explicit selected-asset status.
+* **⬆️ Flexible Updates**: In-app updater supports both **Portable (.exe)** and **Installer (.msi)** channels with selectable check intervals, explicit selected-asset status, and restart-safe external handoff to avoid in-use install failures.
 
 ## 🛠️ Usage
 
