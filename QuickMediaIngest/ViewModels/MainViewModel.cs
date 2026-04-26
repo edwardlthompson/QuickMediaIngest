@@ -562,10 +562,29 @@ namespace QuickMediaIngest.ViewModels
             {
                 try
                 {
+                    string? processPath = Environment.ProcessPath;
+                    if (!string.IsNullOrWhiteSpace(processPath) && File.Exists(processPath))
+                    {
+                        return File.GetLastWriteTime(processPath).ToString("yyyy-MM-dd HH:mm");
+                    }
+
                     string assemblyPath = typeof(MainViewModel).Assembly.Location;
                     if (!string.IsNullOrWhiteSpace(assemblyPath) && File.Exists(assemblyPath))
                     {
                         return File.GetLastWriteTime(assemblyPath).ToString("yyyy-MM-dd HH:mm");
+                    }
+
+                    string baseDir = AppContext.BaseDirectory;
+                    if (!string.IsNullOrWhiteSpace(baseDir) && Directory.Exists(baseDir))
+                    {
+                        string[] candidates = Directory.GetFiles(baseDir, "QuickMediaIngest*.exe");
+                        string? newest = candidates
+                            .OrderByDescending(File.GetLastWriteTimeUtc)
+                            .FirstOrDefault();
+                        if (!string.IsNullOrWhiteSpace(newest) && File.Exists(newest))
+                        {
+                            return File.GetLastWriteTime(newest).ToString("yyyy-MM-dd HH:mm");
+                        }
                     }
                 }
                 catch

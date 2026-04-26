@@ -12,3 +12,4 @@
 - Updates: switch to external updater handoff that waits for app exit before applying MSI/EXE updates, preventing in-use install failures
 - About dialog: add reliable build date display from assembly timestamp and direct links to changelog/release pages
 - FTP video previews: improve thumbnail extraction reliability with longer video download timeout and shell preview fallback for codec-specific videos
+- Build metadata: resolve `BuildDate` from running process path (single-file publish safe) with assembly/base-directory fallbacks to avoid `Unknown` in deployed builds
