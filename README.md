@@ -9,28 +9,43 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 
 ## 🚀 Key Features
 
-* **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with automatic hash verification to ensure data integrity and avoid duplicates.
-* **📂 Unified Scanner (Local & FTP)**: Selecting a source (SD/local/FTP) automatically scans and groups media.
-* **🧭 Unified Source (SD + FTP)**: A dedicated `Unified` sidebar source can merge all available SD/local and saved FTP sources into one grouped import view.
-* **🖼️ Auto Preview Loading**: Thumbnails are loaded automatically during scan (including FTP) with no manual preview pass required.
-* **🚀 Faster SD Preview Pipeline**: Local preview loading now prioritizes embedded EXIF thumbnails and uses bounded parallel thumbnail generation for much faster SD-card ingest preparation.
-* **📷 RAW/Modern Format Support**: Includes DNG, HEIC/HEIF, CR2/CR3, NEF, ARW, RAF, ORF, RW2, SRW plus common photo/video types.
-* **🧠 Shell Thumbnail Fallback**: Uses Windows Shell extraction as a last resort for codec-backed formats.
-* **🛡️ Smart Whitelisting (Persistent IDs)**: Mark specific paths (e.g., `/DCIM`) per device to avoid scanning WhatsApp or system folders. Uses `.importer-id` files in the root for persistent identification.
-* **🔄 Conflict Handling**: Automatically appends sequential numerics (`_01`, `_02`) if collisions occur.
-* **🧹 Dynamic Organizing**: Group items into structured albums with adjustable times and user formats (e.g., `YYYY-MM-DD-HH-MM-SS+Album`).
-* **🧩 Draggable Ribbon Tiles**: Reorder Import controls via drag handle; order persists across launches.
-* **🔎 Persistent Zoom**: Thumbnail zoom level is saved and restored between runs.
-* **🪟 Remembered Window State**: The app restores window size and maximized state between launches.
-* **⬆️ Flexible Updates**: In-app updater supports **Portable (.exe)** and **Installer (.msi)** channels with selectable check interval.
+* **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with hash/size verification and safe collision suffixing.
+* **📂 Unified Scanner (Local + FTP)**: Select SD/local/FTP directly, or use `Unified (SD + FTP)` to merge all active sources into one timeline.
+* **🔄 One-Click Source Refresh**: Top-bar `Refresh` performs a full rescan and can force thumbnail cache rebuild when refreshing sources.
+* **🧭 Verbose Scan Progress Overlay**: Real-time folder/file progress with current folder, per-folder counts, total counts, and scan phase details.
+* **🖼️ Auto Preview Loading**: Local, FTP, and Unified previews load automatically during scan without a separate manual preview pass.
+* **📷 RAW-Friendly Preview Strategy**: RAW files prefer companion rendered previews (`.jpg/.jpeg/.heic/.heif`) when available for visual parity; shell fallback remains for codec-backed formats.
+* **🗂️ Preview Stacks**: RAW+rendered pairs can be shown as a single visible preview tile in the shoot grid while preserving import selection behavior.
+* **🎚️ Adjustable Preview Throughput**: Thumbnail Performance modes `Low`, `Balanced`, `Max`, and `Ultra` tune local and FTP thumbnail worker counts.
+* **🧹 Dynamic Shoot Grouping**: Grouping by adjustable time gap (hours) with fast regrouping from cached scan data.
+* **📝 Shoot-Level Editing**: Rename shoot titles inline and use shoot name tokens in filename templates.
+* **🧠 Advanced Filename Templates**: Date/time (including milliseconds), sequence token support, separator controls, lowercase option, and live preview examples.
+* **🔐 Delete-After-Import Safety**: Warning prompt appears once, remembers acknowledgement/cancel, and persists state.
+* **💾 Persistent App State**: Remembers theme, settings menu expansion, window size/position/state, thumbnail zoom, naming options, and FTP reconnect preferences.
+* **🌐 FTP Reconnect on Startup**: Attempts non-blocking reconnect to the last FTP source and reports unobtrusively if unavailable.
+* **⬆️ Flexible Updates**: In-app updater supports both **Portable (.exe)** and **Installer (.msi)** channels with selectable check intervals and explicit selected-asset status.
 
 ## 🛠️ Usage
 
-1. **Insert Device**: Plug in your SD card or connect your Phone's FTP.
-2. **Select Source**: Click your SD/local/FTP source, or choose `Unified` to merge them; scan starts automatically.
-3. **Select Shoots**: Use checkboxes or All/None to pick what you want.
-4. **Import**: Click `Import` and monitor overall + per-shoot progress.
-5. **Review Refresh**: After import, the source list refreshes automatically so deleted/new files are reflected.
+1. **Connect Sources**: Insert SD/local media and/or add an FTP source.
+2. **Pick View**: Select a single source or `Unified (SD + FTP)` for a merged import surface.
+3. **Scan + Preview**: Watch detailed scan progress while shoots and previews populate automatically.
+4. **Review Shoots**: Rename shoots, review source folders/date ranges, and select shoots/items.
+5. **Import**: Use the top-bar `Import` button and monitor overall + per-group progress.
+6. **Refresh When Needed**: Use top-bar `Refresh` to force full source/preview refresh and cache rebuild.
+
+---
+
+## ⚙️ Settings Surface
+
+The sidebar `Settings` expander includes:
+
+* **Preferences**
+* **Add FTP Source**
+* **Import History**
+* **About & Updates**
+
+Preferences currently include destination path, naming template controls, and thumbnail performance mode.
 
 ---
 

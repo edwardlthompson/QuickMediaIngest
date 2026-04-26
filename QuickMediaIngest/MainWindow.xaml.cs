@@ -8,6 +8,13 @@ using DragEventArgs = System.Windows.DragEventArgs;
 using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
+using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
+using DataObject = System.Windows.DataObject;
+using DragDropEffects = System.Windows.DragDropEffects;
+using Color = System.Windows.Media.Color;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 using System.Windows.Data;
 using System.Globalization;
 using System.Windows.Controls;
@@ -31,7 +38,6 @@ namespace QuickMediaIngest
         private bool _isRibbonTileDragInProgress;
         private Border? _activeRibbonDraggedTile;
         private int _activeRibbonPreviewIndex = -1;
-
         public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger)
         {
             InitializeComponent();
@@ -92,9 +98,19 @@ namespace QuickMediaIngest
 
             Width = vm.SavedWindowWidth;
             Height = vm.SavedWindowHeight;
+            if (vm.SavedWindowLeft.HasValue && vm.SavedWindowTop.HasValue)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = vm.SavedWindowLeft.Value;
+                Top = vm.SavedWindowTop.Value;
+            }
             if (vm.SavedWindowMaximized)
             {
                 WindowState = WindowState.Maximized;
+            }
+            else
+            {
+                WindowState = WindowState.Normal;
             }
         }
 
@@ -151,7 +167,7 @@ namespace QuickMediaIngest
             }
 
                 if (WindowState == WindowState.Normal && DataContext is MainViewModel vmSize)
-                    vmSize.SaveWindowState(Width, Height, false);
+                    vmSize.SaveWindowState(Width, Height, false, Left, Top);
 
             _ribbonLayoutRefreshQueued = true;
             Dispatcher.BeginInvoke(new Action(() =>
@@ -168,15 +184,31 @@ namespace QuickMediaIngest
             _ribbonTileDragStartPoint = e.GetPosition(this);
         }
 
-            private void Window_StateChanged(object sender, EventArgs e)
-            {
-                if (DataContext is not MainViewModel vm) return;
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            if (DataContext is not MainViewModel vm) return;
 
-                if (WindowState == WindowState.Maximized)
-                    vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
-                else if (WindowState == WindowState.Normal)
-                    vm.SaveWindowState(Width, Height, false);
+            if (WindowState == WindowState.Maximized)
+                vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
+            else if (WindowState == WindowState.Normal)
+                vm.SaveWindowState(Width, Height, false, Left, Top);
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm)
+            {
+                return;
             }
+            if (WindowState == WindowState.Maximized)
+            {
+                vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
+            }
+            else
+            {
+                vm.SaveWindowState(Width, Height, false, Left, Top);
+            }
+        }
 
         private void RibbonTileHandle_PreviewMouseMove(object sender, MouseEventArgs e)
         {
@@ -198,13 +230,13 @@ namespace QuickMediaIngest
                 return;
             }
 
-            var data = new DataObject(RibbonTileDragFormat, tile);
+            var data = new System.Windows.DataObject(RibbonTileDragFormat, tile);
 
             try
             {
                 _isRibbonTileDragInProgress = true;
                 _activeRibbonDraggedTile = tile;
-                DragDrop.DoDragDrop(tile, data, DragDropEffects.Move);
+                System.Windows.DragDrop.DoDragDrop(tile, data, System.Windows.DragDropEffects.Move);
             }
             finally
             {
@@ -219,12 +251,12 @@ namespace QuickMediaIngest
         {
             if (!e.Data.GetDataPresent(RibbonTileDragFormat) || RibbonTilePanel == null)
             {
-                e.Effects = DragDropEffects.None;
+                e.Effects = System.Windows.DragDropEffects.None;
                 e.Handled = true;
                 return;
             }
 
-            e.Effects = DragDropEffects.Move;
+            e.Effects = System.Windows.DragDropEffects.Move;
 
             if (e.Data.GetData(RibbonTileDragFormat) is Border draggedTile)
             {
@@ -480,12 +512,12 @@ namespace QuickMediaIngest
 
             bool fromSelected = element.DataContext is TokenItem;
             var payload = new TokenDragPayload(tokenValue, fromSelected);
-            var data = new DataObject(TokenDragFormat, payload);
+            var data = new System.Windows.DataObject(TokenDragFormat, payload);
 
             try
             {
                 _isTokenDragInProgress = true;
-                DragDrop.DoDragDrop(element, data, DragDropEffects.Move | DragDropEffects.Copy);
+                System.Windows.DragDrop.DoDragDrop(element, data, System.Windows.DragDropEffects.Move | System.Windows.DragDropEffects.Copy);
             }
             finally
             {
@@ -495,7 +527,7 @@ namespace QuickMediaIngest
 
         private void Token_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(TokenDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Effects = e.Data.GetDataPresent(TokenDragFormat) ? System.Windows.DragDropEffects.Move : System.Windows.DragDropEffects.None;
             e.Handled = true;
         }
 
@@ -512,45 +544,20 @@ namespace QuickMediaIngest
             {
                 return;
             }
-
             int insertIndex = GetTokenInsertIndex(vm, e.OriginalSource as DependencyObject);
             if (insertIndex < 0 || insertIndex > vm.SelectedTokens.Count)
-            {
                 insertIndex = vm.SelectedTokens.Count;
-            }
 
-            if (payload.FromSelected)
+            // Call ViewModel command to handle insertion/move
+            var payloadType = Type.GetType("QuickMediaIngest.ViewModels.TokenInsertPayload, QuickMediaIngest");
+            if (payloadType != null)
             {
-                int existingIndex = vm.SelectedTokens
-                    .Select((item, index) => new { item, index })
-                    .FirstOrDefault(x => x.item.Value == payload.Token)?.index ?? -1;
-
-                if (existingIndex >= 0)
-                {
-                    var movingItem = vm.SelectedTokens[existingIndex];
-                    vm.SelectedTokens.RemoveAt(existingIndex);
-                    if (existingIndex < insertIndex) insertIndex--;
-                    if (insertIndex < 0) insertIndex = 0;
-                    if (insertIndex > vm.SelectedTokens.Count) insertIndex = vm.SelectedTokens.Count;
-                    vm.SelectedTokens.Insert(insertIndex, movingItem);
-                    vm.UpdateNamingFromTokens();
-                }
-                return;
-            }
-
-            // Token placeholders are single-use and should not be duplicated.
-            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]") &&
-                vm.SelectedTokens.Any(t => t.Value == payload.Token))
-            {
-                return;
-            }
-
-            vm.SelectedTokens.Insert(insertIndex, new TokenItem { Value = payload.Token });
-            vm.UpdateNamingFromTokens();
-
-            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]"))
-            {
-                vm.AvailableTokens.Remove(payload.Token);
+                var insertPayload = Activator.CreateInstance(payloadType);
+                payloadType.GetProperty("Token")?.SetValue(insertPayload, payload.Token);
+                payloadType.GetProperty("Index")?.SetValue(insertPayload, insertIndex);
+                payloadType.GetProperty("FromSelected")?.SetValue(insertPayload, payload.FromSelected);
+                if (vm.InsertTokenCommand.CanExecute(insertPayload))
+                    vm.InsertTokenCommand.Execute(insertPayload);
             }
         }
 
@@ -578,19 +585,14 @@ namespace QuickMediaIngest
             var item = element?.DataContext as TokenItem;
             if (item != null && DataContext is MainViewModel vm)
             {
-                vm.SelectedTokens.Remove(item);
-                vm.UpdateNamingFromTokens();
-
-                if (item.Value.StartsWith("[") && item.Value.EndsWith("]") && !vm.AvailableTokens.Contains(item.Value))
-                {
-                    vm.AvailableTokens.Add(item.Value);
-                }
+                if (vm.RemoveTokenCommand.CanExecute(item))
+                    vm.RemoveTokenCommand.Execute(item);
             }
         }
 
         private void TextBox_SelectAll(object sender, RoutedEventArgs e)
         {
-            if (sender is TextBox textBox)
+            if (sender is System.Windows.Controls.TextBox textBox)
             {
                 textBox.Dispatcher.BeginInvoke(new Action(textBox.SelectAll), DispatcherPriority.Input);
             }
@@ -598,7 +600,7 @@ namespace QuickMediaIngest
 
         private void TextBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is not TextBox textBox)
+            if (sender is not System.Windows.Controls.TextBox textBox)
             {
                 return;
             }
@@ -619,16 +621,20 @@ namespace QuickMediaIngest
             }
         }
 
-        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
+        private void PillToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            // Checked == Dark mode
-            App.ApplyTheme(false); // false => use dark (ApplyTheme param is useLightTheme)
-        }
+            // IsChecked == dark UI (matches App.CurrentIsDarkTheme)
+            bool isDark = ThemeToggle?.IsChecked ?? false;
 
-        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            // Unchecked == Light mode
-            App.ApplyTheme(true);
+            // Persist and apply theme through the viewmodel so SaveConfig() is invoked
+            if (DataContext is MainViewModel vm)
+            {
+                vm.IsDarkTheme = isDark;
+            }
+            else
+            {
+                App.ApplyTheme(!isDark);
+            }
         }
 
         private void Settings_BrowseDestination(object sender, RoutedEventArgs e)
@@ -637,12 +643,60 @@ namespace QuickMediaIngest
             {
                 if (DataContext is MainViewModel vm)
                 {
-                    string initial = vm.DestinationRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-                    Process.Start(new ProcessStartInfo("explorer.exe", initial) { UseShellExecute = true });
-                    MessageBox.Show("Folder picker is unavailable in this build. Explorer opened — navigate to the folder and paste its path into the Destination field.", "Select Folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                    string initial = vm.DestinationRoot;
+                    if (string.IsNullOrWhiteSpace(initial) || !Directory.Exists(initial))
+                    {
+                        initial = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                    }
+
+                    try
+                    {
+                        var dialog = new Microsoft.Win32.OpenFolderDialog
+                        {
+                            InitialDirectory = initial,
+                            Title = "Select destination folder"
+                        };
+
+                        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
+                        {
+                            vm.DestinationRoot = dialog.FolderName;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback for environments where OpenFolderDialog is not available.
+                        Process.Start(new ProcessStartInfo("explorer.exe", initial) { UseShellExecute = true });
+                        System.Windows.MessageBox.Show("Could not open the folder picker. Explorer was opened instead.", "Select Folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
             }
             catch { }
+        }
+
+        private void Browse_Click(object sender, RoutedEventArgs e)
+        {
+            // Reuse existing explorer-fallback browse logic
+            Settings_BrowseDestination(sender, e);
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+            {
+                vm.ShowSettingsDialog = false;
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                if (DataContext is ViewModels.MainViewModel vm && vm.ShowSettingsDialog)
+                {
+                    vm.ShowSettingsDialog = false;
+                    e.Handled = true;
+                }
+            }
         }
 
         private void Settings_MoveTokenUp(object sender, RoutedEventArgs e)
@@ -713,7 +767,7 @@ namespace QuickMediaIngest
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to open crash logs folder.");
-                MessageBox.Show("Unable to open crash logs folder." + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show("Unable to open crash logs folder." + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -732,6 +786,78 @@ namespace QuickMediaIngest
                 if (result != null) return result;
             }
             return null;
+        }
+
+        private void OpenLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string logPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "QuickMediaIngest",
+                    "logs");
+                if (!Directory.Exists(logPath))
+                {
+                    Directory.CreateDirectory(logPath);
+                }
+                Process.Start(new ProcessStartInfo("explorer.exe", logPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to open logs folder.");
+            }
+        }
+
+        private void ReportBug_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/edwardlthompson/QuickMediaIngest/issues")
+                {
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to open bug report URL.");
+            }
+        }
+
+        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            var method = DataContext?.GetType().GetMethod("SelectAllVisible", Type.EmptyTypes);
+            method?.Invoke(DataContext, null);
+        }
+
+        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var method = DataContext?.GetType().GetMethod("DeselectAllVisible", Type.EmptyTypes);
+            method?.Invoke(DataContext, null);
+        }
+
+        private void DeleteAfterImportCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm)
+            {
+                return;
+            }
+            if (vm.DeleteAfterImportPromptDismissed)
+            {
+                return;
+            }
+
+            var result = MessageBox.Show(
+                "Warning: This will permanently remove files from the source after successful copy.",
+                "Delete After Import",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            vm.DeleteAfterImportPromptDismissed = true;
+
+            if (result != MessageBoxResult.OK && sender is CheckBox checkBox)
+            {
+                checkBox.IsChecked = false;
+            }
         }
 
         private sealed record TokenDragPayload(string Token, bool FromSelected);

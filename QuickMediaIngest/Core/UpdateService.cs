@@ -38,18 +38,35 @@ namespace QuickMediaIngest.Core
                 
                 string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
                 
-                // Find the preferred asset based on package type selection
-                string targetExt = packageType == "Installer" ? ".msi" : ".exe";
+                // Find the preferred asset based on package type selection.
+                // Portable should prioritize the standalone .exe, Installer should use .msi.
+                string targetName = packageType == "Installer" ? "QuickMediaIngest.msi" : "QuickMediaIngest.exe";
+                string fallbackExt = packageType == "Installer" ? ".msi" : ".exe";
                 string downloadUrl = string.Empty;
                 if (doc.RootElement.TryGetProperty("assets", out var assets))
                 {
+                    // First pass: exact asset match.
                     foreach (var asset in assets.EnumerateArray())
                     {
                         string name = asset.GetProperty("name").GetString() ?? "";
-                        if (name.EndsWith(targetExt, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(name, targetName, StringComparison.OrdinalIgnoreCase))
                         {
                             downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
                             break;
+                        }
+                    }
+
+                    // Second pass: extension fallback for non-standard asset names.
+                    if (string.IsNullOrEmpty(downloadUrl))
+                    {
+                        foreach (var asset in assets.EnumerateArray())
+                        {
+                            string name = asset.GetProperty("name").GetString() ?? "";
+                            if (name.EndsWith(fallbackExt, StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
+                                break;
+                            }
                         }
                     }
                 }

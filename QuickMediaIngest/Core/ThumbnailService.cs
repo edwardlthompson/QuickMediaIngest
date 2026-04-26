@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 // Removed MetadataExtractor using to avoid ambiguous 'Directory' symbol
 
@@ -14,6 +15,10 @@ namespace QuickMediaIngest.Core
     public class ThumbnailService : IThumbnailService
     {
         private readonly ILogger<ThumbnailService> _logger;
+        private static readonly string[] RawExtensions =
+        {
+            ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
+        };
 
         public ThumbnailService(ILogger<ThumbnailService> logger)
         {
@@ -23,6 +28,8 @@ namespace QuickMediaIngest.Core
         public BitmapSource? GetThumbnail(string filePath)
         {
             if (!File.Exists(filePath)) return null;
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            bool isRaw = RawExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
 
             string cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "Thumbnails");
             System.IO.Directory.CreateDirectory(cacheDir);
@@ -51,16 +58,51 @@ namespace QuickMediaIngest.Core
 
             BitmapSource? thumb = null;
 
-            // 1. Embedded EXIF JPEG thumbnail — fastest path.
-            try
+            // 1. Embedded EXIF JPEG thumbnail — fastest path for JPEG images.
+            if (ext == ".jpg" || ext == ".jpeg")
             {
-                var exifThumb = TryGetExifThumbnail(filePath);
-                if (exifThumb != null) thumb = exifThumb;
+                try
+                {
+                    var exifThumb = TryGetExifThumbnail(filePath);
+                    if (exifThumb != null) thumb = exifThumb;
+                }
+                catch { }
             }
-            catch { }
 
-            // 2. Native WPF decoder
-            if (thumb == null)
+            // 1b. For RAW/DNG, ask the Windows shell first (usually uses embedded preview).
+            if (thumb == null && isRaw)
+            {
+                // Best-practice fallback: if companion rendered file exists (JPG/HEIC),
+                // use it for thumbnail parity with camera output.
+                if (TryGetSiblingRenderedPath(filePath, out string siblingRenderedPath))
+                {
+                    try
+                    {
+                        thumb = GetThumbnail(siblingRenderedPath);
+                    }
+                    catch
+                    {
+                        // Continue to shell-based RAW thumbnail if sibling lookup fails.
+                    }
+                }
+
+                if (thumb != null)
+                {
+                    return thumb;
+                }
+
+                try
+                {
+                    thumb = TryGetShellThumbnail(filePath, 320);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "RAW shell thumbnail extraction failed for {FilePath}.", filePath);
+                }
+            }
+
+            // 2. Native WPF decoder (skip RAW to avoid distorted mosaic frames)
+            if (thumb == null && !isRaw)
             {
                 try
                 {
@@ -69,7 +111,7 @@ namespace QuickMediaIngest.Core
                         var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
                         if (decoder.Frames.Count > 0)
                         {
-                            thumb = CreateResizedThumbnail(decoder.Frames[0]);
+                            thumb = CreateResizedThumbnail(decoder.Frames[0], isRaw ? 320 : 240);
                         }
                     }
                 }
@@ -81,7 +123,7 @@ namespace QuickMediaIngest.Core
             {
                 try
                 {
-                    thumb = TryGetShellThumbnail(filePath, 160);
+                    thumb = TryGetShellThumbnail(filePath, isRaw ? 320 : 240);
                 }
                 catch (Exception ex)
                 {
@@ -107,10 +149,49 @@ namespace QuickMediaIngest.Core
             return thumb;
         }
 
+        private static bool TryGetSiblingRenderedPath(string rawPath, out string siblingPath)
+        {
+            siblingPath = string.Empty;
+            try
+            {
+                string basePath = Path.Combine(
+                    Path.GetDirectoryName(rawPath) ?? string.Empty,
+                    Path.GetFileNameWithoutExtension(rawPath));
+
+                string[] candidates =
+                {
+                    basePath + ".jpg",
+                    basePath + ".jpeg",
+                    basePath + ".heic",
+                    basePath + ".heif",
+                    basePath + ".JPG",
+                    basePath + ".JPEG",
+                    basePath + ".HEIC",
+                    basePath + ".HEIF"
+                };
+
+                foreach (string candidate in candidates)
+                {
+                    if (File.Exists(candidate))
+                    {
+                        siblingPath = candidate;
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore sibling matching errors.
+            }
+
+            return false;
+        }
+
         private static string GetCacheKey(string filePath)
         {
             // Use SourcePath + LastWriteTime as cache key for uniqueness
-            string input = filePath + File.GetLastWriteTimeUtc(filePath).Ticks.ToString();
+            const string cacheVersion = "thumb-v3";
+            string input = cacheVersion + "|" + filePath + "|" + File.GetLastWriteTimeUtc(filePath).Ticks.ToString();
             using (var sha1 = System.Security.Cryptography.SHA1.Create())
             {
                 byte[] hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
@@ -264,11 +345,11 @@ namespace QuickMediaIngest.Core
             return BitConverter.ToUInt32(data, 0);
         }
 
-        private BitmapImage CreateResizedThumbnail(BitmapFrame frame)
+        private BitmapImage CreateResizedThumbnail(BitmapFrame frame, int decodePixelWidth)
         {
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
-            bitmap.DecodePixelWidth = 120; // Match Card widths well
+            bitmap.DecodePixelWidth = Math.Max(120, decodePixelWidth);
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             
             var memoryStream = new MemoryStream();

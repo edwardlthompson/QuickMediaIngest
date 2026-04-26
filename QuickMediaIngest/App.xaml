@@ -8,6 +8,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Yellow" SecondaryColor="Yellow" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <!-- App Theme.* colors + brushes (updated at runtime when switching light/dark) -->
+                <ResourceDictionary Source="/Themes/Brushes.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <!-- Accent and sidebar colors for dark/light -->
             <SolidColorBrush x:Key="AppAccentBrush" Color="#FFEB3B" /> <!-- Yellow for dark -->
@@ -20,6 +22,95 @@
             <SolidColorBrush x:Key="SidebarTitleLight" Color="#222" />
             <SolidColorBrush x:Key="SidebarMenuItemLight" Color="#2962FF" /> <!-- Cobalt blue for light -->
             <SolidColorBrush x:Key="SidebarVersionLight" Color="#888" />
+            <!-- Menu foreground/background (used to avoid ghost text when switching themes) -->
+            <SolidColorBrush x:Key="MenuForegroundBrush" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#FFFFFF" />
+            <!-- Implicit styles so Menu and MenuItem use the dynamic brushes by default -->
+            <Style TargetType="Menu">
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+                <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+            </Style>
+            <Style TargetType="MenuItem">
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+            </Style>
+            <Style TargetType="ContextMenu">
+                <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+            </Style>
+            <Style TargetType="ToolTip">
+                <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+            </Style>
+            <!-- Pill toggle brushes and style -->
+            <SolidColorBrush x:Key="PillToggleOnBrush" Color="#FF263238" />
+            <SolidColorBrush x:Key="PillToggleOffBrush" Color="#FFF4C542" />
+            <SolidColorBrush x:Key="PillToggleThumbBrush" Color="White" />
+            <SolidColorBrush x:Key="PillToggleThumbStroke" Color="#DDDDDD" />
+            <SolidColorBrush x:Key="PillToggleGlowBrush" Color="#55FFEB3B" />
+
+            <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
+                <Setter Property="Width" Value="62" />
+                <Setter Property="Height" Value="30" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Background" Value="{StaticResource PillToggleOffBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource PillToggleOffBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Bd" CornerRadius="16" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Padding="4">
+                                <Grid>
+                                    <Border x:Name="Thumb" Width="22" Height="22" CornerRadius="11"
+                                            Background="{StaticResource PillToggleThumbBrush}" BorderBrush="{StaticResource PillToggleThumbStroke}"
+                                            BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <Border.RenderTransform>
+                                            <TranslateTransform x:Name="ThumbMoveTransform" X="0" />
+                                        </Border.RenderTransform>
+                                        <materialDesign:PackIcon x:Name="ThemeGlyph" Kind="WeatherNight" Width="12" Height="12"
+                                                                 Foreground="#FF546E7A" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Ellipse x:Name="Glow" Width="18" Height="18" Fill="{StaticResource PillToggleGlowBrush}" Opacity="0"
+                                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ThumbMoveTransform" Storyboard.TargetProperty="X" To="30" Duration="0:0:0.16" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource PillToggleOnBrush}" />
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PillToggleOnBrush}" />
+                                    <Setter TargetName="ThemeGlyph" Property="Kind" Value="WeatherNight" />
+                                    <Setter TargetName="ThemeGlyph" Property="Foreground" Value="#FF546E7A" />
+                                    <Setter TargetName="Glow" Property="Opacity" Value="0.35" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ThumbMoveTransform" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.16" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource PillToggleOffBrush}" />
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PillToggleOffBrush}" />
+                                    <Setter TargetName="ThemeGlyph" Property="Kind" Value="WhiteBalanceSunny" />
+                                    <Setter TargetName="ThemeGlyph" Property="Foreground" Value="#FFE09A00" />
+                                    <Setter TargetName="Glow" Property="Opacity" Value="0" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.95" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

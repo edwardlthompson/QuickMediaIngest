@@ -45,7 +45,7 @@ namespace QuickMediaIngest.Core
         /// <param name="destinationRoot">Root directory for output.</param>
         /// <param name="namingTemplate">Naming template for output files.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken)
+        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken, bool deleteAfterImport = false)
         {
             if (group == null || group.Items.Count == 0) return;
 
@@ -79,7 +79,7 @@ namespace QuickMediaIngest.Core
                 string status = $"Copying {item.FileName} ({itemIndex}/{total})";
                 ProgressChanged?.Invoke((itemIndex * 100) / total, status);
 
-                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title);
+                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title, itemIndex);
                 string destPath = Path.Combine(targetDir, destFileName);
                 bool success = false;
                 string errorMessage = string.Empty;
@@ -89,13 +89,35 @@ namespace QuickMediaIngest.Core
                     await _provider.CopyAsync(item.SourcePath, destPath, ct);
                     success = true;
                     _logger.LogInformation("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
+
+                    // If delete-after-import is enabled, verify hash and size before deleting
+                    if (deleteAfterImport && success && File.Exists(destPath))
+                    {
+                        try
+                        {
+                            var srcInfo = new FileInfo(item.SourcePath);
+                            var destInfo = new FileInfo(destPath);
+                            if (srcInfo.Length == destInfo.Length && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath))
+                            {
+                                await _provider.DeleteAsync(item.SourcePath, ct);
+                                _logger.LogInformation("Deleted source file {SourcePath} after successful import and verification.", item.SourcePath);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Source and destination file mismatch (hash or size) for {FileName}. Skipping delete.", item.FileName);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", item.SourcePath);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     errorMessage = ex.Message;
                     _logger.LogError(ex, "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.", item.FileName, item.SourcePath, destPath);
                 }
-
                 ItemProcessed?.Invoke(new IngestProgressInfo
                 {
                     GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
@@ -107,10 +129,19 @@ namespace QuickMediaIngest.Core
                     Success = success,
                     ErrorMessage = errorMessage
                 });
-            });
+            }); // End of Parallel.ForEachAsync
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
             _logger.LogInformation("Completed ingest for group {GroupTitle}.", group.Title);
+        }
+
+        // Computes SHA256 hash of a file
+        private static string ComputeSHA256(string filePath)
+        {
+            using var stream = File.OpenRead(filePath);
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var hash = sha.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
 
         private string GetTargetFolderName(ItemGroup group)
@@ -135,7 +166,7 @@ namespace QuickMediaIngest.Core
         /// <param name="template">The naming template.</param>
         /// <param name="shootName">The group/shoot name.</param>
         /// <returns>The resolved file name.</returns>
-        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName)
+        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName, int sequenceNumber = 1)
         {
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;
@@ -149,14 +180,17 @@ namespace QuickMediaIngest.Core
                         // Replace Tokens
             outputName = outputName.Replace("[Date]", item.DateTaken.ToString("yyyy-MM-dd"));
             outputName = outputName.Replace("[Time]", item.DateTaken.ToString("HH-mm-ss"));
+            outputName = outputName.Replace("[TimeMs]", item.DateTaken.ToString("HH-mm-ss-fff"));
             outputName = outputName.Replace("[YYYY]", item.DateTaken.ToString("yyyy"));
             outputName = outputName.Replace("[MM]", item.DateTaken.ToString("MM"));
             outputName = outputName.Replace("[DD]", item.DateTaken.ToString("dd"));
             outputName = outputName.Replace("[HH]", item.DateTaken.ToString("HH"));
             outputName = outputName.Replace("[mm]", item.DateTaken.ToString("mm"));
             outputName = outputName.Replace("[ss]", item.DateTaken.ToString("ss"));
+            outputName = outputName.Replace("[fff]", item.DateTaken.ToString("fff"));
             outputName = outputName.Replace("[ShootName]", safeShootName);
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
+            outputName = outputName.Replace("[Sequence]", sequenceNumber.ToString("D4"));
             outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
 
             string destFileName = $"{outputName}{ext}";

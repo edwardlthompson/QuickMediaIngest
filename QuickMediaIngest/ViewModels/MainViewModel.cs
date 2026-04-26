@@ -66,7 +66,9 @@ namespace QuickMediaIngest.ViewModels
         }
         [ObservableProperty] private bool showSettingsDialog = false;
 
-        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = !ShowSettingsDialog;
+        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = true;
+
+        public IEnumerable<ImportHistoryRecord> RecentImportHistory => ImportHistoryRecords.Take(7);
 
         // --- Sidebar and import progress fields ---
         private bool _isUpdatingSelectAll = false;
@@ -98,18 +100,9 @@ namespace QuickMediaIngest.ViewModels
                 {
                     new SidebarOption { Label = "Add FTP Source", Command = ToggleAddFtpCommand },
                     new SidebarOption { Label = "Rescan Drives", Command = RescanCommand },
+                    new SidebarOption { Label = "Refresh Unified", Command = RefreshUnifiedCommand },
                 }
             });
-            SidebarSections.Add(new SidebarSection
-            {
-                Title = "Settings",
-                Options =
-                {
-                    new SidebarOption { Label = "Settings", Command = ToggleSettingsCommand },
-                    new SidebarOption { Label = "Theme: Toggle Dark/Light", Command = new RelayCommand(() => IsDarkTheme = !IsDarkTheme) },
-                }
-            });
-            // Note: About is now exposed as the top-level "About & Updates" button in the sidebar.
         }
 
         // Call this in constructor or initialization
@@ -195,6 +188,7 @@ namespace QuickMediaIngest.ViewModels
             _logger = logger;
 
             InitializeSidebarSections();
+            ImportHistoryRecords.CollectionChanged += (s, e) => OnPropertyChanged(nameof(RecentImportHistory));
         }
 
         // Observable properties (must be at class scope, after constructor)
@@ -203,8 +197,10 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private string ftpUser = string.Empty;
         [ObservableProperty] private string ftpPass = string.Empty;
         [ObservableProperty] private string ftpRemoteFolder = "/DCIM";
+        [ObservableProperty] private bool autoReconnectLastFtp = true;
         [ObservableProperty] private bool isTestingFtp = false;
         [ObservableProperty] private bool showAddFtpDialog = false;
+        [ObservableProperty] private bool settingsMenuExpanded = true;
         [ObservableProperty] private string albumName = "New Album";
         [ObservableProperty] private string statusMessage = "Ready";
         [ObservableProperty] private int progressPercent = 0;
@@ -230,9 +226,14 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private int scannedFiles = 0;
         [ObservableProperty] private string scanDialogTitle = "Loading Import List...";
         [ObservableProperty] private string scanProgressMessage = "Preparing scan...";
+        [ObservableProperty] private string currentScanFolder = "/";
+        [ObservableProperty] private int currentScanFolderProcessedFiles = 0;
+        [ObservableProperty] private int currentScanFolderTotalFiles = 0;
         [ObservableProperty] private object? selectedSource;
         [ObservableProperty] private string destinationRoot = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
         [ObservableProperty] private bool deleteAfterImport = false;
+        /// <summary>After the user responds once to the delete-after-import safety prompt (OK or Cancel), do not show it again.</summary>
+        [ObservableProperty] private bool deleteAfterImportPromptDismissed;
         [ObservableProperty] private bool selectAll = true;
         [ObservableProperty] private bool showUpdateBanner = false;
         [ObservableProperty] private string updateUrl = string.Empty;
@@ -246,7 +247,19 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool isCheckingForUpdate = false;
         [ObservableProperty] private int updateIntervalHours = 24;
         [ObservableProperty] private string updatePackageType = "Portable";
-        [ObservableProperty] private string namingTemplate = "[Date]_[Time]_[Original]";
+        [ObservableProperty] private string namingTemplate = "[Date]_[ShootName]_[Original]";
+        [ObservableProperty] private string namingPreset = "Recommended (Date + Shoot + Original)";
+        [ObservableProperty] private bool namingIncludeDate = true;
+        [ObservableProperty] private bool namingIncludeTime = false;
+        [ObservableProperty] private bool namingIncludeSequence = false;
+        [ObservableProperty] private bool namingIncludeShootName = true;
+        [ObservableProperty] private bool namingIncludeOriginalName = true;
+        [ObservableProperty] private string namingDateFormat = "yyyy-MM-dd";
+        [ObservableProperty] private string namingTimeFormat = "HH-mm-ss";
+        [ObservableProperty] private string namingSeparator = "_";
+        [ObservableProperty] private string namingShootNameSample = "my-shoot";
+        [ObservableProperty] private bool namingLowercase = true;
+        [ObservableProperty] private string thumbnailPerformanceMode = "Balanced";
         [ObservableProperty] private double thumbnailSize = 120;
         [ObservableProperty] private string scanPath = string.Empty;
         [ObservableProperty] private bool scanIncludeSubfolders = true;
@@ -275,6 +288,8 @@ namespace QuickMediaIngest.ViewModels
 
             // Load configuration and import history (sync, but could be made async if needed)
             LoadConfig();
+            SyncNamingOptionsFromTemplate();
+            RefreshNamingPreviewExamples();
             LoadImportHistory();
             // Initial population of sidebar sources (drives + saved FTP)
             try
@@ -312,6 +327,8 @@ namespace QuickMediaIngest.ViewModels
             }
             catch { }
 
+            _ = TryReconnectLastFtpAsync();
+
             _startupInitialized = true;
 
             await Task.CompletedTask;
@@ -335,9 +352,13 @@ namespace QuickMediaIngest.ViewModels
         private double _savedWindowWidth = 960;
         private double _savedWindowHeight = 620;
         private bool _savedWindowMaximized = false;
+        private double? _savedWindowLeft;
+        private double? _savedWindowTop;
         private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
         private readonly UnifiedSourceItem _unifiedSource = new();
+        private bool _updatingNamingFromUi = false;
 
         // Remove only these truly unused fields:
         // private bool _isUpdatingSelectAll = false;
@@ -363,14 +384,19 @@ namespace QuickMediaIngest.ViewModels
                         ScanPath = string.Empty;
                     }
 
-                    if (value != null)
+                    if (value is UnifiedSourceItem)
                     {
-                        LoadSourceItems(value);
+                        _ = LoadUnifiedSourceItemsAsync(forceRefresh: false);
+                    }
+                    else if (value != null)
+                    {
+                        LoadSourceItems(value, forceRefresh: false);
                     }
                 }
 
         partial void OnDestinationRootChanged(string value) => SaveConfig();
         partial void OnDeleteAfterImportChanged(bool value) => SaveConfig();
+        partial void OnDeleteAfterImportPromptDismissedChanged(bool value) => SaveConfig();
 
         public bool IsFtpBusy => IsTestingFtp || IsBrowsingFtpFolders;
         partial void OnIsBrowsingFtpFoldersChanged(bool value) => OnPropertyChanged(nameof(IsFtpBusy));
@@ -396,17 +422,24 @@ namespace QuickMediaIngest.ViewModels
             SaveConfig();
         }
 
-            public double SavedWindowWidth => _savedWindowWidth;
-            public double SavedWindowHeight => _savedWindowHeight;
-            public bool SavedWindowMaximized => _savedWindowMaximized;
+        public double SavedWindowWidth => _savedWindowWidth;
+        public double SavedWindowHeight => _savedWindowHeight;
+        public bool SavedWindowMaximized => _savedWindowMaximized;
+        public double? SavedWindowLeft => _savedWindowLeft;
+        public double? SavedWindowTop => _savedWindowTop;
 
-            public void SaveWindowState(double width, double height, bool maximized)
+        public void SaveWindowState(double width, double height, bool maximized, double? left = null, double? top = null)
+        {
+            _savedWindowWidth = width;
+            _savedWindowHeight = height;
+            _savedWindowMaximized = maximized;
+            if (!maximized && left.HasValue && top.HasValue)
             {
-                _savedWindowWidth = width;
-                _savedWindowHeight = height;
-                _savedWindowMaximized = maximized;
-                SaveConfig();
+                _savedWindowLeft = left;
+                _savedWindowTop = top;
             }
+            SaveConfig();
+        }
 
 
         [RelayCommand] private async Task ToggleAddFtp()
@@ -426,7 +459,43 @@ namespace QuickMediaIngest.ViewModels
 
         partial void OnUpdateIntervalHoursChanged(int value) { SaveConfig(); CheckUpdates(); }
         partial void OnUpdatePackageTypeChanged(string value) => SaveConfig();
-        partial void OnNamingTemplateChanged(string value) => SaveConfig();
+        partial void OnNamingTemplateChanged(string value)
+        {
+            if (_updatingNamingFromUi)
+            {
+                SaveConfig();
+                return;
+            }
+
+            SyncNamingOptionsFromTemplate();
+            RefreshNamingPreviewExamples();
+            SaveConfig();
+        }
+        partial void OnNamingPresetChanged(string value)
+        {
+            ApplyNamingPreset(value);
+            SaveConfig();
+        }
+        partial void OnNamingIncludeDateChanged(bool value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingIncludeTimeChanged(bool value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingIncludeSequenceChanged(bool value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingIncludeShootNameChanged(bool value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingIncludeOriginalNameChanged(bool value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingDateFormatChanged(string value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingTimeFormatChanged(string value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingSeparatorChanged(string value) => UpdateNamingTemplateFromOptions();
+        partial void OnNamingShootNameSampleChanged(string value)
+        {
+            RefreshNamingPreviewExamples();
+            SaveConfig();
+        }
+        partial void OnNamingLowercaseChanged(bool value)
+        {
+            RefreshNamingPreviewExamples();
+            SaveConfig();
+        }
+        partial void OnSettingsMenuExpandedChanged(bool value) => SaveConfig();
+        partial void OnThumbnailPerformanceModeChanged(string value) => SaveConfig();
         partial void OnThumbnailSizeChanged(double value) => SaveConfig();
         partial void OnScanPathChanged(string value)
         {
@@ -551,10 +620,42 @@ namespace QuickMediaIngest.ViewModels
             "Portable",
             "Installer"
         };
+        public ObservableCollection<string> NamingPresetOptions { get; } = new ObservableCollection<string>
+        {
+            "Recommended (Date + Shoot + Original)",
+            "Date + Time + Shoot + Original",
+            "Shoot + Date + Original",
+            "Custom"
+        };
+        public ObservableCollection<string> NamingDateFormatOptions { get; } = new ObservableCollection<string>
+        {
+            "yyyy-MM-dd",
+            "yyyyMMdd"
+        };
+        public ObservableCollection<string> NamingTimeFormatOptions { get; } = new ObservableCollection<string>
+        {
+            "HH-mm-ss",
+            "HHmmss",
+            "HH-mm-ss-fff",
+            "HHmmssfff"
+        };
+        public ObservableCollection<string> NamingSeparatorOptions { get; } = new ObservableCollection<string>
+        {
+            "_",
+            "-"
+        };
+        public ObservableCollection<string> ThumbnailPerformanceOptions { get; } = new ObservableCollection<string>
+        {
+            "Low",
+            "Balanced",
+            "Max",
+            "Ultra"
+        };
+        public ObservableCollection<string> NamingPreviewExamples { get; } = new ObservableCollection<string>();
 
         public ObservableCollection<string> AvailableTokens { get; } = new ObservableCollection<string> 
         { 
-            "[Date]", "[Time]", "[YYYY]", "[MM]", "[DD]", "[HH]", "[mm]", "[ss]", "[ShootName]", "[Original]", "[Ext]", "_", "-" 
+            "[Date]", "[Time]", "[TimeMs]", "[YYYY]", "[MM]", "[DD]", "[HH]", "[mm]", "[ss]", "[fff]", "[ShootName]", "[Original]", "[Sequence]", "[Ext]", "_", "-" 
         };
         
         public ObservableCollection<TokenItem> SelectedTokens { get; } = new ObservableCollection<TokenItem>();
@@ -564,6 +665,171 @@ namespace QuickMediaIngest.ViewModels
             NamingTemplate = string.Join("", SelectedTokens.Select(t => t.Value));
             OnPropertyChanged("NamingTemplate");
             SaveConfig();
+        }
+
+        private void ApplyNamingPreset(string preset)
+        {
+            _updatingNamingFromUi = true;
+            switch (preset)
+            {
+                case "Recommended (Date + Shoot + Original)":
+                    NamingIncludeDate = true;
+                    NamingIncludeTime = false;
+                    NamingIncludeSequence = false;
+                    NamingIncludeShootName = true;
+                    NamingIncludeOriginalName = true;
+                    break;
+                case "Date + Time + Shoot + Original":
+                    NamingIncludeDate = true;
+                    NamingIncludeTime = true;
+                    NamingIncludeSequence = false;
+                    NamingIncludeShootName = true;
+                    NamingIncludeOriginalName = true;
+                    break;
+                case "Shoot + Date + Original":
+                    NamingIncludeDate = true;
+                    NamingIncludeTime = false;
+                    NamingIncludeSequence = false;
+                    NamingIncludeShootName = true;
+                    NamingIncludeOriginalName = true;
+                    break;
+                default:
+                    // Custom keeps user-selected options.
+                    break;
+            }
+            _updatingNamingFromUi = false;
+            UpdateNamingTemplateFromOptions();
+        }
+
+        private void UpdateNamingTemplateFromOptions()
+        {
+            if (_updatingNamingFromUi)
+            {
+                return;
+            }
+
+            var parts = new List<string>();
+            if (NamingIncludeDate)
+            {
+                parts.Add(NamingDateFormat == "yyyyMMdd" ? "[YYYY][MM][DD]" : "[Date]");
+            }
+            if (NamingIncludeTime)
+            {
+                parts.Add(NamingTimeFormat switch
+                {
+                    "HHmmss" => "[HH][mm][ss]",
+                    "HH-mm-ss-fff" => "[TimeMs]",
+                    "HHmmssfff" => "[HH][mm][ss][fff]",
+                    _ => "[Time]"
+                });
+            }
+            if (NamingIncludeSequence)
+            {
+                parts.Add("[Sequence]");
+            }
+            if (NamingIncludeShootName)
+            {
+                parts.Add("[ShootName]");
+            }
+            if (NamingIncludeOriginalName)
+            {
+                parts.Add("[Original]");
+            }
+
+            if (parts.Count == 0)
+            {
+                parts.Add("[Original]");
+            }
+
+            _updatingNamingFromUi = true;
+            NamingTemplate = string.Join(NamingSeparator, parts);
+            _updatingNamingFromUi = false;
+
+            RefreshNamingPreviewExamples();
+            SaveConfig();
+        }
+
+        private void SyncNamingOptionsFromTemplate()
+        {
+            _updatingNamingFromUi = true;
+            NamingIncludeDate = NamingTemplate.Contains("[Date]", StringComparison.Ordinal) ||
+                               (NamingTemplate.Contains("[YYYY]", StringComparison.Ordinal) &&
+                                NamingTemplate.Contains("[MM]", StringComparison.Ordinal) &&
+                                NamingTemplate.Contains("[DD]", StringComparison.Ordinal));
+            NamingDateFormat = NamingTemplate.Contains("[YYYY][MM][DD]", StringComparison.Ordinal) ? "yyyyMMdd" : "yyyy-MM-dd";
+            NamingIncludeTime = NamingTemplate.Contains("[Time]", StringComparison.Ordinal) ||
+                                NamingTemplate.Contains("[TimeMs]", StringComparison.Ordinal) ||
+                                (NamingTemplate.Contains("[HH]", StringComparison.Ordinal) &&
+                                 NamingTemplate.Contains("[mm]", StringComparison.Ordinal) &&
+                                 NamingTemplate.Contains("[ss]", StringComparison.Ordinal));
+            NamingTimeFormat = NamingTemplate.Contains("[HH][mm][ss][fff]", StringComparison.Ordinal) ? "HHmmssfff"
+                : NamingTemplate.Contains("[TimeMs]", StringComparison.Ordinal) ? "HH-mm-ss-fff"
+                : NamingTemplate.Contains("[HH][mm][ss]", StringComparison.Ordinal) ? "HHmmss"
+                : "HH-mm-ss";
+            NamingIncludeSequence = NamingTemplate.Contains("[Sequence]", StringComparison.Ordinal);
+            NamingIncludeShootName = NamingTemplate.Contains("[ShootName]", StringComparison.Ordinal);
+            NamingIncludeOriginalName = NamingTemplate.Contains("[Original]", StringComparison.Ordinal);
+            NamingSeparator = NamingTemplate.Contains("-") && !NamingTemplate.Contains("_") ? "-" : "_";
+            _updatingNamingFromUi = false;
+        }
+
+        private void RefreshNamingPreviewExamples()
+        {
+            try
+            {
+                string separator = string.IsNullOrWhiteSpace(NamingSeparator) ? "_" : NamingSeparator;
+                string date = NamingDateFormat == "yyyyMMdd" ? "20260425" : "2026-04-25";
+                string time = NamingTimeFormat switch
+                {
+                    "HHmmss" => "195649",
+                    "HH-mm-ss-fff" => "19-56-49-123",
+                    "HHmmssfff" => "195649123",
+                    _ => "19-56-49"
+                };
+                string shoot = string.IsNullOrWhiteSpace(NamingShootNameSample) ? "my-shoot" : NamingShootNameSample.Trim();
+                string[] originals = { "img_0001", "img_0002", "img_0003" };
+
+                string template = NamingTemplate;
+                if (string.IsNullOrWhiteSpace(template))
+                {
+                    template = "[Date]" + separator + "[ShootName]" + separator + "[Original]";
+                }
+
+                NamingPreviewExamples.Clear();
+                for (int index = 0; index < originals.Length; index++)
+                {
+                    string original = originals[index];
+                    string output = template
+                        .Replace("[Date]", date, StringComparison.Ordinal)
+                        .Replace("[Time]", time, StringComparison.Ordinal)
+                        .Replace("[TimeMs]", "19-56-49-123", StringComparison.Ordinal)
+                        .Replace("[YYYY]", "2026", StringComparison.Ordinal)
+                        .Replace("[MM]", "04", StringComparison.Ordinal)
+                        .Replace("[DD]", "25", StringComparison.Ordinal)
+                        .Replace("[HH]", "19", StringComparison.Ordinal)
+                        .Replace("[mm]", "56", StringComparison.Ordinal)
+                        .Replace("[ss]", "49", StringComparison.Ordinal)
+                        .Replace("[fff]", "123", StringComparison.Ordinal)
+                        .Replace("[ShootName]", shoot, StringComparison.Ordinal)
+                        .Replace("[Original]", original, StringComparison.Ordinal)
+                        .Replace("[Sequence]", (index + 1).ToString("D4"), StringComparison.Ordinal)
+                        .Replace("[Ext]", "jpg", StringComparison.Ordinal)
+                        .Replace("__", "_", StringComparison.Ordinal)
+                        .Replace("--", "-", StringComparison.Ordinal)
+                        .Trim('_', '-');
+
+                    if (NamingLowercase)
+                    {
+                        output = output.ToLowerInvariant();
+                    }
+
+                    NamingPreviewExamples.Add($"{output}.jpg");
+                }
+            }
+            catch
+            {
+                // Keep UI stable if preview generation fails.
+            }
         }
        
         [RelayCommand] private void Import() => ExecuteImport();
@@ -588,12 +854,34 @@ namespace QuickMediaIngest.ViewModels
             OpenUrl(repo);
         }
         [RelayCommand] private void RefreshUpdate() => CheckUpdates(force: true);
+        [RelayCommand]
+        private async Task RefreshAllSources()
+        {
+            ScanDrives();
+            _sourceItemsCache.Clear();
+            _thumbnailByItemKey.Clear();
+            ClearThumbnailDiskCache();
+
+            if (SelectedSource is UnifiedSourceItem || SelectedSource == null)
+            {
+                await LoadUnifiedSourceItemsAsync(forceRefresh: true);
+                if (SelectedSource == null)
+                {
+                    SelectedSource = _unifiedSource;
+                }
+                return;
+            }
+
+            LoadSourceItems(SelectedSource, forceRefresh: true);
+        }
         // BrowseDestination command removed; UI entry deleted.
         [RelayCommand] private void Rescan() => ScanDrives();
         [RelayCommand] private void BrowseScanPath() => ExecuteBrowseScanPath();
         [RelayCommand] private void BuildSelectedPreviews() => ExecuteBuildSelectedPreviews();
         [RelayCommand] private void SelectAllShoots() => SetAllShootsSelected(true);
         [RelayCommand] private void DeselectAllShoots() => SetAllShootsSelected(false);
+        public void SelectAllVisible() => SetAllShootsSelected(true);
+        public void DeselectAllVisible() => SetAllShootsSelected(false);
 
         // Keyboard accelerator commands for UI
         public ICommand SelectAllCommand => new RelayCommand(SelectAllShoots);
@@ -629,27 +917,49 @@ namespace QuickMediaIngest.ViewModels
 
                 if (!string.IsNullOrEmpty(url))
                 {
+                    string assetLabel = GetUpdateAssetLabel(url);
                      Application.Current.Dispatcher.Invoke(() =>
                      {
                          UpdateUrl = url;
                          ShowUpdateBanner = true;
                          IsUpdateAvailable = true;
-                         UpdateStatus = "Update available";
+                         UpdateStatus = $"Update available: {assetLabel}";
+                         StatusMessage = $"Update found on GitHub: {assetLabel}";
                          UpdateProgress = 0.0;
                      });
                 }
                 else if (force)
                 {
+                    string expected = UpdatePackageType == "Installer" ? "QuickMediaIngest.msi" : "QuickMediaIngest.exe";
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                         StatusMessage = "No updates found. App is up to date.";
-                         UpdateStatus = "No updates found.";
+                         StatusMessage = $"No updates found. App is up to date ({expected}).";
+                         UpdateStatus = $"No updates found for {expected}.";
                          IsUpdateAvailable = false;
                      });
                 }
 
                 Application.Current.Dispatcher.Invoke(() => IsCheckingForUpdate = false);
             });
+        }
+
+        private static string GetUpdateAssetLabel(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return "release page";
+            }
+
+            try
+            {
+                var uri = new Uri(url);
+                string fileName = Path.GetFileName(uri.LocalPath);
+                return string.IsNullOrWhiteSpace(fileName) ? "release page" : Uri.UnescapeDataString(fileName);
+            }
+            catch
+            {
+                return "release page";
+            }
         }
 
         private async void ExecuteDownloadUpdate()
@@ -666,9 +976,14 @@ namespace QuickMediaIngest.ViewModels
             try
             {
                 string ext = Path.GetExtension(UpdateUrl).ToLowerInvariant();
-                string fileName = ext == ".msi" ? "QuickMediaIngest_Update.msi" : ext == ".exe" ? "QuickMediaIngest_Update.exe" : null;
+                string fileName = ext switch
+                {
+                    ".msi" => "QuickMediaIngest_Update.msi",
+                    ".exe" => "QuickMediaIngest_Update.exe",
+                    _ => string.Empty
+                };
 
-                if (fileName != null)
+                if (!string.IsNullOrEmpty(fileName))
                 {
                     string tempPath = Path.Combine(Path.GetTempPath(), fileName);
 
@@ -777,6 +1092,7 @@ namespace QuickMediaIngest.ViewModels
 
             FtpRemoteFolder = remoteFolder;
             ShowAddFtpDialog = false;
+            SaveConfig();
             SelectedSource = ftp; // triggers scan instantly
         }
 
@@ -932,7 +1248,60 @@ namespace QuickMediaIngest.ViewModels
             FtpDialogStatusMessage = StatusMessage;
         }
 
-        private async void LoadSourceItems(object source)
+        private async Task TryReconnectLastFtpAsync()
+        {
+            if (!AutoReconnectLastFtp || string.IsNullOrWhiteSpace(FtpHost))
+            {
+                return;
+            }
+
+            string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                var result = await _ftpScanner.TestConnectionAsync(
+                    FtpHost,
+                    FtpPort,
+                    FtpUser,
+                    FtpPass,
+                    remotePath,
+                    8,
+                    timeout.Token);
+
+                if (!result.Success)
+                {
+                    StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
+                    return;
+                }
+
+                var ftp = new FtpSourceItem
+                {
+                    Host = FtpHost,
+                    Port = FtpPort,
+                    User = FtpUser,
+                    Pass = FtpPass,
+                    RemoteFolder = remotePath
+                };
+
+                bool exists = Sources.OfType<FtpSourceItem>().Any(s =>
+                    string.Equals(s.Host, ftp.Host, StringComparison.OrdinalIgnoreCase) &&
+                    s.Port == ftp.Port &&
+                    string.Equals(NormalizeFtpPath(s.RemoteFolder), remotePath, StringComparison.OrdinalIgnoreCase));
+
+                if (!exists)
+                {
+                    Sources.Add(ftp);
+                }
+
+                StatusMessage = $"Reconnected FTP source: {FtpHost}:{FtpPort}{remotePath}";
+            }
+            catch
+            {
+                StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
+            }
+        }
+
+        private async void LoadSourceItems(object source, bool forceRefresh = false)
         {
             foreach (var existing in Groups)
             {
@@ -940,11 +1309,6 @@ namespace QuickMediaIngest.ViewModels
             }
             Groups.Clear();
             EnsureFilteredItemsViewSource();
-
-            if (_currentSourceItems.Count == 0)
-            {
-                return;
-            }
 
             string sourceLabel = source.ToString() ?? "source";
             var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -961,6 +1325,9 @@ namespace QuickMediaIngest.ViewModels
                 ScannedFiles = 0;
                 TotalFilesToScan = 0;
                 ScanProgressMessage = "Preparing scan...";
+                CurrentScanFolder = "/";
+                CurrentScanFolderProcessedFiles = 0;
+                CurrentScanFolderTotalFiles = 0;
 
                 if (source is FtpSourceItem ftp)
                 {
@@ -969,7 +1336,7 @@ namespace QuickMediaIngest.ViewModels
                     sourceLabel = $"{ftp.Host}{remotePath}";
                     sourceKey = BuildSourceKey(ftp);
 
-                    if (_sourceItemsCache.TryGetValue(sourceKey, out var cachedFtpItems))
+                    if (!forceRefresh && _sourceItemsCache.TryGetValue(sourceKey, out var cachedFtpItems))
                     {
                         items = CloneItems(cachedFtpItems);
                         ScanProgressMessage = "Loaded from cache.";
@@ -999,6 +1366,9 @@ namespace QuickMediaIngest.ViewModels
                                 TotalFoldersToScan = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
                                 ScannedFiles = progress.ProcessedFiles;
                                 TotalFilesToScan = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
+                                CurrentScanFolder = progress.CurrentFolder;
+                                CurrentScanFolderProcessedFiles = progress.CurrentFolderProcessedFiles;
+                                CurrentScanFolderTotalFiles = progress.CurrentFolderTotalFiles;
 
                                 if (progress.Phase == "Prescan")
                                 {
@@ -1028,7 +1398,7 @@ namespace QuickMediaIngest.ViewModels
                     sourceLabel = localPath;
                     sourceKey = BuildSourceKey(localPath);
 
-                    if (_sourceItemsCache.TryGetValue(sourceKey, out var cachedLocalItems))
+                    if (!forceRefresh && _sourceItemsCache.TryGetValue(sourceKey, out var cachedLocalItems))
                     {
                         items = CloneItems(cachedLocalItems);
                         ScanProgressMessage = "Loaded from cache.";
@@ -1046,6 +1416,7 @@ namespace QuickMediaIngest.ViewModels
 
                     StatusMessage = $"Scanning: {localPath}...";
                     ScanProgressMessage = $"Scanning local folders in {localPath}...";
+                    CurrentScanFolder = localPath;
                     items = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders, (scanned, total) =>
                     {
                         Application.Current.Dispatcher.Invoke(() =>
@@ -1056,6 +1427,8 @@ namespace QuickMediaIngest.ViewModels
                             ScanProgressMessage = $"Scanning folders: {scanned}/{total}";
                             ScannedFiles = 0;
                             TotalFilesToScan = 0;
+                            CurrentScanFolderProcessedFiles = 0;
+                            CurrentScanFolderTotalFiles = 0;
                         });
                     }));
                 }
@@ -1071,6 +1444,7 @@ BuildGroups:
                 if (Groups.Count > 0)
                 {
                     await LoadThumbnailsAsync(Groups.ToList(), source, sourceLabel);
+                    _sourceItemsCache[sourceKey] = CloneItems(_currentSourceItems);
                 }
                 else
                 {
@@ -1182,6 +1556,15 @@ BuildGroups:
                 group.AlbumName = AlbumName;
                 group.FolderPath = Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty;
                 group.SyncSelectionFromItems();
+                ApplyPreviewStacks(group.Items);
+                foreach (var item in group.Items)
+                {
+                    string key = BuildItemKey(item);
+                    if (item.Thumbnail == null && _thumbnailByItemKey.TryGetValue(key, out var cachedThumb))
+                    {
+                        item.Thumbnail = cachedThumb;
+                    }
+                }
                 group.PropertyChanged += Group_PropertyChanged;
                 Groups.Add(group);
             }
@@ -1189,6 +1572,99 @@ BuildGroups:
 
             UpdateSelectAllFromGroups();
             StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
+        }
+
+        private static readonly HashSet<string> RenderedPreviewExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".heic", ".heif", ".png", ".webp", ".tif", ".tiff"
+        };
+
+        private static readonly HashSet<string> RawPreviewExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
+        };
+
+        private static void ApplyPreviewStacks(List<ImportItem> items)
+        {
+            foreach (var item in items)
+            {
+                item.IsPreviewVisible = true;
+                item.IsStackRepresentative = true;
+                item.StackKey = item.SourcePath;
+                item.PreviewLabel = item.FileName;
+            }
+
+            var imageItems = items.Where(i => !i.IsVideo).ToList();
+            var groups = imageItems.GroupBy(i => Path.GetFileNameWithoutExtension(i.FileName), StringComparer.OrdinalIgnoreCase);
+            foreach (var group in groups)
+            {
+                var members = group.ToList();
+                if (members.Count <= 1)
+                {
+                    continue;
+                }
+
+                var rendered = members.Where(m => RenderedPreviewExtensions.Contains(Path.GetExtension(m.FileName))).ToList();
+                var raws = members.Where(m => RawPreviewExtensions.Contains(Path.GetExtension(m.FileName))).ToList();
+                if (rendered.Count == 0 || raws.Count == 0)
+                {
+                    continue;
+                }
+
+                var representative = rendered
+                    .OrderBy(m => Path.GetExtension(m.FileName).Equals(".jpg", StringComparison.OrdinalIgnoreCase) ? 0 :
+                                  Path.GetExtension(m.FileName).Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ? 1 :
+                                  Path.GetExtension(m.FileName).Equals(".heic", StringComparison.OrdinalIgnoreCase) ? 2 : 3)
+                    .First();
+
+                string stackKey = group.Key;
+                int hiddenCount = members.Count - 1;
+                foreach (var member in members)
+                {
+                    member.StackKey = stackKey;
+                    member.IsStackRepresentative = ReferenceEquals(member, representative);
+                    member.IsPreviewVisible = member.IsStackRepresentative;
+                    member.PreviewLabel = member.IsStackRepresentative && hiddenCount > 0
+                        ? $"{member.FileName} (+{hiddenCount})"
+                        : member.FileName;
+                }
+            }
+        }
+
+        private static void SyncStackSelections(IEnumerable<ItemGroup> groups)
+        {
+            foreach (var group in groups)
+            {
+                var stackGroups = group.Items
+                    .GroupBy(i => i.StackKey, StringComparer.OrdinalIgnoreCase)
+                    .Where(g => g.Count() > 1);
+
+                foreach (var stack in stackGroups)
+                {
+                    var leader = stack.FirstOrDefault(i => i.IsStackRepresentative) ?? stack.First();
+                    bool selected = leader.IsSelected;
+                    foreach (var member in stack)
+                    {
+                        member.IsSelected = selected;
+                    }
+                }
+            }
+        }
+
+        private static void ClearThumbnailDiskCache()
+        {
+            try
+            {
+                string cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "Thumbnails");
+                if (Directory.Exists(cacheDir))
+                {
+                    Directory.Delete(cacheDir, true);
+                }
+            }
+            catch
+            {
+                // Ignore cache purge failures.
+            }
         }
 
         private void ShowSkippedFoldersReport(string sourceLabel, HashSet<string> skippedFolderDetails)
@@ -1307,15 +1783,34 @@ BuildGroups:
 
                 int current = 0;
 
-                // Load up to 4 thumbnails in parallel — safely bounded for SD card I/O.
-                Parallel.ForEach(allItems, new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
+                int workers = GetThumbnailWorkerCount();
+                // Use CPU-aware parallelism for local thumbnail decode.
+                Parallel.ForEach(allItems, new ParallelOptions { MaxDegreeOfParallelism = workers }, item =>
                 {
+                    string itemKey = BuildItemKey(item);
+                    if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
+                    {
+                        int cCached = Interlocked.Increment(ref current);
+                        Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Thumbnail = cachedThumb;
+                            ScannedFiles = cCached;
+                            ScanProgressPercent = total > 0 ? (cCached * 100) / total : 0;
+                            ScanProgressMessage = $"Loading previews: {cCached}/{total}";
+                        });
+                        return;
+                    }
+
                     var thumb = _thumbnailService.GetThumbnail(item.SourcePath);
                     int c = Interlocked.Increment(ref current);
 
                     Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        if (thumb != null) item.Thumbnail = thumb;
+                        if (thumb != null)
+                        {
+                            item.Thumbnail = thumb;
+                            _thumbnailByItemKey[itemKey] = thumb;
+                        }
                         ScannedFiles = c;
                         ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
                         ScanProgressMessage = $"Loading previews: {c}/{total}";
@@ -1389,68 +1884,93 @@ BuildGroups:
 
             int loadedCount = 0;
             int skippedCount = 0;
-            for (int i = 0; i < items.Count; i++)
-            {
-                var item = items[i];
-                int overallIndex = startIndex + i + 1;
+            int processedCount = 0;
+            int workerCount = GetFtpThumbnailWorkerCount();
 
-                if (overallIndex == 1 || overallIndex % 10 == 0 || overallIndex == totalItemCount)
+            var indexedItems = items.Select((item, index) => (item, index)).ToList();
+            await Parallel.ForEachAsync(
+                indexedItems,
+                new ParallelOptions { MaxDegreeOfParallelism = workerCount },
+                async (entry, _) =>
                 {
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    var item = entry.item;
+                    int overallIndex = startIndex + entry.index + 1;
+                    string itemKey = BuildItemKey(item);
+
+                    string ext = Path.GetExtension(item.FileName);
+                    if (string.IsNullOrWhiteSpace(ext))
                     {
-                        ScannedFiles = overallIndex;
-                        TotalFilesToScan = totalItemCount;
-                        ScanProgressPercent = totalItemCount > 0 ? (overallIndex * 100) / totalItemCount : 0;
-                        if (updateScanProgressMessage)
-                        {
-                            ScanProgressMessage = $"Loading FTP previews: {overallIndex}/{totalItemCount}";
-                        }
-                    });
-                }
-
-                string ext = Path.GetExtension(item.FileName);
-                if (string.IsNullOrWhiteSpace(ext))
-                {
-                    ext = ".jpg";
-                }
-
-                string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
-
-                try
-                {
-                    bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
-                    if (!downloaded)
-                    {
-                        skippedCount++;
-                        continue;
+                        ext = ".jpg";
                     }
 
-                    var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
-                    if (thumb != null)
-                    {
-                        loadedCount++;
-                        await Application.Current.Dispatcher.InvokeAsync(() => item.Thumbnail = thumb);
-                    }
-                }
-                catch
-                {
-                    skippedCount++;
-                }
-                finally
-                {
+                    string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
+
                     try
                     {
-                        if (File.Exists(tempPath))
+                        if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
                         {
-                            File.Delete(tempPath);
+                            Interlocked.Increment(ref loadedCount);
+                            await Application.Current.Dispatcher.InvokeAsync(() => item.Thumbnail = cachedThumb);
+                        }
+                        else
+                        {
+                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
+                            if (!downloaded)
+                            {
+                                Interlocked.Increment(ref skippedCount);
+                            }
+                            else
+                            {
+                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
+                                if (thumb != null)
+                                {
+                                    Interlocked.Increment(ref loadedCount);
+                                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                                    {
+                                        item.Thumbnail = thumb;
+                                        _thumbnailByItemKey[itemKey] = thumb;
+                                    });
+                                }
+                            }
                         }
                     }
                     catch
                     {
-                        // Ignore temp cleanup failures.
+                        Interlocked.Increment(ref skippedCount);
                     }
-                }
-            }
+                    finally
+                    {
+                        try
+                        {
+                            if (File.Exists(tempPath))
+                            {
+                                File.Delete(tempPath);
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore temp cleanup failures.
+                        }
+                    }
+
+                    int processed = Interlocked.Increment(ref processedCount);
+                    if (processed == 1 || processed % 10 == 0 || processed == items.Count)
+                    {
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            ScannedFiles = startIndex + processed;
+                            TotalFilesToScan = totalItemCount;
+                            ScanProgressPercent = totalItemCount > 0 ? ((startIndex + processed) * 100) / totalItemCount : 0;
+                            CurrentScanFolder = item.SourcePath;
+                            CurrentScanFolderProcessedFiles = processed;
+                            CurrentScanFolderTotalFiles = items.Count;
+                            if (updateScanProgressMessage)
+                            {
+                                ScanProgressMessage = $"Loading FTP previews: {Math.Min(totalItemCount, startIndex + processed)}/{totalItemCount}";
+                            }
+                        });
+                    }
+                });
 
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
@@ -1528,7 +2048,13 @@ BuildGroups:
             return new Uri(uriText);
         }
 
-        private async Task LoadUnifiedSourceItemsAsync()
+        [RelayCommand]
+        private async Task RefreshUnified()
+        {
+            await LoadUnifiedSourceItemsAsync(forceRefresh: true);
+        }
+
+        private async Task LoadUnifiedSourceItemsAsync(bool forceRefresh = false)
         {
             var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var concreteSources = Sources
@@ -1545,26 +2071,32 @@ BuildGroups:
             try
             {
                 ShowScanProgressDialog = true;
-                ScanDialogTitle = "Loading Unified Import List...";
+                ScanDialogTitle = forceRefresh ? "Refreshing Unified Import List..." : "Loading Unified Import List...";
                 ScanProgressPercent = 0;
                 ScannedFolders = 0;
                 TotalFoldersToScan = concreteSources.Count;
                 ScannedFiles = 0;
                 TotalFilesToScan = 0;
                 ScanProgressMessage = "Merging SD and FTP sources...";
+                CurrentScanFolder = "/";
+                CurrentScanFolderProcessedFiles = 0;
+                CurrentScanFolderTotalFiles = 0;
 
                 var results = new List<List<ImportItem>>();
 
                 foreach (var src in concreteSources)
                 {
                     List<ImportItem> sourceItems;
+                    CurrentScanFolder = src is FtpSourceItem ftpSrc
+                        ? $"{ftpSrc.Host}:{ftpSrc.Port}{NormalizeFtpPath(ftpSrc.RemoteFolder)}"
+                        : src.ToString() ?? "source";
 
                     if (src is string drive)
                     {
                         string localPath = drive;
                         string localKey = BuildSourceKey(localPath);
 
-                        if (_sourceItemsCache.TryGetValue(localKey, out var cachedLocal))
+                        if (!forceRefresh && _sourceItemsCache.TryGetValue(localKey, out var cachedLocal))
                         {
                             sourceItems = CloneItems(cachedLocal);
                         }
@@ -1587,7 +2119,7 @@ BuildGroups:
                     {
                         string ftpKey = BuildSourceKey(ftp);
 
-                        if (_sourceItemsCache.TryGetValue(ftpKey, out var cachedFtp))
+                        if (!forceRefresh && _sourceItemsCache.TryGetValue(ftpKey, out var cachedFtp))
                         {
                             sourceItems = CloneItems(cachedFtp);
                         }
@@ -1626,6 +2158,8 @@ BuildGroups:
                     ScannedFolders++;
                     ScannedFiles = results.Sum(r => r.Count);
                     TotalFilesToScan = ScannedFiles;
+                    CurrentScanFolderProcessedFiles = sourceItems.Count;
+                    CurrentScanFolderTotalFiles = sourceItems.Count;
                     ScanProgressPercent = TotalFoldersToScan > 0 ? (ScannedFolders * 100) / TotalFoldersToScan : 0;
                     ScanProgressMessage = $"Merged {ScannedFolders}/{TotalFoldersToScan} sources...";
                 }
@@ -1684,6 +2218,18 @@ BuildGroups:
 
             foreach (var item in allItems)
             {
+                string itemKey = BuildItemKey(item);
+                if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
+                {
+                    item.Thumbnail = cachedThumb;
+                    processed++;
+                    ScannedFiles = processed;
+                    TotalFilesToScan = total;
+                    ScanProgressPercent = total > 0 ? (processed * 100) / total : 0;
+                    ScanProgressMessage = $"Loading Unified previews: {processed}/{total}";
+                    continue;
+                }
+
                 if (item.IsFtpSource)
                 {
                     if (ftpSourcesByKey.TryGetValue(item.SourceId, out var ftp))
@@ -1705,6 +2251,7 @@ BuildGroups:
                                 if (thumb != null)
                                 {
                                     item.Thumbnail = thumb;
+                                    _thumbnailByItemKey[itemKey] = thumb;
                                 }
                             }
                         }
@@ -1734,6 +2281,7 @@ BuildGroups:
                     if (thumb != null)
                     {
                         item.Thumbnail = thumb;
+                        _thumbnailByItemKey[itemKey] = thumb;
                     }
                 }
 
@@ -1768,8 +2316,42 @@ BuildGroups:
                 DateTaken = i.DateTaken,
                 IsVideo = i.IsVideo,
                 FileType = i.FileType,
-                IsSelected = i.IsSelected
+                IsSelected = i.IsSelected,
+                Thumbnail = i.Thumbnail,
+                IsPreviewVisible = i.IsPreviewVisible,
+                PreviewLabel = i.PreviewLabel,
+                StackKey = i.StackKey,
+                IsStackRepresentative = i.IsStackRepresentative
             }).ToList();
+        }
+
+        private static string BuildItemKey(ImportItem item)
+        {
+            string sourceId = string.IsNullOrWhiteSpace(item.SourceId) ? "unknown" : item.SourceId;
+            return $"{sourceId}|{item.SourcePath}";
+        }
+
+        private int GetThumbnailWorkerCount()
+        {
+            int cpu = Math.Max(2, Environment.ProcessorCount);
+            return ThumbnailPerformanceMode switch
+            {
+                "Low" => 2,
+                "Max" => Math.Clamp(cpu, 6, 16),
+                "Ultra" => Math.Clamp(cpu * 2, 12, 32),
+                _ => Math.Clamp(Math.Max(3, cpu / 2), 3, 12)
+            };
+        }
+
+        private int GetFtpThumbnailWorkerCount()
+        {
+            return ThumbnailPerformanceMode switch
+            {
+                "Low" => 2,
+                "Max" => 8,
+                "Ultra" => 16,
+                _ => 4
+            };
         }
 
         private static string BuildSourceKey(FtpSourceItem ftp)
@@ -1834,6 +2416,7 @@ BuildGroups:
                 return;
             }
 
+            SyncStackSelections(Groups);
             var selectedGroups = Groups.Where(g => g.Items.Any(i => i.IsSelected)).ToList();
             int totalFiles = selectedGroups.Sum(g => g.Items.Count(i => i.IsSelected));
             if (totalFiles == 0)
@@ -2373,7 +2956,23 @@ BuildGroups:
                     UpdateIntervalHours = UpdateIntervalHours,
                     DestinationRoot = DestinationRoot,
                     DeleteAfterImport = DeleteAfterImport,
+                    DeleteAfterImportPromptDismissed = DeleteAfterImportPromptDismissed,
                     NamingTemplate = NamingTemplate,
+                    NamingPreset = NamingPreset,
+                    NamingDateFormat = NamingDateFormat,
+                    NamingTimeFormat = NamingTimeFormat,
+                    NamingSeparator = NamingSeparator,
+                    NamingIncludeSequence = NamingIncludeSequence,
+                    NamingShootNameSample = NamingShootNameSample,
+                    NamingLowercase = NamingLowercase,
+                    ThumbnailPerformanceMode = ThumbnailPerformanceMode,
+                    FtpHost = FtpHost,
+                    FtpPort = FtpPort,
+                    FtpUser = FtpUser,
+                    FtpPass = FtpPass,
+                    FtpRemoteFolder = FtpRemoteFolder,
+                    AutoReconnectLastFtp = AutoReconnectLastFtp,
+                    SettingsMenuExpanded = SettingsMenuExpanded,
                     ScanPath = ScanPath,
                     SelectAll = SelectAll,
                     IsDarkTheme = IsDarkTheme,
@@ -2387,6 +2986,8 @@ BuildGroups:
                     WindowWidth = _savedWindowWidth,
                     WindowHeight = _savedWindowHeight,
                     WindowMaximized = _savedWindowMaximized,
+                    WindowLeft = _savedWindowLeft,
+                    WindowTop = _savedWindowTop,
                     IsFirstRun = this.IsFirstRun
                 };
                 
@@ -2409,7 +3010,23 @@ BuildGroups:
                         UpdateIntervalHours = config.UpdateIntervalHours;
                         if (!string.IsNullOrEmpty(config.DestinationRoot)) DestinationRoot = config.DestinationRoot;
                         DeleteAfterImport = config.DeleteAfterImport;
+                        DeleteAfterImportPromptDismissed = config.DeleteAfterImportPromptDismissed;
                         if (!string.IsNullOrEmpty(config.NamingTemplate)) NamingTemplate = config.NamingTemplate;
+                        if (!string.IsNullOrWhiteSpace(config.NamingPreset)) NamingPreset = config.NamingPreset;
+                        if (!string.IsNullOrWhiteSpace(config.NamingDateFormat)) NamingDateFormat = config.NamingDateFormat;
+                        if (!string.IsNullOrWhiteSpace(config.NamingTimeFormat)) NamingTimeFormat = config.NamingTimeFormat;
+                        if (!string.IsNullOrWhiteSpace(config.NamingSeparator)) NamingSeparator = config.NamingSeparator;
+                        NamingIncludeSequence = config.NamingIncludeSequence;
+                        if (!string.IsNullOrWhiteSpace(config.NamingShootNameSample)) NamingShootNameSample = config.NamingShootNameSample;
+                        NamingLowercase = config.NamingLowercase;
+                        if (!string.IsNullOrWhiteSpace(config.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = config.ThumbnailPerformanceMode;
+                        if (!string.IsNullOrWhiteSpace(config.FtpHost)) FtpHost = config.FtpHost;
+                        FtpPort = config.FtpPort > 0 ? config.FtpPort : 21;
+                        if (!string.IsNullOrWhiteSpace(config.FtpUser)) FtpUser = config.FtpUser;
+                        if (!string.IsNullOrWhiteSpace(config.FtpPass)) FtpPass = config.FtpPass;
+                        if (!string.IsNullOrWhiteSpace(config.FtpRemoteFolder)) FtpRemoteFolder = NormalizeFtpPath(config.FtpRemoteFolder);
+                        AutoReconnectLastFtp = config.AutoReconnectLastFtp;
+                        SettingsMenuExpanded = config.SettingsMenuExpanded;
                         if (!string.IsNullOrWhiteSpace(config.ScanPath)) ScanPath = config.ScanPath;
                         SelectAll = config.SelectAll;
                         if (config.IsDarkTheme.HasValue)
@@ -2428,11 +3045,19 @@ BuildGroups:
                         if (config.WindowWidth >= 400) _savedWindowWidth = config.WindowWidth;
                         if (config.WindowHeight >= 300) _savedWindowHeight = config.WindowHeight;
                         _savedWindowMaximized = config.WindowMaximized;
+                        if (config.WindowLeft.HasValue && config.WindowTop.HasValue &&
+                            !double.IsNaN(config.WindowLeft.Value) && !double.IsNaN(config.WindowTop.Value) &&
+                            !double.IsInfinity(config.WindowLeft.Value) && !double.IsInfinity(config.WindowTop.Value))
+                        {
+                            _savedWindowLeft = config.WindowLeft;
+                            _savedWindowTop = config.WindowTop;
+                        }
 
                         OnPropertyChanged("UpdateIntervalHours");
                         OnPropertyChanged("UpdatePackageType");
                         OnPropertyChanged("DestinationRoot");
                         OnPropertyChanged("DeleteAfterImport");
+                        OnPropertyChanged(nameof(DeleteAfterImportPromptDismissed));
                         OnPropertyChanged("NamingTemplate");
                         OnPropertyChanged("ScanPath");
                         OnPropertyChanged("SelectAll");
@@ -2587,11 +3212,6 @@ BuildGroups:
         public string Label { get; set; } = string.Empty;
     }
 
-    public class TokenItem
-    {
-        public string Value { get; set; } = string.Empty;
-    }
-
     public class TokenInsertPayload
     {
         public string Token { get; set; } = string.Empty;
@@ -2610,9 +3230,13 @@ BuildGroups:
                 SelectedTokens.Remove(item);
                 UpdateNamingFromTokens();
 
-                if (item.Value.StartsWith("[") && item.Value.EndsWith("]") && !AvailableTokens.Contains(item.Value))
+                var value = item.Value;
+                if (!string.IsNullOrEmpty(value) &&
+                    value.StartsWith("[") &&
+                    value.EndsWith("]") &&
+                    !AvailableTokens.Contains(value))
                 {
-                    AvailableTokens.Add(item.Value);
+                    AvailableTokens.Add(value);
                 }
             }
         }
@@ -2699,8 +3323,24 @@ BuildGroups:
         public int UpdateIntervalHours { get; set; } = 24;
         public string UpdatePackageType { get; set; } = "Portable";
         public string DestinationRoot { get; set; } = string.Empty;
-        public bool DeleteAfterImport { get; set; } = false;
+        public bool DeleteAfterImport { get; set; }
+        public bool DeleteAfterImportPromptDismissed { get; set; }
         public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
+        public string NamingPreset { get; set; } = "Recommended (Date + Shoot + Original)";
+        public string NamingDateFormat { get; set; } = "yyyy-MM-dd";
+        public string NamingTimeFormat { get; set; } = "HH-mm-ss";
+        public string NamingSeparator { get; set; } = "_";
+        public bool NamingIncludeSequence { get; set; } = false;
+        public string NamingShootNameSample { get; set; } = "my-shoot";
+        public bool NamingLowercase { get; set; } = true;
+        public string ThumbnailPerformanceMode { get; set; } = "Balanced";
+        public string FtpHost { get; set; } = string.Empty;
+        public int FtpPort { get; set; } = 21;
+        public string FtpUser { get; set; } = string.Empty;
+        public string FtpPass { get; set; } = string.Empty;
+        public string FtpRemoteFolder { get; set; } = "/DCIM";
+        public bool AutoReconnectLastFtp { get; set; } = true;
+        public bool SettingsMenuExpanded { get; set; } = true;
         public string ScanPath { get; set; } = string.Empty;
         public bool SelectAll { get; set; } = true;
         public bool? IsDarkTheme { get; set; }
@@ -2713,6 +3353,8 @@ BuildGroups:
             public double WindowWidth { get; set; } = 960;
             public double WindowHeight { get; set; } = 620;
             public bool WindowMaximized { get; set; } = false;
+            public double? WindowLeft { get; set; }
+            public double? WindowTop { get; set; }
             public bool IsFirstRun { get; set; } = true;
     }
 }

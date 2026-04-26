@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.Net.Http;
 using System.IO;
@@ -16,47 +17,70 @@ namespace QuickMediaIngest
 {
     public partial class App : System.Windows.Application
     {
+
         public App()
         {
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         }
 
-            private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-            {
-                try
-                {
-                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
-                        string logsDir = Path.Combine(baseDir, "Logs");
-                        Directory.CreateDirectory(logsDir);
-                        string fatalPath = Path.Combine(baseDir, "fatal.log");
-                        File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
-                        // Also write a timestamped crash file for easier collection
-                        string crashFile = Path.Combine(logsDir, $"crash-ui-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n");
-                }
-                catch { }
-                MessageBox.Show($"A fatal error occurred:\n{e.Exception}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                e.Handled = true;
-            }
 
-            private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            System.Threading.Tasks.Task.Run(() =>
             {
                 try
                 {
-                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                        string baseDir = Path.Combine(appData, "QuickMediaIngest");
-                        string logsDir = Path.Combine(baseDir, "Logs");
-                        Directory.CreateDirectory(logsDir);
-                        string fatalPath = Path.Combine(baseDir, "fatal.log");
-                        File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
-                        string crashFile = Path.Combine(logsDir, $"crash-domain-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-                        File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n");
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                    string logsDir = Path.Combine(baseDir, "logs");
+                    Directory.CreateDirectory(logsDir);
+                    string fatalPath = Path.Combine(baseDir, "fatal.log");
+                    File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
+                    string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    string configDump = TryGetAppConfigDump();
+                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n\nAppConfig:\n{configDump}\n");
                 }
                 catch { }
-                MessageBox.Show($"A fatal error occurred:\n{e.ExceptionObject}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            });
+            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
+        }
+
+
+        private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
+        {
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                    string logsDir = Path.Combine(baseDir, "logs");
+                    Directory.CreateDirectory(logsDir);
+                    string fatalPath = Path.Combine(baseDir, "fatal.log");
+                    File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
+                    string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    string configDump = TryGetAppConfigDump();
+                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n\nAppConfig:\n{configDump}\n");
                 }
+                catch { }
+            });
+            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private static string TryGetAppConfigDump()
+        {
+            try
+            {
+                // Try to get the current AppConfig state from the ViewModel or static config
+                // (This is a placeholder; replace with actual config serialization if available)
+                return File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
+                    ? File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
+                    : "(No config file found)";
+            }
+            catch { return "(Failed to read AppConfig)"; }
+        }
         public static bool CurrentIsDarkTheme { get; private set; } = true;
         private ServiceProvider? _serviceProvider;
         private static ILogger<App>? _logger;
@@ -68,11 +92,17 @@ namespace QuickMediaIngest
             _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
             _logger.LogInformation("Application startup initiated.");
 
+            // Run marker for clean shutdown (marker removed on normal exit)
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string baseDir = Path.Combine(appData, "QuickMediaIngest");
+            string runMarker = Path.Combine(baseDir, "last_run.tmp");
+            // Mark this run as started
+            try { Directory.CreateDirectory(baseDir); File.WriteAllText(runMarker, DateTime.Now.ToString("O")); } catch { }
+
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
 
             // Allow forcing a controlled test crash by creating a file named 'qmi_force_crash.txt' in the temp folder.
-            // Useful for verifying the unhandled-exception logging behavior during manual tests.
             try
             {
                 string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
@@ -91,7 +121,6 @@ namespace QuickMediaIngest
 
             if (mainWindow.DataContext is MainViewModel vm)
             {
-                // Complete startup work while splash is visible.
                 await vm.InitializeAsync();
                 mainWindow.ApplyWindowStateFromViewModel();
             }
@@ -104,6 +133,15 @@ namespace QuickMediaIngest
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // Remove run marker to indicate clean exit
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string baseDir = Path.Combine(appData, "QuickMediaIngest");
+                string runMarker = Path.Combine(baseDir, "last_run.tmp");
+                if (File.Exists(runMarker)) File.Delete(runMarker);
+            }
+            catch { }
             _serviceProvider?.Dispose();
             base.OnExit(e);
         }
@@ -205,18 +243,106 @@ namespace QuickMediaIngest
                 theme.SetBaseTheme(useLightTheme ? Theme.Light : Theme.Dark);
 
                 // Dark mode uses classic yellow accents, light mode uses blue accents.
-                Color accentColor = (Color)ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
+                System.Windows.Media.Color accentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
                 theme.SetPrimaryColor(accentColor);
                 theme.SetSecondaryColor(accentColor);
 
                 paletteHelper.SetTheme(theme);
                 CurrentIsDarkTheme = !useLightTheme;
 
-                Current.Resources["AppAccentBrush"] = new SolidColorBrush(accentColor);
+                System.Windows.Application.Current.Resources["AppAccentBrush"] = new System.Windows.Media.SolidColorBrush(accentColor);
+                // Update menu brushes to ensure visibility when switching themes
+                System.Windows.Media.SolidColorBrush menuForeground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1A1A1A")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                System.Windows.Media.SolidColorBrush menuBackground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E1E1E"));
+                try
+                {
+                    System.Windows.Application.Current.Resources["MenuForegroundBrush"] = menuForeground;
+                    System.Windows.Application.Current.Resources["MenuBackgroundBrush"] = menuBackground;
+                }
+                catch { }
+
+                ApplyChromePalette(useLightTheme);
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error applying theme.");
+            }
+        }
+
+        /// <summary>
+        /// Updates sidebar and Theme.* palette so chrome inverts with light/dark mode
+        /// (MaterialDesign paper alone does not drive SidebarBackground or custom Theme keys).
+        /// </summary>
+        private static void ApplyChromePalette(bool useLightTheme)
+        {
+            if (Application.Current == null)
+            {
+                return;
+            }
+
+            var res = Application.Current.Resources;
+
+            static void SetBrushColor(ResourceDictionary rd, string key, System.Windows.Media.Color c)
+            {
+                if (rd[key] is SolidColorBrush existing && !existing.IsFrozen)
+                {
+                    existing.Color = c;
+                }
+                else
+                {
+                    rd[key] = new SolidColorBrush(c);
+                }
+            }
+
+            static void SetThemeColor(ResourceDictionary rd, string key, System.Windows.Media.Color c)
+            {
+                rd[key] = c;
+            }
+
+            if (useLightTheme)
+            {
+                // Sidebar: slightly darker than main paper so layout reads clearly
+                SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#E8EAED"));
+                SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#5F6368"));
+
+                SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                SetThemeColor(res, "Theme.BarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                SetThemeColor(res, "Theme.CardBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FAFAFA"));
+                SetThemeColor(res, "Theme.TextPrimary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#212121"));
+                SetThemeColor(res, "Theme.TextSecondary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#424242"));
+                SetThemeColor(res, "Theme.TextTertiary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#5F6368"));
+                SetThemeColor(res, "Theme.Accent", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#0078D4"));
+                SetThemeColor(res, "Theme.AccentLight", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#42A5F5"));
+                SetThemeColor(res, "Theme.Divider", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#BDBDBD"));
+                SetThemeColor(res, "Theme.Hover", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#EEEEEE"));
+                SetThemeColor(res, "Theme.Border", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#CCCCCC"));
+                SetThemeColor(res, "Theme.Success", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#4CAF50"));
+                SetThemeColor(res, "Theme.Warning", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFA500"));
+                SetThemeColor(res, "Theme.Error", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F44336"));
+                SetThemeColor(res, "Theme.ExcelYellow", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFD700"));
+            }
+            else
+            {
+                SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#232323"));
+                SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#9E9E9E"));
+
+                SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1E1E1E"));
+                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
+                SetThemeColor(res, "Theme.BarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
+                SetThemeColor(res, "Theme.CardBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#252526"));
+                SetThemeColor(res, "Theme.TextPrimary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                SetThemeColor(res, "Theme.TextSecondary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#E0E0E0"));
+                SetThemeColor(res, "Theme.TextTertiary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#B0BEC5"));
+                SetThemeColor(res, "Theme.Accent", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#007ACC"));
+                SetThemeColor(res, "Theme.AccentLight", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1084D7"));
+                SetThemeColor(res, "Theme.Divider", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3F3F46"));
+                SetThemeColor(res, "Theme.Hover", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3E3E42"));
+                SetThemeColor(res, "Theme.Border", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#3F3F46"));
+                SetThemeColor(res, "Theme.Success", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#4CAF50"));
+                SetThemeColor(res, "Theme.Warning", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFA500"));
+                SetThemeColor(res, "Theme.Error", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F44336"));
+                SetThemeColor(res, "Theme.ExcelYellow", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFEB3B"));
             }
         }
     }
