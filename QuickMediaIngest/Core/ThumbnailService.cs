@@ -19,6 +19,10 @@ namespace QuickMediaIngest.Core
         {
             ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
         };
+        private static readonly string[] VideoExtensions =
+        {
+            ".mp4", ".mov", ".m4v", ".avi", ".wmv", ".mkv", ".3gp", ".mts", ".m2ts"
+        };
 
         public ThumbnailService(ILogger<ThumbnailService> logger)
         {
@@ -30,6 +34,7 @@ namespace QuickMediaIngest.Core
             if (!File.Exists(filePath)) return null;
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             bool isRaw = RawExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
+            bool isVideo = VideoExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
 
             string cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "Thumbnails");
             System.IO.Directory.CreateDirectory(cacheDir);
@@ -124,7 +129,12 @@ namespace QuickMediaIngest.Core
             {
                 try
                 {
-                    thumb = TryGetShellImage(filePath, isRaw ? 512 : 240, thumbnailOnly: true);
+                    thumb = TryGetShellImage(filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
+                    if (thumb == null && isVideo)
+                    {
+                        // Some video codecs return preview frames only via non-thumbnail mode.
+                        thumb = TryGetShellImage(filePath, 512, thumbnailOnly: false);
+                    }
                 }
                 catch (Exception ex)
                 {

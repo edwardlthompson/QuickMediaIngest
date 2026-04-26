@@ -10,3 +10,5 @@
 - Naming reliability: improve millisecond handling via EXIF subsecond parsing and non-zero fallback when metadata precision is second-level
 - UX/settings: add stack compare toggle, preset save/load, and top-bar filtering controls
 - Updates: switch to external updater handoff that waits for app exit before applying MSI/EXE updates, preventing in-use install failures
+- About dialog: add reliable build date display from assembly timestamp and direct links to changelog/release pages
+- FTP video previews: improve thumbnail extraction reliability with longer video download timeout and shell preview fallback for codec-specific videos

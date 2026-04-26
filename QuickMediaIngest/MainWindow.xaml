@@ -222,6 +222,8 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
                             <Button Content="📂 Open Logs Folder" Click="OpenLogs_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
                             <Button Content="🐛 Report a Bug" Click="ReportBug_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
+                            <Button Content="📝 Changelog" Command="{Binding OpenChangelogCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
+                            <Button Content="🚀 Releases" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="Version:" FontWeight="SemiBold" Width="80"/>

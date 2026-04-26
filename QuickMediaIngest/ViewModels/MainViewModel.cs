@@ -556,6 +556,26 @@ namespace QuickMediaIngest.ViewModels
         public bool IsUnifiedSourceSelected => SelectedSource is UnifiedSourceItem;
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        public string BuildDate
+        {
+            get
+            {
+                try
+                {
+                    string assemblyPath = typeof(MainViewModel).Assembly.Location;
+                    if (!string.IsNullOrWhiteSpace(assemblyPath) && File.Exists(assemblyPath))
+                    {
+                        return File.GetLastWriteTime(assemblyPath).ToString("yyyy-MM-dd HH:mm");
+                    }
+                }
+                catch
+                {
+                    // Ignore build date lookup errors.
+                }
+
+                return "Unknown";
+            }
+        }
 
         partial void OnIsDarkThemeChanged(bool value)
         {
@@ -893,6 +913,7 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand] private void LoadPreset() => LoadLatestPreset();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
         [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
+        [RelayCommand] private void OpenChangelog() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/blob/main/CHANGELOG.md");
         [RelayCommand] private void OpenGitHub()
         {
             const string repo = "https://github.com/edwardlthompson/QuickMediaIngest";
@@ -2093,7 +2114,8 @@ BuildGroups:
                         }
                         else
                         {
-                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
+                            int timeoutSeconds = IsLikelyVideoPath(item.FileName) ? 120 : 30;
+                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds);
                             if (!downloaded)
                             {
                                 Interlocked.Increment(ref skippedCount);
@@ -2178,6 +2200,20 @@ BuildGroups:
             {
                 return false;
             }
+        }
+
+        private static bool IsLikelyVideoPath(string path)
+        {
+            string ext = Path.GetExtension(path);
+            return ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".mov", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".m4v", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".avi", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".wmv", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".3gp", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".mts", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".m2ts", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void DownloadFtpFileSync(FtpSourceItem ftp, string remotePath, string localPath, CancellationToken cancellationToken)
@@ -2422,7 +2458,8 @@ BuildGroups:
 
                         try
                         {
-                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, 30);
+                            int timeoutSeconds = IsLikelyVideoPath(item.FileName) ? 120 : 30;
+                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds);
                             if (downloaded)
                             {
                                 var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
