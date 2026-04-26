@@ -13,14 +13,18 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 * **📂 Unified Scanner (Local + FTP)**: Select SD/local/FTP directly, or use `Unified (SD + FTP)` to merge all active sources into one timeline.
 * **🔄 One-Click Source Refresh**: Top-bar `Refresh` performs a full rescan and can force thumbnail cache rebuild when refreshing sources.
 * **🧭 Verbose Scan Progress Overlay**: Real-time folder/file progress with current folder, per-folder counts, total counts, and scan phase details.
-* **🖼️ Auto Preview Loading**: Local, FTP, and Unified previews load automatically during scan without a separate manual preview pass.
+* **🖼️ Auto Preview Loading (Photos + Videos)**: Local, FTP, and Unified previews load automatically during scan without a separate manual preview pass.
 * **📷 RAW-Friendly Preview Strategy**: RAW files prefer companion rendered previews (`.jpg/.jpeg/.heic/.heif`) when available for visual parity; shell fallback remains for codec-backed formats.
-* **🗂️ Preview Stacks**: RAW+rendered pairs can be shown as a single visible preview tile in the shoot grid while preserving import selection behavior.
+* **🗂️ Preview Stacks + Compare Mode**: RAW+rendered pairs can stay stacked by default, or be expanded side-by-side for quick visual comparison.
 * **🎚️ Adjustable Preview Throughput**: Thumbnail Performance modes `Low`, `Balanced`, `Max`, and `Ultra` tune local and FTP thumbnail worker counts.
 * **🧹 Dynamic Shoot Grouping**: Grouping by adjustable time gap (hours) with fast regrouping from cached scan data.
 * **📝 Shoot-Level Editing**: Rename shoot titles inline and use shoot name tokens in filename templates.
-* **🧠 Advanced Filename Templates**: Date/time (including milliseconds), sequence token support, separator controls, lowercase option, and live preview examples.
+* **🧠 Advanced Filename Templates**: Date/time (including milliseconds), sequence token support, separator controls, lowercase option, live preview examples, and stronger millisecond fallback when source metadata is second-only.
 * **🔐 Delete-After-Import Safety**: Warning prompt appears once, remembers acknowledgement/cancel, and persists state.
+* **🧪 Preflight + Reports**: Run import preflight checks and export import result artifacts (`json` + `txt`) for auditing.
+* **📋 Queue, Retry, and Resume**: Queue import jobs, retry failed files, and resume pending import plans after interruption.
+* **🧷 Duplicate + Verification Policies**: Choose duplicate handling (`Suffix`, `Skip`, `OverwriteIfNewer`) and verification mode (`Fast` size-check or `Strict` hash verification).
+* **🎛️ Presets + Live Filters**: Save/load workflow presets and filter preview surfaces by keyword/type while reviewing.
 * **💾 Persistent App State**: Remembers theme, settings menu expansion, window size/position/state, thumbnail zoom, naming options, and FTP reconnect preferences.
 * **🌐 FTP Reconnect on Startup**: Attempts non-blocking reconnect to the last FTP source and reports unobtrusively if unavailable.
 * **⬆️ Flexible Updates**: In-app updater supports both **Portable (.exe)** and **Installer (.msi)** channels with selectable check intervals and explicit selected-asset status.
@@ -31,8 +35,10 @@ Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery,
 2. **Pick View**: Select a single source or `Unified (SD + FTP)` for a merged import surface.
 3. **Scan + Preview**: Watch detailed scan progress while shoots and previews populate automatically.
 4. **Review Shoots**: Rename shoots, review source folders/date ranges, and select shoots/items.
-5. **Import**: Use the top-bar `Import` button and monitor overall + per-group progress.
-6. **Refresh When Needed**: Use top-bar `Refresh` to force full source/preview refresh and cache rebuild.
+5. **Preflight/Queue (Optional)**: Run `Preflight`, queue a batch with `Queue`, or resume pending jobs.
+6. **Import**: Use `Import` and monitor verbose overall + per-group progress, ETA, speed, and failed-item list.
+7. **Retry/Report**: Retry failed files quickly and review generated import reports in destination `_ImportReports`.
+8. **Refresh When Needed**: Use top-bar `Refresh` to force full source/preview refresh and cache rebuild.
 
 ---
 
@@ -45,7 +51,7 @@ The sidebar `Settings` expander includes:
 * **Import History**
 * **About & Updates**
 
-Preferences currently include destination path, naming template controls, and thumbnail performance mode.
+Preferences currently include destination path, naming template controls, thumbnail performance mode, stack expansion mode, duplicate policy, verification mode, and preset save/load controls.
 
 ---
 

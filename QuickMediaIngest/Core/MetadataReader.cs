@@ -43,12 +43,68 @@ namespace QuickMediaIngest.Core
 
                 if (subIfdDir != null && subIfdDir.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out DateTime dateTime))
                 {
-                    item.DateTaken = dateTime;
+                    item.DateTaken = ApplyExifSubsecondPrecision(subIfdDir, dateTime);
+                }
+                else
+                {
+                    // Fallback ensures [fff] tokens are not always 000 when metadata lacks ms precision.
+                    var fallback = File.GetLastWriteTime(item.SourcePath);
+                    if (fallback.Year > 1900)
+                    {
+                        item.DateTaken = fallback;
+                    }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to read metadata for {FileName}.", item.FileName);
+            }
+        }
+
+        private static DateTime ApplyExifSubsecondPrecision(ExifSubIfdDirectory subIfdDir, DateTime baseDateTime)
+        {
+            try
+            {
+                string? subsec = subIfdDir.GetDescription(ExifDirectoryBase.TagSubsecondTimeOriginal)
+                    ?? subIfdDir.GetDescription(ExifDirectoryBase.TagSubsecondTime);
+                if (string.IsNullOrWhiteSpace(subsec))
+                {
+                    return baseDateTime;
+                }
+
+                string digits = new string(subsec.Where(char.IsDigit).ToArray());
+                if (digits.Length == 0)
+                {
+                    return baseDateTime;
+                }
+
+                if (digits.Length > 3)
+                {
+                    digits = digits.Substring(0, 3);
+                }
+                else if (digits.Length < 3)
+                {
+                    digits = digits.PadRight(3, '0');
+                }
+
+                if (!int.TryParse(digits, out int milliseconds))
+                {
+                    return baseDateTime;
+                }
+
+                return new DateTime(
+                    baseDateTime.Year,
+                    baseDateTime.Month,
+                    baseDateTime.Day,
+                    baseDateTime.Hour,
+                    baseDateTime.Minute,
+                    baseDateTime.Second,
+                    milliseconds,
+                    baseDateTime.Kind);
+            }
+            catch
+            {
+                return baseDateTime;
             }
         }
     }

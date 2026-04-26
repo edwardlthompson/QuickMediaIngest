@@ -104,7 +104,77 @@
             </Border>
         </Grid>
         <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
-            <!-- ...existing Import Progress dialog content... -->
+            <Border Width="760" Padding="18" CornerRadius="8"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource MaterialDesignPaper}"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Import In Progress..." FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <ProgressBar Height="16" Minimum="0" Maximum="100" Value="{Binding ProgressPercent}" Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding ProgressPercent, StringFormat='Overall Progress: {0}%'}" FontSize="12" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                    <Border Background="{DynamicResource MenuBackgroundBrush}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Current Group:" FontWeight="SemiBold" Margin="0,0,10,6"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentImportGroupTitle}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Files Processed:" FontWeight="SemiBold" Margin="0,0,10,6"/>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="{Binding ProcessedFilesForImport}"/>
+                                <TextBlock Text="/"/>
+                                <TextBlock Text="{Binding TotalFilesForImport}"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Succeeded:" FontWeight="SemiBold" Margin="0,0,10,6"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentFileBeingImported}" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Failed:" FontWeight="SemiBold" Margin="0,0,10,6"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding FailedFilesForImport}" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Elapsed:" FontWeight="SemiBold" Margin="0,0,10,6"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ImportElapsedText}" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="ETA / Speed:" FontWeight="SemiBold"/>
+                            <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal">
+                                <TextBlock Text="ETA "/>
+                                <TextBlock Text="{Binding ImportEtaText}"/>
+                                <TextBlock Text="  |  "/>
+                                <TextBlock Text="{Binding ImportDataRateText}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="Current Group Progress" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ProgressBar Height="12" Minimum="0" Maximum="100" Value="{Binding CurrentGroupProgressPercent}" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding CurrentGroupFileBeingImported, StringFormat='Group Files: {0}'}" FontSize="12"/>
+                    <TextBlock Text="{Binding TotalFilesInCurrentGroup, StringFormat='Group Total: {0}'}" FontSize="12"/>
+                    <TextBlock Text="{Binding TotalFilesForImport, StringFormat='Overall Total Files: {0}'}" FontSize="12" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding FailedImportRecords.Count, StringFormat='Failed In Last Run: {0}'}" FontSize="12"/>
+                    <TextBlock Text="{Binding QueuedImportCount, StringFormat='Queued Jobs: {0}'}" FontSize="12"/>
+                    <ItemsControl ItemsSource="{Binding FailedImportRecords}" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{DynamicResource Theme.Error.Brush}" TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
         </Grid>
         <Grid Grid.ColumnSpan="2" Background="{DynamicResource Theme.Hover.Brush}" Visibility="{Binding ShowSkippedFoldersDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
             <!-- ...existing Skipped Folders dialog content... -->
@@ -273,6 +343,22 @@
                                 <TextBlock Text="Import" VerticalAlignment="Center" Foreground="{DynamicResource MaterialDesignBody}"/>
                             </StackPanel>
                         </Button>
+                        <Button Command="{Binding QueueImportCommand}" Margin="0,0,10,6" Height="26" Padding="8,0"
+                                Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Queue selected files for import">
+                            <TextBlock Text="Queue"/>
+                        </Button>
+                        <Button Command="{Binding PreflightImportCommand}" Margin="0,0,10,6" Height="26" Padding="8,0"
+                                Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Run dry-run preflight report">
+                            <TextBlock Text="Preflight"/>
+                        </Button>
+                        <Button Command="{Binding RetryFailedImportsCommand}" Margin="0,0,12,6" Height="26" Padding="8,0"
+                                Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Retry failed files from last import">
+                            <TextBlock Text="Retry Failed"/>
+                        </Button>
+                        <Button Command="{Binding ResumePendingImportCommand}" Margin="0,0,12,6" Height="26" Padding="8,0"
+                                Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Resume pending import plan">
+                            <TextBlock Text="Resume Pending"/>
+                        </Button>
                         <Button Command="{Binding RefreshAllSourcesCommand}" Margin="0,0,12,6" Height="26" Padding="8,0"
                                 Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Rescan drives and refresh unified">
                             <StackPanel Orientation="Horizontal">
@@ -302,6 +388,11 @@
                                     Value="{Binding ThumbnailSize, Mode=TwoWay}" Margin="5,0" ToolTip="Adjust thumbnail size"/>
                             <materialDesign:PackIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,6">
+                            <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBox Width="140" Text="{Binding FilterKeyword, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0"/>
+                            <ComboBox Width="90" ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay}"/>
+                        </StackPanel>
                     </WrapPanel>
                 </Border>
 
@@ -325,6 +416,8 @@
                                             <ColumnDefinition Width="260" />
                                         </Grid.ColumnDefinitions>
                                         <TextBox Grid.Column="0" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" FontSize="15" BorderThickness="0,0,0,1" Margin="0,0,8,0"
+                                                 GotKeyboardFocus="TextBox_SelectAll"
+                                                 PreviewMouseLeftButtonDown="TextBox_PreviewMouseLeftButtonDown"
                                                  materialDesign:HintAssist.Hint="Enter Shoot Name"/>
                                         <CheckBox Grid.Column="1" Content="Select Shoot" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="4,0,10,0" VerticalAlignment="Top"/>
                                         <StackPanel Grid.Column="2">
@@ -501,6 +594,18 @@
                     <Separator Margin="0,0,0,12"/>
                     <TextBlock Text="Thumbnail Performance" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+                    <CheckBox Content="Expand stacked RAW/rendered previews side-by-side" IsChecked="{Binding ExpandPreviewStacks, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Duplicate Handling" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding DuplicatePolicyOptions}" SelectedItem="{Binding DuplicatePolicy, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Verification Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding VerificationModeOptions}" SelectedItem="{Binding VerificationMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button Content="Save Preset" Command="{Binding SavePresetCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0"/>
+                        <Button Content="Load Latest Preset" Command="{Binding LoadPresetCommand}" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                    </StackPanel>
 
                         <Button Content="Save &amp; Close" HorizontalAlignment="Right" 
                             Width="120" Click="CloseSettings_Click" IsDefault="True"/>

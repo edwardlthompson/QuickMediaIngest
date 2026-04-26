@@ -75,6 +75,8 @@ namespace QuickMediaIngest.ViewModels
         private bool _selectAll = true;
         private long _processedBytesForImport = 0;
         private DateTime _importStartedAtUtc = DateTime.MinValue;
+        private readonly Queue<QueuedImportJob> _importQueue = new();
+        private readonly object _importQueueLock = new();
         // Sidebar sections for expandable menu
         public ObservableCollection<SidebarSection> SidebarSections { get; } = new();
 
@@ -265,7 +267,11 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool scanIncludeSubfolders = true;
         [ObservableProperty] private bool isImporting = false;
         [ObservableProperty] private bool showSuccessNotification = false;
+        [ObservableProperty] private int queuedImportCount = 0;
         [ObservableProperty] private int timeBetweenShootsHours = 4;
+        [ObservableProperty] private bool expandPreviewStacks = false;
+        [ObservableProperty] private string duplicatePolicy = "Suffix";
+        [ObservableProperty] private string verificationMode = "Fast";
         [ObservableProperty] private bool isBrowsingFtpFolders = false;
         [ObservableProperty] private string selectedFtpPresetFolder = "/DCIM";
         [ObservableProperty] private FtpFolderOption? selectedBrowsedFtpFolder;
@@ -291,6 +297,7 @@ namespace QuickMediaIngest.ViewModels
             SyncNamingOptionsFromTemplate();
             RefreshNamingPreviewExamples();
             LoadImportHistory();
+            TryRestorePendingImportPlanNotice();
             // Initial population of sidebar sources (drives + saved FTP)
             try
             {
@@ -332,6 +339,31 @@ namespace QuickMediaIngest.ViewModels
             _startupInitialized = true;
 
             await Task.CompletedTask;
+        }
+
+        private void TryRestorePendingImportPlanNotice()
+        {
+            try
+            {
+                string path = GetPendingImportPlanPath();
+                if (!File.Exists(path))
+                {
+                    return;
+                }
+
+                string json = File.ReadAllText(path);
+                var plan = System.Text.Json.JsonSerializer.Deserialize<PendingImportPlan>(json);
+                if (plan == null || plan.SelectedSourcePaths.Count == 0)
+                {
+                    return;
+                }
+
+                StatusMessage = $"Recovered pending import plan ({plan.SelectedSourcePaths.Count} files from {plan.SourceDisplay}).";
+            }
+            catch
+            {
+                // Ignore pending plan read failures.
+            }
         }
 
         // Observable properties (must be at class scope)
@@ -497,6 +529,13 @@ namespace QuickMediaIngest.ViewModels
         partial void OnSettingsMenuExpandedChanged(bool value) => SaveConfig();
         partial void OnThumbnailPerformanceModeChanged(string value) => SaveConfig();
         partial void OnThumbnailSizeChanged(double value) => SaveConfig();
+        partial void OnExpandPreviewStacksChanged(bool value)
+        {
+            RebuildGroupsFromCurrentItems();
+            SaveConfig();
+        }
+        partial void OnDuplicatePolicyChanged(string value) => SaveConfig();
+        partial void OnVerificationModeChanged(string value) => SaveConfig();
         partial void OnScanPathChanged(string value)
         {
             if (SelectedSource is FtpSourceItem ftp)
@@ -526,6 +565,7 @@ namespace QuickMediaIngest.ViewModels
         public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
         public ObservableCollection<ImportHistoryRecord> ImportHistoryRecords { get; } = new ObservableCollection<ImportHistoryRecord>();
+        public ObservableCollection<FailedImportRecord> FailedImportRecords { get; } = new ObservableCollection<FailedImportRecord>();
 
         [RelayCommand]
         private void ClearImportHistory()
@@ -650,6 +690,17 @@ namespace QuickMediaIngest.ViewModels
             "Balanced",
             "Max",
             "Ultra"
+        };
+        public ObservableCollection<string> DuplicatePolicyOptions { get; } = new ObservableCollection<string>
+        {
+            "Suffix",
+            "Skip",
+            "OverwriteIfNewer"
+        };
+        public ObservableCollection<string> VerificationModeOptions { get; } = new ObservableCollection<string>
+        {
+            "Fast",
+            "Strict"
         };
         public ObservableCollection<string> NamingPreviewExamples { get; } = new ObservableCollection<string>();
 
@@ -833,6 +884,12 @@ namespace QuickMediaIngest.ViewModels
         }
        
         [RelayCommand] private void Import() => ExecuteImport();
+        [RelayCommand] private void QueueImport() => QueueCurrentImport();
+        [RelayCommand] private void PreflightImport() => ExecuteImportPreflight();
+        [RelayCommand] private void RetryFailedImports() => ExecuteRetryFailedImports();
+        [RelayCommand] private void ResumePendingImport() => ExecuteResumePendingImport();
+        [RelayCommand] private void SavePreset() => SaveCurrentPreset();
+        [RelayCommand] private void LoadPreset() => LoadLatestPreset();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
         [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
         [RelayCommand] private void OpenGitHub()
@@ -1556,7 +1613,7 @@ BuildGroups:
                 group.AlbumName = AlbumName;
                 group.FolderPath = Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty;
                 group.SyncSelectionFromItems();
-                ApplyPreviewStacks(group.Items);
+                ApplyPreviewStacks(group.Items, ExpandPreviewStacks);
                 foreach (var item in group.Items)
                 {
                     string key = BuildItemKey(item);
@@ -1571,6 +1628,7 @@ BuildGroups:
 
 
             UpdateSelectAllFromGroups();
+            ApplyFiltersToCurrentGroups();
             StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
         }
 
@@ -1584,7 +1642,7 @@ BuildGroups:
             ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
         };
 
-        private static void ApplyPreviewStacks(List<ImportItem> items)
+        private static void ApplyPreviewStacks(List<ImportItem> items, bool expandPreviewStacks)
         {
             foreach (var item in items)
             {
@@ -1623,7 +1681,7 @@ BuildGroups:
                 {
                     member.StackKey = stackKey;
                     member.IsStackRepresentative = ReferenceEquals(member, representative);
-                    member.IsPreviewVisible = member.IsStackRepresentative;
+                    member.IsPreviewVisible = expandPreviewStacks || member.IsStackRepresentative;
                     member.PreviewLabel = member.IsStackRepresentative && hiddenCount > 0
                         ? $"{member.FileName} (+{hiddenCount})"
                         : member.FileName;
@@ -1722,10 +1780,56 @@ BuildGroups:
             FilteredItemsView = cvs;
             cvs.Refresh();
         }
-        partial void OnFilterStartDateChanged(DateTime? value) => EnsureFilteredItemsViewSource();
-        partial void OnFilterEndDateChanged(DateTime? value) => EnsureFilteredItemsViewSource();
-        partial void OnFilterFileTypeChanged(string value) => EnsureFilteredItemsViewSource();
-        partial void OnFilterKeywordChanged(string value) => EnsureFilteredItemsViewSource();
+        partial void OnFilterStartDateChanged(DateTime? value)
+        {
+            EnsureFilteredItemsViewSource();
+            ApplyFiltersToCurrentGroups();
+        }
+        partial void OnFilterEndDateChanged(DateTime? value)
+        {
+            EnsureFilteredItemsViewSource();
+            ApplyFiltersToCurrentGroups();
+        }
+        partial void OnFilterFileTypeChanged(string value)
+        {
+            EnsureFilteredItemsViewSource();
+            ApplyFiltersToCurrentGroups();
+        }
+        partial void OnFilterKeywordChanged(string value)
+        {
+            EnsureFilteredItemsViewSource();
+            ApplyFiltersToCurrentGroups();
+        }
+
+        private void ApplyFiltersToCurrentGroups()
+        {
+            foreach (var group in Groups)
+            {
+                ApplyPreviewStacks(group.Items, ExpandPreviewStacks);
+                foreach (var item in group.Items)
+                {
+                    bool visible = true;
+                    if (FilterStartDate.HasValue && item.DateTaken < FilterStartDate.Value.Date)
+                    {
+                        visible = false;
+                    }
+                    if (visible && FilterEndDate.HasValue && item.DateTaken > FilterEndDate.Value.Date.AddDays(1).AddTicks(-1))
+                    {
+                        visible = false;
+                    }
+                    if (visible && !string.IsNullOrWhiteSpace(FilterFileType) && !string.Equals(item.FileType, FilterFileType, StringComparison.OrdinalIgnoreCase))
+                    {
+                        visible = false;
+                    }
+                    if (visible && !string.IsNullOrWhiteSpace(FilterKeyword) && !item.FileName.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))
+                    {
+                        visible = false;
+                    }
+
+                    item.IsPreviewVisible = item.IsPreviewVisible && visible;
+                }
+            }
+        }
 
         private void ExecuteCopySkippedFoldersReport()
         {
@@ -1766,7 +1870,7 @@ BuildGroups:
 
             await Task.Run(() =>
             {
-                var allItems = groups.SelectMany(g => g.Items).Where(i => !i.IsVideo).ToList();
+                var allItems = groups.SelectMany(g => g.Items).ToList();
                 int total = allItems.Count;
 
                 if (total == 0)
@@ -1825,7 +1929,6 @@ BuildGroups:
         {
             var allItems = groups
                 .SelectMany(g => g.Items)
-                .Where(i => !i.IsVideo)
                 .ToList();
 
             if (allItems.Count == 0)
@@ -2197,7 +2300,6 @@ BuildGroups:
         {
             var allItems = groups
                 .SelectMany(g => g.Items)
-                .Where(i => !i.IsVideo)
                 .ToList();
 
             if (allItems.Count == 0)
@@ -2387,7 +2489,7 @@ BuildGroups:
                 ScannedFolders = 0;
                 TotalFoldersToScan = selectedGroups.Count;
                 ScannedFiles = 0;
-                TotalFilesToScan = selectedGroups.SelectMany(g => g.Items).Count(i => !i.IsVideo);
+                TotalFilesToScan = selectedGroups.SelectMany(g => g.Items).Count();
                 ScanProgressMessage = $"Building previews for {selectedGroups.Count} selected folder(s)...";
                 StatusMessage = "Building previews for selected folders...";
 
@@ -2426,11 +2528,13 @@ BuildGroups:
             }
 
             IsImporting = true;
+            SavePendingImportPlan(selectedGroups);
             _logger.LogInformation("Import started. SelectedGroups={GroupCount}, SelectedFiles={FileCount}", selectedGroups.Count, totalFiles);
             TotalFilesForImport = totalFiles;
             CurrentFileBeingImported = 0;
             ProcessedFilesForImport = 0;
             FailedFilesForImport = 0;
+            FailedImportRecords.Clear();
             CurrentGroupFileBeingImported = 0;
             TotalFilesInCurrentGroup = 0;
             CurrentGroupProgressPercent = 0;
@@ -2522,6 +2626,12 @@ BuildGroups:
                                 if (!progress.Success)
                                 {
                                     FailedFilesForImport++;
+                                    FailedImportRecords.Add(new FailedImportRecord
+                                    {
+                                        SourcePath = progress.SourcePath,
+                                        FileName = progress.FileName,
+                                        ErrorMessage = string.IsNullOrWhiteSpace(progress.ErrorMessage) ? "Import failed." : progress.ErrorMessage
+                                    });
                                 }
                                 else
                                 {
@@ -2544,7 +2654,7 @@ BuildGroups:
                         {
                             foreach (var group in selectedGroups)
                             {
-                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token);
+                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token, CreateIngestOptions());
 
                                 if (DeleteAfterImport)
                                 {
@@ -2585,8 +2695,10 @@ BuildGroups:
                     ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
                 }
                 ShowSuccessNotification = true;
+                ShowWindowsImportCompletionNotification(CurrentFileBeingImported, TotalFilesForImport, FailedFilesForImport);
 
                 SaveImportHistoryRecord(stopwatch.Elapsed);
+                ExportImportReportArtifact(stopwatch.Elapsed, selectedGroups);
                 
                 // Hide progress dialog after a brief moment to show completion
                 await System.Threading.Tasks.Task.Delay(1000);
@@ -2686,6 +2798,7 @@ BuildGroups:
                 // Clear the imported groups and refresh scan to show updated/deleted state
                 Groups.Clear();
                 _sourceItemsCache.Clear();
+                ClearPendingImportPlan();
                 if (SelectedSource != null)
                 {
                     LoadSourceItems(SelectedSource);
@@ -2709,11 +2822,304 @@ BuildGroups:
                 }
 
                 ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
-                SystemSounds.Asterisk.Play();
                 IsImporting = false;
                 ShowImportProgressDialog = false;
                 _logger.LogInformation("Import finished. Imported={ImportedCount}, Failed={FailedCount}", CurrentFileBeingImported, FailedFilesForImport);
             }
+
+            TryStartNextQueuedImport();
+        }
+
+        private void ExecuteImportPreflight()
+        {
+            SyncStackSelections(Groups);
+            var selectedGroups = Groups.Where(g => g.Items.Any(i => i.IsSelected)).ToList();
+            int selectedCount = selectedGroups.Sum(g => g.Items.Count(i => i.IsSelected));
+            long totalBytes = selectedGroups.SelectMany(g => g.Items).Where(i => i.IsSelected).Sum(i => Math.Max(0, i.FileSize));
+            var duplicateNames = selectedGroups
+                .SelectMany(g => g.Items.Where(i => i.IsSelected))
+                .GroupBy(i => i.FileName, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .Take(25)
+                .ToList();
+
+            var report = new
+            {
+                GeneratedAt = DateTime.Now,
+                DestinationRoot,
+                SelectedGroups = selectedGroups.Count,
+                SelectedFiles = selectedCount,
+                TotalBytes = totalBytes,
+                DuplicatePolicy,
+                VerificationMode,
+                PotentialDuplicateNames = duplicateNames
+            };
+
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "preflight");
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, $"preflight-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            StatusMessage = $"Preflight complete: {selectedCount} files, {(totalBytes / (1024d * 1024d)):0.00} MB. Saved to {path}.";
+        }
+
+        private void ExecuteRetryFailedImports()
+        {
+            if (FailedImportRecords.Count == 0)
+            {
+                StatusMessage = "No failed files to retry.";
+                return;
+            }
+
+            var failedPaths = new HashSet<string>(FailedImportRecords.Select(f => f.SourcePath), StringComparer.OrdinalIgnoreCase);
+            foreach (var group in Groups)
+            {
+                foreach (var item in group.Items)
+                {
+                    item.IsSelected = failedPaths.Contains(item.SourcePath);
+                }
+                group.SyncSelectionFromItems();
+            }
+
+            StatusMessage = $"Retrying {failedPaths.Count} failed file(s)...";
+            ExecuteImport();
+        }
+
+        private void ExecuteResumePendingImport()
+        {
+            try
+            {
+                string path = GetPendingImportPlanPath();
+                if (!File.Exists(path))
+                {
+                    StatusMessage = "No pending import plan found.";
+                    return;
+                }
+
+                var plan = System.Text.Json.JsonSerializer.Deserialize<PendingImportPlan>(File.ReadAllText(path));
+                if (plan == null || plan.SelectedSourcePaths.Count == 0)
+                {
+                    StatusMessage = "Pending import plan is empty.";
+                    return;
+                }
+
+                if (!string.Equals(plan.SourceId, BuildSelectedSourceId(), StringComparison.OrdinalIgnoreCase))
+                {
+                    StatusMessage = $"Pending import source is {plan.SourceDisplay}. Select that source first.";
+                    return;
+                }
+
+                var selectedSet = new HashSet<string>(plan.SelectedSourcePaths, StringComparer.OrdinalIgnoreCase);
+                foreach (var group in Groups)
+                {
+                    foreach (var item in group.Items)
+                    {
+                        item.IsSelected = selectedSet.Contains(item.SourcePath);
+                    }
+                    group.SyncSelectionFromItems();
+                }
+
+                StatusMessage = $"Resuming pending import ({selectedSet.Count} files).";
+                ExecuteImport();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Unable to resume pending import: {ex.Message}";
+            }
+        }
+
+        private void QueueCurrentImport()
+        {
+            SyncStackSelections(Groups);
+            var selectedPaths = Groups
+                .SelectMany(g => g.Items)
+                .Where(i => i.IsSelected)
+                .Select(i => i.SourcePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (selectedPaths.Count == 0)
+            {
+                StatusMessage = "Select files before queueing an import.";
+                return;
+            }
+
+            lock (_importQueueLock)
+            {
+                _importQueue.Enqueue(new QueuedImportJob
+                {
+                    SourceDisplay = SelectedSource?.ToString() ?? "Unknown",
+                    SourceId = BuildSelectedSourceId(),
+                    SelectedSourcePaths = selectedPaths
+                });
+                QueuedImportCount = _importQueue.Count;
+            }
+
+            StatusMessage = $"Queued import job with {selectedPaths.Count} file(s).";
+            if (!IsImporting)
+            {
+                TryStartNextQueuedImport();
+            }
+        }
+
+        private void TryStartNextQueuedImport()
+        {
+            if (IsImporting)
+            {
+                return;
+            }
+
+            QueuedImportJob? nextJob = null;
+            lock (_importQueueLock)
+            {
+                if (_importQueue.Count > 0)
+                {
+                    nextJob = _importQueue.Dequeue();
+                }
+                QueuedImportCount = _importQueue.Count;
+            }
+
+            if (nextJob == null)
+            {
+                return;
+            }
+
+            if (!string.Equals(nextJob.SourceId, BuildSelectedSourceId(), StringComparison.OrdinalIgnoreCase))
+            {
+                StatusMessage = $"Queued import for {nextJob.SourceDisplay} is waiting. Switch to that source and queue again to run.";
+                return;
+            }
+
+            var selectedSet = new HashSet<string>(nextJob.SelectedSourcePaths, StringComparer.OrdinalIgnoreCase);
+            foreach (var group in Groups)
+            {
+                foreach (var item in group.Items)
+                {
+                    item.IsSelected = selectedSet.Contains(item.SourcePath);
+                }
+                group.SyncSelectionFromItems();
+            }
+
+            StatusMessage = $"Starting queued import ({selectedSet.Count} file(s)).";
+            ExecuteImport();
+        }
+
+        private void SaveCurrentPreset()
+        {
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "presets");
+                Directory.CreateDirectory(dir);
+                var preset = new UserPreset
+                {
+                    Name = $"preset-{DateTime.Now:yyyyMMdd-HHmmss}",
+                    DestinationRoot = DestinationRoot,
+                    NamingTemplate = NamingTemplate,
+                    VerificationMode = VerificationMode,
+                    DuplicatePolicy = DuplicatePolicy,
+                    ThumbnailPerformanceMode = ThumbnailPerformanceMode
+                };
+                string path = Path.Combine(dir, preset.Name + ".json");
+                File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(preset, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                StatusMessage = $"Saved preset: {preset.Name}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Unable to save preset: {ex.Message}";
+            }
+        }
+
+        private void LoadLatestPreset()
+        {
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "presets");
+                if (!Directory.Exists(dir))
+                {
+                    StatusMessage = "No presets available.";
+                    return;
+                }
+
+                string? latest = Directory.GetFiles(dir, "*.json")
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(latest))
+                {
+                    StatusMessage = "No presets available.";
+                    return;
+                }
+
+                var preset = System.Text.Json.JsonSerializer.Deserialize<UserPreset>(File.ReadAllText(latest));
+                if (preset == null)
+                {
+                    StatusMessage = "Preset could not be loaded.";
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(preset.DestinationRoot)) DestinationRoot = preset.DestinationRoot;
+                if (!string.IsNullOrWhiteSpace(preset.NamingTemplate)) NamingTemplate = preset.NamingTemplate;
+                if (!string.IsNullOrWhiteSpace(preset.VerificationMode)) VerificationMode = preset.VerificationMode;
+                if (!string.IsNullOrWhiteSpace(preset.DuplicatePolicy)) DuplicatePolicy = preset.DuplicatePolicy;
+                if (!string.IsNullOrWhiteSpace(preset.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = preset.ThumbnailPerformanceMode;
+                SaveConfig();
+                StatusMessage = $"Loaded preset: {preset.Name}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Unable to load preset: {ex.Message}";
+            }
+        }
+
+        private static void ShowWindowsImportCompletionNotification(int importedCount, int totalCount, int failedCount)
+        {
+            string title = failedCount > 0 ? "Import completed with warnings" : "Import completed";
+            string body = failedCount > 0
+                ? $"Imported {importedCount}/{totalCount}. Failed: {failedCount}."
+                : $"Imported {importedCount}/{totalCount} successfully.";
+
+            try
+            {
+                SystemSounds.Exclamation.Play();
+            }
+            catch
+            {
+                // Ignore local sound playback issues.
+            }
+
+            try
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show(
+                        body,
+                        title,
+                        MessageBoxButton.OK,
+                        failedCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+                }));
+            }
+            catch
+            {
+                // Ignore notification failures to avoid interrupting import completion.
+            }
+        }
+
+        private IngestOptions CreateIngestOptions()
+        {
+            DuplicateHandlingMode duplicateMode = DuplicatePolicy switch
+            {
+                "Skip" => DuplicateHandlingMode.Skip,
+                "OverwriteIfNewer" => DuplicateHandlingMode.OverwriteIfNewer,
+                _ => DuplicateHandlingMode.Suffix
+            };
+
+            ImportVerificationMode verification = VerificationMode == "Strict"
+                ? ImportVerificationMode.Strict
+                : ImportVerificationMode.Fast;
+
+            return new IngestOptions
+            {
+                DuplicateHandling = duplicateMode,
+                VerificationMode = verification
+            };
         }
 
         private async Task ExecuteUnifiedImportAsync(List<ItemGroup> selectedGroups, CancellationToken cancellationToken)
@@ -2811,6 +3217,12 @@ BuildGroups:
                     if (!progress.Success)
                     {
                         FailedFilesForImport++;
+                        FailedImportRecords.Add(new FailedImportRecord
+                        {
+                            SourcePath = progress.SourcePath,
+                            FileName = progress.FileName,
+                            ErrorMessage = string.IsNullOrWhiteSpace(progress.ErrorMessage) ? "Import failed." : progress.ErrorMessage
+                        });
                     }
                     else
                     {
@@ -2829,7 +3241,7 @@ BuildGroups:
                 });
             };
 
-            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken);
+            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken, CreateIngestOptions());
 
             if (!DeleteAfterImport)
             {
@@ -2912,6 +3324,118 @@ BuildGroups:
             }
         }
 
+        private string BuildSelectedSourceId()
+        {
+            return SelectedSource switch
+            {
+                FtpSourceItem ftp => BuildSourceKey(ftp),
+                string local => BuildSourceKey(local),
+                UnifiedSourceItem => "unified",
+                _ => "unknown"
+            };
+        }
+
+        private static string GetPendingImportPlanPath()
+        {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
+            Directory.CreateDirectory(folder);
+            return Path.Combine(folder, "pending-import.json");
+        }
+
+        private void SavePendingImportPlan(List<ItemGroup> selectedGroups)
+        {
+            try
+            {
+                var selectedPaths = selectedGroups
+                    .SelectMany(g => g.Items)
+                    .Where(i => i.IsSelected)
+                    .Select(i => i.SourcePath)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var plan = new PendingImportPlan
+                {
+                    CreatedAt = DateTime.Now,
+                    SourceId = BuildSelectedSourceId(),
+                    SourceDisplay = SelectedSource?.ToString() ?? "Unknown",
+                    DestinationRoot = DestinationRoot,
+                    NamingTemplate = NamingTemplate,
+                    SelectedSourcePaths = selectedPaths
+                };
+                string json = System.Text.Json.JsonSerializer.Serialize(plan, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(GetPendingImportPlanPath(), json);
+            }
+            catch
+            {
+                // Ignore pending plan persistence failures.
+            }
+        }
+
+        private void ClearPendingImportPlan()
+        {
+            try
+            {
+                string path = GetPendingImportPlanPath();
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Ignore clear failures.
+            }
+        }
+
+        private void ExportImportReportArtifact(TimeSpan duration, List<ItemGroup> selectedGroups)
+        {
+            try
+            {
+                string reportDir = Path.Combine(DestinationRoot, "_ImportReports");
+                Directory.CreateDirectory(reportDir);
+                string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                var report = new ImportReportArtifact
+                {
+                    GeneratedAt = DateTime.Now,
+                    Source = SelectedSource?.ToString() ?? "Unknown",
+                    Destination = DestinationRoot,
+                    DurationSeconds = duration.TotalSeconds,
+                    FilesSelected = TotalFilesForImport,
+                    FilesImported = CurrentFileBeingImported,
+                    FailedFiles = FailedFilesForImport,
+                    VerificationMode = VerificationMode,
+                    DuplicatePolicy = DuplicatePolicy,
+                    Failed = FailedImportRecords.ToList()
+                };
+
+                string jsonPath = Path.Combine(reportDir, $"import-report-{timestamp}.json");
+                File.WriteAllText(jsonPath, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+                var text = new StringBuilder();
+                text.AppendLine($"Import Report - {report.GeneratedAt:yyyy-MM-dd HH:mm:ss}");
+                text.AppendLine($"Source: {report.Source}");
+                text.AppendLine($"Destination: {report.Destination}");
+                text.AppendLine($"DurationSeconds: {report.DurationSeconds:0.##}");
+                text.AppendLine($"Imported: {report.FilesImported}/{report.FilesSelected}");
+                text.AppendLine($"Failed: {report.FailedFiles}");
+                text.AppendLine($"Verification: {report.VerificationMode}");
+                text.AppendLine($"DuplicatePolicy: {report.DuplicatePolicy}");
+                if (FailedImportRecords.Count > 0)
+                {
+                    text.AppendLine("Failed Files:");
+                    foreach (var failure in FailedImportRecords)
+                    {
+                        text.AppendLine($"- {failure.FileName} | {failure.ErrorMessage}");
+                    }
+                }
+                string txtPath = Path.Combine(reportDir, $"import-report-{timestamp}.txt");
+                File.WriteAllText(txtPath, text.ToString());
+            }
+            catch
+            {
+                // Ignore report export errors.
+            }
+        }
+
         private void LoadImportHistory()
         {
             try
@@ -2981,6 +3505,9 @@ BuildGroups:
                     TimeBetweenShootsHours = TimeBetweenShootsHours,
                     LimitFtpThumbnailLoad = LimitFtpThumbnailLoad,
                     FtpInitialThumbnailCount = FtpInitialThumbnailCount,
+                    ExpandPreviewStacks = ExpandPreviewStacks,
+                    DuplicatePolicy = DuplicatePolicy,
+                    VerificationMode = VerificationMode,
                     RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
                     UpdatePackageType = UpdatePackageType,
                     WindowWidth = _savedWindowWidth,
@@ -3039,6 +3566,9 @@ BuildGroups:
                         TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
                         LimitFtpThumbnailLoad = false;
                         FtpInitialThumbnailCount = 0;
+                        ExpandPreviewStacks = config.ExpandPreviewStacks;
+                        if (!string.IsNullOrWhiteSpace(config.DuplicatePolicy)) DuplicatePolicy = config.DuplicatePolicy;
+                        if (!string.IsNullOrWhiteSpace(config.VerificationMode)) VerificationMode = config.VerificationMode;
                         if (config.RibbonTileOrder is { Count: > 0 })
                             _ribbonTileOrder = config.RibbonTileOrder;
                         if (!string.IsNullOrEmpty(config.UpdatePackageType)) UpdatePackageType = config.UpdatePackageType;
@@ -3299,6 +3829,54 @@ BuildGroups:
             $"{StartedAtDisplay} | Imported {FilesImported}/{FilesSelected} | Failed {FailedFiles} | Duration {DurationDisplay}";
     }
 
+    public class FailedImportRecord
+    {
+        public string SourcePath { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
+    }
+
+    internal sealed class QueuedImportJob
+    {
+        public string SourceId { get; set; } = string.Empty;
+        public string SourceDisplay { get; set; } = string.Empty;
+        public List<string> SelectedSourcePaths { get; set; } = new();
+    }
+
+    internal sealed class PendingImportPlan
+    {
+        public DateTime CreatedAt { get; set; }
+        public string SourceId { get; set; } = string.Empty;
+        public string SourceDisplay { get; set; } = string.Empty;
+        public string DestinationRoot { get; set; } = string.Empty;
+        public string NamingTemplate { get; set; } = string.Empty;
+        public List<string> SelectedSourcePaths { get; set; } = new();
+    }
+
+    internal sealed class ImportReportArtifact
+    {
+        public DateTime GeneratedAt { get; set; }
+        public string Source { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+        public double DurationSeconds { get; set; }
+        public int FilesSelected { get; set; }
+        public int FilesImported { get; set; }
+        public int FailedFiles { get; set; }
+        public string VerificationMode { get; set; } = string.Empty;
+        public string DuplicatePolicy { get; set; } = string.Empty;
+        public List<FailedImportRecord> Failed { get; set; } = new();
+    }
+
+    internal sealed class UserPreset
+    {
+        public string Name { get; set; } = string.Empty;
+        public string DestinationRoot { get; set; } = string.Empty;
+        public string NamingTemplate { get; set; } = string.Empty;
+        public string VerificationMode { get; set; } = "Fast";
+        public string DuplicatePolicy { get; set; } = "Suffix";
+        public string ThumbnailPerformanceMode { get; set; } = "Balanced";
+    }
+
     public class RelayCommand : ICommand
     {
         private readonly Action _execute;
@@ -3349,6 +3927,9 @@ BuildGroups:
         public int TimeBetweenShootsHours { get; set; } = 4;
         public bool LimitFtpThumbnailLoad { get; set; } = false;
         public int FtpInitialThumbnailCount { get; set; } = 0;
+        public bool ExpandPreviewStacks { get; set; } = false;
+        public string DuplicatePolicy { get; set; } = "Suffix";
+        public string VerificationMode { get; set; } = "Fast";
         public List<string>? RibbonTileOrder { get; set; }
             public double WindowWidth { get; set; } = 960;
             public double WindowHeight { get; set; } = 620;

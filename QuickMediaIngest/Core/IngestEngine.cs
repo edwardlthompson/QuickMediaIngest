@@ -9,6 +9,25 @@ using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
 {
+    public enum DuplicateHandlingMode
+    {
+        Suffix = 0,
+        Skip = 1,
+        OverwriteIfNewer = 2
+    }
+
+    public enum ImportVerificationMode
+    {
+        Fast = 0,
+        Strict = 1
+    }
+
+    public sealed class IngestOptions
+    {
+        public DuplicateHandlingMode DuplicateHandling { get; set; } = DuplicateHandlingMode.Suffix;
+        public ImportVerificationMode VerificationMode { get; set; } = ImportVerificationMode.Fast;
+    }
+
     /// <summary>
     /// Handles the ingestion of media files into the destination directory, raising progress events and logging results.
     /// </summary>
@@ -45,9 +64,16 @@ namespace QuickMediaIngest.Core
         /// <param name="destinationRoot">Root directory for output.</param>
         /// <param name="namingTemplate">Naming template for output files.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public async Task IngestGroupAsync(ItemGroup group, string destinationRoot, string namingTemplate, CancellationToken cancellationToken, bool deleteAfterImport = false)
+        public async Task IngestGroupAsync(
+            ItemGroup group,
+            string destinationRoot,
+            string namingTemplate,
+            CancellationToken cancellationToken,
+            IngestOptions? options = null,
+            bool deleteAfterImport = false)
         {
             if (group == null || group.Items.Count == 0) return;
+            options ??= new IngestOptions();
 
             // Check if there are any selected items; skip group if none are selected
             var selectedItems = group.Items.Where(i => i.IsSelected).ToList();
@@ -79,13 +105,31 @@ namespace QuickMediaIngest.Core
                 string status = $"Copying {item.FileName} ({itemIndex}/{total})";
                 ProgressChanged?.Invoke((itemIndex * 100) / total, status);
 
-                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title, itemIndex);
-                string destPath = Path.Combine(targetDir, destFileName);
+                string destFileName = ResolveFileName(item, targetDir, namingTemplate, group.Title, itemIndex, options.DuplicateHandling, out bool skippedAsDuplicate);
+                string destPath = string.IsNullOrEmpty(destFileName) ? string.Empty : Path.Combine(targetDir, destFileName);
                 bool success = false;
                 string errorMessage = string.Empty;
 
                 try
                 {
+                    if (skippedAsDuplicate)
+                    {
+                        success = true;
+                        errorMessage = "Skipped duplicate due to duplicate policy.";
+                        ItemProcessed?.Invoke(new IngestProgressInfo
+                        {
+                            GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
+                            GroupCurrent = itemIndex,
+                            GroupTotal = total,
+                            SourcePath = item.SourcePath,
+                            FileName = item.FileName,
+                            FileSizeBytes = item.FileSize,
+                            Success = true,
+                            ErrorMessage = errorMessage
+                        });
+                        return;
+                    }
+
                     await _provider.CopyAsync(item.SourcePath, destPath, ct);
                     success = true;
                     _logger.LogInformation("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
@@ -97,7 +141,10 @@ namespace QuickMediaIngest.Core
                         {
                             var srcInfo = new FileInfo(item.SourcePath);
                             var destInfo = new FileInfo(destPath);
-                            if (srcInfo.Length == destInfo.Length && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath))
+                            bool verified = options.VerificationMode == ImportVerificationMode.Strict
+                                ? srcInfo.Length == destInfo.Length && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath)
+                                : srcInfo.Length == destInfo.Length;
+                            if (verified)
                             {
                                 await _provider.DeleteAsync(item.SourcePath, ct);
                                 _logger.LogInformation("Deleted source file {SourcePath} after successful import and verification.", item.SourcePath);
@@ -166,11 +213,34 @@ namespace QuickMediaIngest.Core
         /// <param name="template">The naming template.</param>
         /// <param name="shootName">The group/shoot name.</param>
         /// <returns>The resolved file name.</returns>
-        public string ResolveFileName(ImportItem item, string targetDir, string template, string shootName, int sequenceNumber = 1)
+        public string ResolveFileName(
+            ImportItem item,
+            string targetDir,
+            string template,
+            string shootName,
+            int sequenceNumber,
+            DuplicateHandlingMode duplicateHandling,
+            out bool skippedAsDuplicate)
         {
+            skippedAsDuplicate = false;
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;
             string safeShootName = SanitizeFileNamePart(string.IsNullOrWhiteSpace(shootName) ? "Shoot" : shootName);
+            DateTime effectiveDateTaken = item.DateTaken;
+            if ((template.Contains("[fff]", StringComparison.Ordinal) || template.Contains("[TimeMs]", StringComparison.Ordinal))
+                && effectiveDateTaken.Millisecond == 0)
+            {
+                int syntheticMs = Math.Clamp(sequenceNumber % 1000, 1, 999);
+                effectiveDateTaken = new DateTime(
+                    effectiveDateTaken.Year,
+                    effectiveDateTaken.Month,
+                    effectiveDateTaken.Day,
+                    effectiveDateTaken.Hour,
+                    effectiveDateTaken.Minute,
+                    effectiveDateTaken.Second,
+                    syntheticMs,
+                    effectiveDateTaken.Kind);
+            }
 
             if (string.IsNullOrEmpty(outputName))
             {
@@ -178,16 +248,16 @@ namespace QuickMediaIngest.Core
             }
 
                         // Replace Tokens
-            outputName = outputName.Replace("[Date]", item.DateTaken.ToString("yyyy-MM-dd"));
-            outputName = outputName.Replace("[Time]", item.DateTaken.ToString("HH-mm-ss"));
-            outputName = outputName.Replace("[TimeMs]", item.DateTaken.ToString("HH-mm-ss-fff"));
-            outputName = outputName.Replace("[YYYY]", item.DateTaken.ToString("yyyy"));
-            outputName = outputName.Replace("[MM]", item.DateTaken.ToString("MM"));
-            outputName = outputName.Replace("[DD]", item.DateTaken.ToString("dd"));
-            outputName = outputName.Replace("[HH]", item.DateTaken.ToString("HH"));
-            outputName = outputName.Replace("[mm]", item.DateTaken.ToString("mm"));
-            outputName = outputName.Replace("[ss]", item.DateTaken.ToString("ss"));
-            outputName = outputName.Replace("[fff]", item.DateTaken.ToString("fff"));
+            outputName = outputName.Replace("[Date]", effectiveDateTaken.ToString("yyyy-MM-dd"));
+            outputName = outputName.Replace("[Time]", effectiveDateTaken.ToString("HH-mm-ss"));
+            outputName = outputName.Replace("[TimeMs]", effectiveDateTaken.ToString("HH-mm-ss-fff"));
+            outputName = outputName.Replace("[YYYY]", effectiveDateTaken.ToString("yyyy"));
+            outputName = outputName.Replace("[MM]", effectiveDateTaken.ToString("MM"));
+            outputName = outputName.Replace("[DD]", effectiveDateTaken.ToString("dd"));
+            outputName = outputName.Replace("[HH]", effectiveDateTaken.ToString("HH"));
+            outputName = outputName.Replace("[mm]", effectiveDateTaken.ToString("mm"));
+            outputName = outputName.Replace("[ss]", effectiveDateTaken.ToString("ss"));
+            outputName = outputName.Replace("[fff]", effectiveDateTaken.ToString("fff"));
             outputName = outputName.Replace("[ShootName]", safeShootName);
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
             outputName = outputName.Replace("[Sequence]", sequenceNumber.ToString("D4"));
@@ -195,6 +265,33 @@ namespace QuickMediaIngest.Core
 
             string destFileName = $"{outputName}{ext}";
             string fullPath = Path.Combine(targetDir, destFileName);
+
+            if (File.Exists(fullPath))
+            {
+                switch (duplicateHandling)
+                {
+                    case DuplicateHandlingMode.Skip:
+                        skippedAsDuplicate = true;
+                        return string.Empty;
+                    case DuplicateHandlingMode.OverwriteIfNewer:
+                        try
+                        {
+                            var srcInfo = new FileInfo(item.SourcePath);
+                            var dstInfo = new FileInfo(fullPath);
+                            if (srcInfo.LastWriteTimeUtc <= dstInfo.LastWriteTimeUtc)
+                            {
+                                skippedAsDuplicate = true;
+                                return string.Empty;
+                            }
+                        }
+                        catch
+                        {
+                            skippedAsDuplicate = true;
+                            return string.Empty;
+                        }
+                        return destFileName;
+                }
+            }
 
             int counter = 1;
             while (File.Exists(fullPath))
