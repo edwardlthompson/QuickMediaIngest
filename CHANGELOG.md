@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.1] — 2026-04-28
+
+### Added
+
+- **Update discovery**: When GitHub reports a **newer release**, the app can show a **desktop popup** (in addition to status text). Each **release tag** is remembered so the same build is not announced repeatedly across background checks (`LastNotifiedUpdateTag` in `config.json`).
+- **Update API**: `UpdateCheckResult` returns **download URL** and **remote tag** from the latest release; startup runs an update check according to **About → interval** (still gated by `%AppData%\QuickMediaIngest\last_update_check.txt`).
+- **Shortcuts**: **F1** opens an in-app **keyboard shortcuts** reference window.
+- **Architecture**: **`AppConfig`** for persisted settings; **`MainViewModel`** split into partial files (`Config`, tokens); additional **`Core/Services`** types and unit tests (`FtpWorkflowService`, `ShootFilterService`, `UnifiedConcreteSourceScanService`).
+
+### Changed
+
+- **Notifications sidebar**: Removed redundant **Check for updates** (About & Updates remains the place to check manually); removed **Mute** on the notification feed; **Delete after import** status line moved to the **top** of the readiness summary so it reads naturally before a scan.
+- **Import history**: Shown as an **in-app overlay** aligned with other modals (standalone `ImportHistoryWindow` removed).
+- **Theming**: Legacy `DarkTheme` / `LightTheme` / `ControlStyles` resource dictionaries removed; styling consolidated with **MaterialDesign BundledTheme**, **`Themes/Brushes.xaml`**, and inline **`App.xaml`** resources.
+- **Localization**: Additional strings in **English**, **Spanish**, and **French**.
+- **SQLite**: **ImportHistory** table and index created when initializing the database (supports per-file history features).
+
+---
+
 ## [1.2.0] — 2026-04-27
 
 ### Added
@@ -47,3 +66,4 @@ See git history and tags prior to `v1.2.0` for incremental changes. The pre-1.2.
 ## Unreleased
 
 _(Nothing staged yet.)_
+

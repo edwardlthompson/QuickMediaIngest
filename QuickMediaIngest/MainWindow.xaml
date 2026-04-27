@@ -5,6 +5,7 @@
     xmlns:models="clr-namespace:QuickMediaIngest.Core.Models"
     xmlns:loc="clr-namespace:QuickMediaIngest.Localization"
     xmlns:vm="clr-namespace:QuickMediaIngest.ViewModels"
+    xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     Title="{loc:Loc Main_WindowTitle}" Height="620" Width="960"
     Icon="QuickMediaIngest.ico"
@@ -21,12 +22,17 @@
     Loaded="MainWindow_Loaded">
     <Window.InputBindings>
         <KeyBinding Key="I" Modifiers="Control" Command="{Binding ImportCommand}" />
+        <KeyBinding Key="Q" Modifiers="Control" Command="{Binding QueueImportCommand}" />
+        <KeyBinding Key="P" Modifiers="Control" Command="{Binding PreflightImportCommand}" />
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RefreshAllSourcesCommand}" />
         <KeyBinding Key="A" Modifiers="Control" Command="{Binding SelectAllCommand}" />
         <KeyBinding Key="Escape" Command="{Binding CancelCommand}" />
+        <KeyBinding Key="F1" Command="{Binding ShowShortcutsHelpCommand}" />
     </Window.InputBindings>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        
+        <converters:FilterFileTypeToDisplayConverter x:Key="FilterFileTypeToDisplayConverter" />
+
         <!-- Inverted Boolean to Boolean Converter for disabling during import -->
         <local:InvertBoolConverter x:Key="BoolToInvertedBoolConverter" />
         
@@ -45,6 +51,12 @@
     </Window.Resources>
 
     <Grid>
+        <TextBlock x:Name="LiveAnnouncementHost"
+                   Width="1" Height="1" Margin="-99999,0,0,0"
+                   Focusable="False"
+                   IsHitTestVisible="False"
+                   Visibility="Hidden"
+                   Text="{Binding AccessibilityAnnouncement}" />
         <!-- Overlays (dialogs, notifications) -->
         <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" Loaded="AddFtpOverlay_Loaded" Unloaded="AddFtpOverlay_Unloaded">
             <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
@@ -77,6 +89,7 @@
 
                         <TextBlock Text="{loc:Loc Ftp_Password}" Style="{StaticResource AppBodyTextStyle}" Margin="0,6,0,0"/>
                         <PasswordBox PasswordChar="●" PasswordChanged="PasswordBox_PasswordChanged"/>
+                        <TextBlock Text="{loc:Loc Ftp_PasswordVaultHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
                         <TextBlock Text="{loc:Loc Ftp_RemoteFolder}" Style="{StaticResource AppBodyTextStyle}" Margin="0,6,0,0"/>
                         <TextBox Text="{Binding FtpRemoteFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FtpInputTextBoxStyle}" />
@@ -85,10 +98,10 @@
                         <TextBlock Text="{Binding FtpDialogStatusMessage}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" />
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                            <Button Content="{loc:Loc Btn_Test}" Command="{Binding TestFtpConnectionCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc Settings_Browse}" Command="{Binding BrowseFtpFoldersCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc Btn_Save}" Command="{Binding SaveFtpCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc Btn_Cancel}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource MaterialDesignFlatButton}"/>
+                            <Button Content="{loc:Loc Btn_Test}" Command="{Binding TestFtpConnectionCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc Settings_Browse}" Command="{Binding BrowseFtpFoldersCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc Btn_Save}" Command="{Binding SaveFtpCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc Btn_Cancel}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -107,8 +120,8 @@
             <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border Width="560" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="Select Drives To Scan" Style="{StaticResource AppDialogTitleTextStyle}" Margin="0,0,0,12"/>
-                        <TextBlock Text="Choose which fixed and removable drives should be scanned for quick scans." Style="{StaticResource AppBodyTextStyle}" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                        <TextBlock Text="{loc:Loc DriveSelect_Title}" Style="{StaticResource AppDialogTitleTextStyle}" Margin="0,0,0,12"/>
+                        <TextBlock Text="{loc:Loc DriveSelect_Description}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,0,10" TextWrapping="Wrap"/>
                         <ListBox ItemsSource="{Binding DriveSelectionItems}" MaxHeight="280">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -126,8 +139,8 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                            <Button Content="Save and Scan" Command="{Binding ConfirmDriveSelectionCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc Btn_Cancel}" Command="{Binding CancelDriveSelectionCommand}" Style="{StaticResource MaterialDesignFlatButton}"/>
+                            <Button Content="{loc:Loc DriveSelect_SaveAndScan}" Command="{Binding ConfirmDriveSelectionCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc Btn_Cancel}" Command="{Binding CancelDriveSelectionCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -285,6 +298,13 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                        <Button Content="{loc:Loc Btn_CancelImport}"
+                                Command="{Binding CancelActiveImportCommand}"
+                                Visibility="{Binding IsImporting, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Style="{StaticResource DialogOutlinedButtonStyle}"
+                                Padding="14,6"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>
@@ -310,8 +330,8 @@
                                   Content="{loc:Loc SkippedFolders_DontRemindExcluded}"
                                   IsChecked="{Binding SuppressExcludedFolderScanReminders, Mode=TwoWay}"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-                            <Button Content="Copy" Command="{Binding CopySkippedFoldersReportCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc Btn_Close}" Command="{Binding CloseSkippedFoldersReportCommand}" Style="{StaticResource MaterialDesignFlatButton}"/>
+                            <Button Content="{loc:Loc Btn_Copy}" Command="{Binding CopySkippedFoldersReportCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc Btn_Close}" Command="{Binding CloseSkippedFoldersReportCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -333,6 +353,15 @@
                     <StackPanel>
                         <TextBlock Text="{loc:Loc About_Title}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,12"/>
                         <TextBlock Text="{loc:Loc About_Description}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <TextBlock Text="{loc:Loc About_Glossary}" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="{loc:Loc About_Glossary_TermPreflight}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Loc About_Glossary_DefPreflight}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <TextBlock Text="{loc:Loc About_Glossary_TermUnified}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Loc About_Glossary_DefUnified}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <TextBlock Text="{loc:Loc About_Glossary_TermShoot}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Loc About_Glossary_DefShoot}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap"/>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="120"/>
                             <TextBlock Text="{Binding AppVersion}"/>
@@ -348,8 +377,8 @@
                             <ComboBox ItemsSource="{Binding IntervalOptions}" SelectedValue="{Binding UpdateIntervalHours}" SelectedValuePath="Hours" DisplayMemberPath="Display" Width="160" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                            <Button Content="{loc:Loc About_CheckUpdatesNow}" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
-                            <Button Content="{loc:Loc About_DownloadUpdate}" Command="{Binding DownloadUpdateCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsDownloadingUpdate, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
+                            <Button Content="{loc:Loc About_CheckUpdatesNow}" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="{loc:Loc About_DownloadUpdate}" Command="{Binding DownloadUpdateCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="{Binding IsDownloadingUpdate, Converter={StaticResource BoolToInvertedBoolConverter}}"/>
                         </StackPanel>
 
                         <TextBlock Text="" Height="8"/>
@@ -367,10 +396,10 @@
                         <Separator Margin="0,12,0,12" />
                         <TextBlock Text="{loc:Loc About_Diagnostics}" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                            <Button Content="{loc:Loc About_OpenLogsFolder}" Click="OpenLogs_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
-                            <Button Content="{loc:Loc About_ReportBug}" Click="ReportBug_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
-                            <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0" />
-                            <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" />
+                            <Button Content="{loc:Loc About_OpenLogsFolder}" Click="OpenLogs_Click" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                            <Button Content="{loc:Loc About_ReportBug}" Click="ReportBug_Click" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                            <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                            <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="80"/>
@@ -379,11 +408,57 @@
                             <TextBlock Text="{Binding BuildDate}" Width="120"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="{loc:Loc Btn_Close}" Command="{Binding ToggleAboutCommand}" Style="{StaticResource MaterialDesignFlatButton}"/>
+                            <Button Content="{loc:Loc Btn_Close}" Command="{Binding ToggleAboutCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
+        </Grid>
+        <!-- Import History: root-level overlay (same VisualBrush blur as Settings/About) -->
+        <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
+              Visibility="{Binding ShowImportHistoryDialog, Converter={StaticResource BooleanToVisibilityConverter}}"
+              Panel.ZIndex="955">
+            <Border Background="Transparent" MouseDown="CloseImportHistory_Click">
+                <Grid>
+                    <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+                        <Rectangle.Fill>
+                            <VisualBrush Visual="{Binding ElementName=MainChromeRoot}" Stretch="Fill"/>
+                        </Rectangle.Fill>
+                        <Rectangle.Effect>
+                            <BlurEffect Radius="14" RenderingBias="Performance"/>
+                        </Rectangle.Effect>
+                    </Rectangle>
+                    <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+                </Grid>
+            </Border>
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Background="{DynamicResource MaterialDesignPaper}"
+                    CornerRadius="8" Padding="18" Width="720" MaxHeight="520"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{loc:Loc Btn_ImportHistory}" Style="{StaticResource AppHeadingTextStyle}" FontSize="18"/>
+                    <ListView Grid.Row="1" ItemsSource="{Binding ImportHistoryRecords}" Margin="0,8,0,8" MinHeight="280"
+                              Background="{DynamicResource MaterialDesignPaper}"
+                              BorderBrush="{DynamicResource MaterialDesignDivider}">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="{loc:Loc History_ColumnStarted}" Width="180" DisplayMemberBinding="{Binding StartedAtDisplay}"/>
+                                <GridViewColumn Header="{loc:Loc History_ColumnSummary}" Width="420" DisplayMemberBinding="{Binding SummaryDisplay}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Width="90" Margin="6" Content="{loc:Loc History_Export}" Command="{Binding ExportImportHistoryCommand}" Style="{StaticResource DialogPrimaryButtonStyle}"/>
+                        <Button Width="90" Margin="6" Content="{loc:Loc History_Clear}" Click="ImportHistory_Clear_Click" Style="{StaticResource DialogPrimaryButtonStyle}"/>
+                        <Button Width="90" Margin="6" Content="{loc:Loc Btn_Close}" Command="{Binding CloseImportHistoryCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
         <!-- Main layout: Sidebar + Main Content -->
         <Grid x:Name="MainChromeRoot">
@@ -431,10 +506,10 @@
                                               Style="{StaticResource SidebarRowToggleStyle}"
                                               Checked="SidebarCollapseToggle_Toggled"
                                               Unchecked="SidebarCollapseToggle_Toggled"
-                                              ToolTip="Collapse or expand sidebar">
+                                              ToolTip="{loc:Loc Sidebar_CollapseTooltip}">
                                     <StackPanel Orientation="Horizontal">
                                         <materialDesign:PackIcon x:Name="SidebarHeaderToggleIcon" Kind="DockLeft" Style="{StaticResource SidebarIconStyle}" Width="16" Height="16" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="SidebarHeaderLabelText" Text="Sidebar" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="SidebarHeaderLabelText" Text="{loc:Loc Sidebar_Label}" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     </StackPanel>
                                 </ToggleButton>
                             </Grid>
@@ -443,10 +518,10 @@
                                               Style="{StaticResource SidebarRowToggleStyle}"
                                               Checked="PillToggle_Toggled"
                                               Unchecked="PillToggle_Toggled"
-                                              ToolTip="Toggle dark/light theme">
+                                              ToolTip="{loc:Loc Theme_Tooltip}">
                                     <StackPanel Orientation="Horizontal">
                                         <materialDesign:PackIcon Kind="ThemeLightDark" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
-                                        <TextBlock Text="Theme" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{loc:Loc Theme_Label}" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </ToggleButton>
                             </Border>
@@ -483,7 +558,7 @@
                             <Expander.Header>
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Notifications" Style="{StaticResource SidebarHeaderTextStyle}" />
+                                    <TextBlock Text="{loc:Loc Sidebar_Notifications}" Style="{StaticResource SidebarHeaderTextStyle}" />
                                 </StackPanel>
                             </Expander.Header>
                             <Grid Margin="0,6,0,0">
@@ -492,10 +567,7 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <StackPanel Grid.Row="0">
-                                    <Button Content="{loc:Loc About_CheckUpdatesNow}" Command="{Binding RefreshUpdateCommand}" Style="{StaticResource MaterialDesignFlatButton}" HorizontalAlignment="Left"/>
-                                    <TextBlock Text="{Binding SelectedFilesStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                                    <TextBlock Text="{Binding DestinationStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding DeleteAfterImportStatusLine}" TextWrapping="Wrap" Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding DeleteAfterImportStatusLine}" TextWrapping="Wrap">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource AppBodyTextStyle}">
                                                 <Setter Property="Foreground" Value="{DynamicResource Theme.Warning.Brush}"/>
@@ -507,6 +579,8 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
+                                    <TextBlock Text="{Binding SelectedFilesStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                    <TextBlock Text="{Binding DestinationStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     <TextBlock Text="{Binding RawGroupingStatusText}" Margin="0,4,0,0">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource AppBodyTextStyle}">
@@ -525,24 +599,31 @@
                                     <TextBlock Text="{Binding LastImportSummary}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     <Separator Margin="0,8,0,8"/>
-                                    <TextBlock Text="Notification Feed" Style="{StaticResource SidebarHeaderTextStyle}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{loc:Loc Sidebar_NotificationFeed}" Style="{StaticResource SidebarHeaderTextStyle}" Margin="0,0,0,4"/>
+                                    <Button Content="{loc:Loc Notify_ClearFeed}"
+                                            Command="{Binding ClearNotificationFeedCommand}"
+                                            Style="{StaticResource DialogOutlinedButtonStyle}"
+                                            Padding="8,2" Margin="0,0,0,6"/>
                                 </StackPanel>
                                 <ListBox Grid.Row="1" ItemsSource="{Binding NotificationFeed}" Margin="0,4,0,0">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate DataType="{x:Type vm:NotificationFeedLine}">
-                                            <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" Margin="2,1,2,1">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource AppCaptionTextStyle}">
-                                                        <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding UseSuccessAccent}" Value="True">
-                                                                <Setter Property="Foreground" Value="{DynamicResource Theme.Success.Brush}"/>
-                                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                            <StackPanel Margin="0,2,0,2">
+                                                <Separator Margin="0,4,0,6" Visibility="{Binding IsSessionDivider, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppCaptionTextStyle}">
+                                                            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding UseSuccessAccent}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Theme.Success.Brush}"/>
+                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
                                 </ListBox>
@@ -552,7 +633,8 @@
 
                     <!-- Collapsed icon rail -->
                     <StackPanel x:Name="SidebarCollapsedRail" Grid.Row="1" Visibility="Collapsed" Margin="8,12,8,8">
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Click="ThemeIconButton_Click" ToolTip="Toggle dark/light theme" Margin="0,0,0,6"><materialDesign:PackIcon Kind="ThemeLightDark" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Click="ThemeIconButton_Click" ToolTip="{loc:Loc Theme_Tooltip}" Margin="0,0,0,6">
+                            <materialDesign:PackIcon Kind="ThemeLightDark" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <ItemsControl ItemsSource="{Binding Sources}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -566,7 +648,8 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" ToolTip="Notifications" Margin="0,0,0,6"><materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Width="18" Height="18"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}" Margin="0,0,0,6">
+                            <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Width="18" Height="18"/></Button>
                     </StackPanel>
 
                     <!-- Bottom Settings menu -->
@@ -666,9 +749,9 @@
                         Padding="10,4">
                     <StackPanel>
                         <WrapPanel VerticalAlignment="Center" Margin="0,0,0,4">
-                            <Border Style="{StaticResource TopBarSectionCardStyle}" ToolTip="Import actions">
+                            <Border Style="{StaticResource TopBarSectionCardStyle}" ToolTip="{loc:Loc Toolbar_ImportActionsTooltip}">
                                 <StackPanel>
-                                    <TextBlock Text="Import Actions" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{loc:Loc Toolbar_ImportActions}" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
                                     <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}">
                                         <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}"><Button Command="{Binding ImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}" Content="{loc:Loc Toolbar_Import}"/></Border>
                                         <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}"><Button Command="{Binding QueueImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}" Content="{loc:Loc Toolbar_Queue}"/></Border>
@@ -688,9 +771,9 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Style="{StaticResource TopBarSectionCardLastStyle}" ToolTip="View and preview controls">
+                            <Border Style="{StaticResource TopBarSectionCardLastStyle}" ToolTip="{loc:Loc Toolbar_ViewSectionTooltip}">
                                 <StackPanel>
-                                    <TextBlock Text="View" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{loc:Loc Toolbar_ViewSection}" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
                                     <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}">
                                         <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
                                             <ToggleButton x:Name="SelectAllCheckBox" Style="{StaticResource TopBarActionToggleStyle}" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
@@ -700,11 +783,11 @@
                                                 </StackPanel>
                                             </ToggleButton>
                                         </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="Expand or collapse all groups">
+                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ExpandAllGroupsTooltip}">
                                             <ToggleButton Style="{StaticResource TopBarActionToggleStyle}" IsChecked="{Binding AllGroupsExpanded, Mode=TwoWay}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <materialDesign:PackIcon Kind="ArrowExpandVertical" Width="14" Height="14" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
-                                                    <TextBlock Text="Expand All Groups" Style="{StaticResource AppTextPrimaryStyle}"/>
+                                                    <TextBlock Text="{loc:Loc Toolbar_ExpandAllGroups}" Style="{StaticResource AppTextPrimaryStyle}"/>
                                                 </StackPanel>
                                             </ToggleButton>
                                         </Border>
@@ -719,7 +802,7 @@
                                         </Border>
                                         <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ThumbTooltip}">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <materialDesign:PackIcon Kind="Magnify" Width="15" Height="15" Foreground="{DynamicResource MaterialDesignBody}" Margin="0,0,6,0"/>
+                                                <materialDesign:PackIcon Kind="Magnify" Width="15" Height="15" Foreground="{DynamicResource MenuForegroundBrush}" Margin="0,0,6,0"/>
                                                 <materialDesign:PackIcon Kind="Minus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
                                                 <Slider x:Name="ThumbnailZoomSlider" Minimum="50" Maximum="300" Width="120" Value="{Binding ThumbnailSize, Mode=TwoWay}" Margin="5,0" ToolTip="{loc:Loc Toolbar_ThumbTooltip}"/>
                                                 <materialDesign:PackIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
@@ -734,8 +817,16 @@
                                                      materialDesign:HintAssist.Hint="{loc:Loc Toolbar_FilterHint}"
                                                      materialDesign:HintAssist.IsFloating="False"/>
                                         </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="Filter previews by media type"><ComboBox Width="150" Style="{StaticResource TopBarFieldComboBoxStyle}" ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerLastStyle}" ToolTip="Clear preview cache and rebuild previews"><Button Command="{Binding ClearThumbnailCacheAndReloadPreviewsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="Clear preview cache and rebuild previews" Content="Rebuild Previews"/></Border>
+                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_FilterFileTypeTooltip}">
+                                            <ComboBox Width="150" Style="{StaticResource TopBarFieldComboBoxStyle}" ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterFileTypeToDisplayConverter}}"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </Border>
+                                        <Border Style="{StaticResource TopBarControlContainerLastStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}"><Button Command="{Binding ClearThumbnailCacheAndReloadPreviewsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}" Content="{loc:Loc Toolbar_RebuildPreviews}"/></Border>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
@@ -753,6 +844,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Style="{StaticResource AppCaptionTextStyle}" Margin="4,0,4,0"/>
                                         <Button Content="✕" FontSize="11"
+                                                AutomationProperties.Name="{loc:Loc A11y_RemoveFilterChip}"
                                                 Command="{Binding DataContext.RemoveFilterChipCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding Id}"
                                                 Style="{StaticResource TopBarActionButtonStyle}"
@@ -768,9 +860,28 @@
                 </Border>
 
                 <!-- Grouped Import Items List -->
-                <ListView Grid.Row="1" ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" Margin="24" Name="GroupsListView" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                <Grid Grid.Row="1" Margin="24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Margin="0,0,0,14" Padding="14" CornerRadius="8"
+                            BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1"
+                            Background="{DynamicResource Theme.CardBackground.Brush}"
+                            Visibility="{Binding ShowPostDeleteRecoveryBanner, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Banner_PostDeleteRecovery}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="{loc:Loc Btn_OpenRecycleBin}" Command="{Binding OpenRecycleBinCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,10,0" Padding="14,8"/>
+                                <Button Content="{loc:Loc Btn_Close}" Command="{Binding DismissPostDeleteRecoveryBannerCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Padding="14,8"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Grid Grid.Row="1">
+                <ListView ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" Name="GroupsListView" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                          ScrollViewer.CanContentScroll="False">
+                          ScrollViewer.CanContentScroll="False"
+                          Visibility="{Binding ShowShootGroupsList, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -803,7 +914,7 @@
                                                 Width="34"
                                                 Height="30"
                                                 Margin="0,0,8,0"
-                                                ToolTip="Expand or collapse this shoot group">
+                                                ToolTip="{loc:Loc Shoot_GroupExpandTooltip}">
                                             <Path Data="M 2 2 L 2 12 L 10 7 Z"
                                                   Fill="{DynamicResource MenuForegroundBrush}"
                                                   Width="12"
@@ -878,7 +989,7 @@
                                             <Button Content="{loc:Loc Shoot_IgnoreFolder}"
                                                     Command="{Binding DataContext.SkipFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding FolderPath}"
-                                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                    Style="{StaticResource DialogOutlinedButtonStyle}"
                                                     Margin="0,10,0,0"
                                                     HorizontalAlignment="Left"
                                                     Padding="10,4"
@@ -943,6 +1054,43 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+                <Border Padding="28"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Stretch"
+                        CornerRadius="8"
+                        BorderBrush="{DynamicResource MaterialDesignDivider}"
+                        BorderThickness="1"
+                        Background="{DynamicResource Theme.CardBackground.Brush}"
+                        Visibility="{Binding ShowShootListEmptyPlaceholder, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel HorizontalAlignment="Center" MaxWidth="440">
+                        <StackPanel Visibility="{Binding ShowEmptyNoSourcesPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{loc:Loc Empty_NoSourcesTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <Button Content="{loc:Loc Btn_AddFtpSource}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" HorizontalAlignment="Left" Padding="16,8"/>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowEmptyFilterPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{loc:Loc Empty_FilterNoMatchTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <Button Content="{loc:Loc Empty_ClearFilters}" Command="{Binding ClearFiltersCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" HorizontalAlignment="Left" Padding="16,8"/>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowEmptyFtpFailurePanel, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{loc:Loc Empty_FtpFailureTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <TextBlock Text="{loc:Loc Empty_FtpFailureBody}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{loc:Loc Toolbar_Refresh}" Command="{Binding RefreshAllSourcesCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
+                                <Button Content="{loc:Loc Btn_AddFtpSource}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
+                                <Button Content="{loc:Loc Btn_Close}" Command="{Binding DismissFtpProblemHintsCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Padding="16,8"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowEmptyScanPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{loc:Loc Empty_NoFilesTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{loc:Loc Toolbar_Refresh}" Command="{Binding RefreshAllSourcesCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
+                                <Button Content="{loc:Loc Btn_AddFtpSource}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Padding="16,8"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                    </Grid>
+                </Grid>
                 <!-- Details Panel for Selected Group -->
                 <Border Grid.Row="2" Background="{DynamicResource MaterialDesignPaper}" Padding="16" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource MaterialDesignDivider}">
                     <StackPanel>
@@ -1013,128 +1161,190 @@
                 </Grid>
             </Border>
             
-            <Border VerticalAlignment="Center" HorizontalAlignment="Center" 
-                    Background="{DynamicResource MenuBackgroundBrush}" 
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Background="{DynamicResource MenuBackgroundBrush}"
                     CornerRadius="15" Padding="25" Width="580"
+                    Margin="16"
+                    MaxHeight="{Binding ElementName=SettingsOverlay, Path=ActualHeight}"
                     BorderBrush="{DynamicResource MenuForegroundBrush}" BorderThickness="1">
-                <StackPanel>
-                    <TextBlock Text="{loc:Loc Settings_MainTitle}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,20" 
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*" MinHeight="120"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{loc:Loc Settings_MainTitle}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,16"
                                Foreground="{DynamicResource MenuForegroundBrush}"/>
-                    
-                    <TextBlock Text="{loc:Loc Settings_SaveDestination}" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <DockPanel Margin="0,0,0,20">
-                        <Button x:Name="SettingsBrowseBtn" Content="{loc:Loc Settings_Browse}" DockPanel.Dock="Right"
-                                Padding="10,5" Click="Browse_Click"
-                                Style="{StaticResource PrefsOutlinedButtonStyle}"/>
-                        <TextBox x:Name="DestPathDisplay" IsReadOnly="True" Margin="0,0,10,0"
-                                 Text="{Binding DestinationRoot, Mode=TwoWay}"/>
-                    </DockPanel>
-                    <Separator Margin="0,0,0,12"/>
 
-                    <TextBlock Text="{loc:Loc Settings_FileNamingScheme}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <TextBlock Text="{loc:Loc Settings_Preset}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <ComboBox ItemsSource="{Binding NamingPresetOptions}" SelectedItem="{Binding NamingPreset, Mode=TwoWay}" Margin="0,0,0,10"/>
-
-                    <WrapPanel Margin="0,0,0,6">
-                        <CheckBox Content="{loc:Loc Settings_Date}" IsChecked="{Binding NamingIncludeDate, Mode=TwoWay}" Margin="0,0,16,0"/>
-                        <CheckBox Content="{loc:Loc Settings_Time}" IsChecked="{Binding NamingIncludeTime, Mode=TwoWay}" Margin="0,0,16,0"/>
-                        <CheckBox Content="{loc:Loc Settings_Sequence}" IsChecked="{Binding NamingIncludeSequence, Mode=TwoWay}" Margin="0,0,16,0"/>
-                        <CheckBox Content="{loc:Loc Settings_ShootName}" IsChecked="{Binding NamingIncludeShootName, Mode=TwoWay}" Margin="0,0,16,0"/>
-                        <CheckBox Content="{loc:Loc Settings_OriginalName}" IsChecked="{Binding NamingIncludeOriginalName, Mode=TwoWay}"/>
-                    </WrapPanel>
-
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="8" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Column="0" Grid.Row="0">
-                            <TextBlock Text="{loc:Loc Settings_DateFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding NamingDateFormatOptions}" SelectedItem="{Binding NamingDateFormat, Mode=TwoWay}"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2" Grid.Row="0">
-                            <TextBlock Text="{loc:Loc Settings_TimeFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding NamingTimeFormatOptions}" SelectedItem="{Binding NamingTimeFormat, Mode=TwoWay}"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="0" Grid.Row="2">
-                            <TextBlock Text="{loc:Loc Settings_Separator}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding NamingSeparatorOptions}" SelectedItem="{Binding NamingSeparator, Mode=TwoWay}"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Text="{loc:Loc Settings_ShootNameSample}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding NamingShootNameSample, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
-                    <CheckBox Content="{loc:Loc Settings_ForceLowercase}" IsChecked="{Binding NamingLowercase, Mode=TwoWay}" Margin="0,0,0,10"/>
-
-                    <Border Background="{DynamicResource MenuBackgroundBrush}"
-                            BorderBrush="{DynamicResource MenuForegroundBrush}"
-                            BorderThickness="1"
-                            CornerRadius="5" Padding="10" Margin="0,4,0,20">
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="0,0,4,0">
                         <StackPanel>
-                            <TextBlock Text="{loc:Loc Settings_PreviewExamples}" FontWeight="SemiBold" Margin="0,0,0,6"
-                                       Foreground="{DynamicResource MenuForegroundBrush}"/>
-                            <ItemsControl ItemsSource="{Binding NamingPreviewExamples}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" FontWeight="Light"
-                                                   Foreground="{DynamicResource MenuForegroundBrush}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                                <Expander.Header>
+                                    <TextBlock Text="{loc:Loc Settings_SaveDestination}" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <StackPanel Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Loc Settings_DestinationPreset}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding DestinationPresetOptions}"
+                                              SelectedValue="{Binding DestinationPreset}"
+                                              SelectedValuePath="Key"
+                                              DisplayMemberPath="Label"
+                                              Margin="0,0,0,12"/>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <Button x:Name="SettingsBrowseBtn" Content="{loc:Loc Settings_Browse}" DockPanel.Dock="Right"
+                                                Padding="10,5" Click="Browse_Click"
+                                                Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                                        <TextBox x:Name="DestPathDisplay" IsReadOnly="True" Margin="0,0,10,0"
+                                                 Text="{Binding DestinationRoot, Mode=TwoWay}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                                <Expander.Header>
+                                    <TextBlock Text="{loc:Loc Settings_FileNamingScheme}" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <StackPanel Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Loc Settings_Preset}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding NamingPresetOptions}" SelectedItem="{Binding NamingPreset, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                    <WrapPanel Margin="0,0,0,6">
+                                        <CheckBox Content="{loc:Loc Settings_Date}" IsChecked="{Binding NamingIncludeDate, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                        <CheckBox Content="{loc:Loc Settings_Time}" IsChecked="{Binding NamingIncludeTime, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                        <CheckBox Content="{loc:Loc Settings_Sequence}" IsChecked="{Binding NamingIncludeSequence, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                        <CheckBox Content="{loc:Loc Settings_ShootName}" IsChecked="{Binding NamingIncludeShootName, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                        <CheckBox Content="{loc:Loc Settings_OriginalName}" IsChecked="{Binding NamingIncludeOriginalName, Mode=TwoWay}"/>
+                                    </WrapPanel>
+
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="8" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Grid.Column="0" Grid.Row="0">
+                                            <TextBlock Text="{loc:Loc Settings_DateFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <ComboBox ItemsSource="{Binding NamingDateFormatOptions}" SelectedItem="{Binding NamingDateFormat, Mode=TwoWay}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Grid.Row="0">
+                                            <TextBlock Text="{loc:Loc Settings_TimeFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <ComboBox ItemsSource="{Binding NamingTimeFormatOptions}" SelectedItem="{Binding NamingTimeFormat, Mode=TwoWay}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="0" Grid.Row="2">
+                                            <TextBlock Text="{loc:Loc Settings_Separator}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <ComboBox ItemsSource="{Binding NamingSeparatorOptions}" SelectedItem="{Binding NamingSeparator, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="{loc:Loc Settings_ShootNameSample}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <TextBox Text="{Binding NamingShootNameSample, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_ForceLowercase}" IsChecked="{Binding NamingLowercase, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                    <Border Background="{DynamicResource MenuBackgroundBrush}"
+                                            BorderBrush="{DynamicResource MenuForegroundBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="5" Padding="10" Margin="0,4,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{loc:Loc Settings_PreviewExamples}" FontWeight="SemiBold" Margin="0,0,0,6"
+                                                       Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                            <ItemsControl ItemsSource="{Binding NamingPreviewExamples}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" FontWeight="Light"
+                                                                   Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                                <Expander.Header>
+                                    <TextBlock Text="{loc:Loc Settings_Section_LanguagePrompts}" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <StackPanel Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Loc Settings_DisplayLanguage}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <ComboBox ItemsSource="{Binding UiLanguageOptions}"
+                                              SelectedValue="{Binding UiLanguage, Mode=TwoWay}"
+                                              SelectedValuePath="Code"
+                                              DisplayMemberPath="Label"
+                                              Margin="0,0,0,8"/>
+                                    <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82" Margin="0,0,0,12"/>
+                                    <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                                <Expander.Header>
+                                    <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <StackPanel Margin="0,8,0,0">
+                                    <CheckBox Content="{loc:Loc Settings_OpenDestinationWhenDone}" IsChecked="{Binding OpenDestinationFolderWhenImportCompletes, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_ShowDiskSpaceSummary}" IsChecked="{Binding ShowCompactImportSummaryModal, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_ConfirmCancelImport}" IsChecked="{Binding ConfirmCancelImportRequest, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_SingleThreadImport}" IsChecked="{Binding ImportSingleThreaded, Mode=TwoWay}" Margin="0,0,0,8"/>
+                                    <DockPanel Margin="0,0,0,12">
+                                        <TextBlock DockPanel.Dock="Left" Width="260" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                   Text="{loc:Loc Settings_FileCooldownMs}" Margin="0,0,12,0"/>
+                                        <TextBox Text="{Binding ImportCooldownBetweenFilesMs, UpdateSourceTrigger=PropertyChanged}" Width="120"/>
+                                    </DockPanel>
+                                    <Button Content="{loc:Loc Settings_OpenImportReportsFolder}" HorizontalAlignment="Left"
+                                            Command="{Binding OpenImportReportsFolderCommand}"
+                                            Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander IsExpanded="{Binding SettingsAdvancedExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}">
+                                <Expander.Header>
+                                    <TextBlock Text="{loc:Loc Settings_AdvancedHeader}" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <StackPanel Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+                                    <CheckBox Content="{loc:Loc Settings_GroupRawRendered}"
+                                              IsChecked="{Binding GroupRawAndRenderedPairs, Mode=TwoWay}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="{loc:Loc Settings_ExpandStacked}"
+                                              IsChecked="{Binding ExpandPreviewStacks, Mode=TwoWay}"
+                                              IsEnabled="{Binding GroupRawAndRenderedPairs}"
+                                              Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="{loc:Loc Settings_DuplicateHandling}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding DuplicatePolicyOptions}" SelectedItem="{Binding DuplicatePolicy, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="{loc:Loc Settings_VerificationMode}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding VerificationModeOptions}" SelectedItem="{Binding VerificationMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="{loc:Loc Settings_SavePreset}" Command="{Binding SavePresetCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0"/>
+                                        <Button Content="{loc:Loc Settings_LoadLatestPreset}" Command="{Binding LoadPresetCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
                         </StackPanel>
-                    </Border>
-                    <Separator Margin="0,0,0,12"/>
-                    <TextBlock Text="{loc:Loc Settings_DisplayLanguage}" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <ComboBox ItemsSource="{Binding UiLanguageOptions}"
-                              SelectedValue="{Binding UiLanguage, Mode=TwoWay}"
-                              SelectedValuePath="Code"
-                              DisplayMemberPath="Label"
-                              Margin="0,0,0,8"/>
-                    <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82" Margin="0,0,0,12"/>
-                    <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
-                    <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}" Margin="0,0,0,12"/>
+                    </ScrollViewer>
 
-                    <Expander IsExpanded="{Binding SettingsAdvancedExpanded, Mode=TwoWay}" Margin="0,0,0,12">
-                        <Expander.Header>
-                            <TextBlock Text="{loc:Loc Settings_AdvancedHeader}" FontWeight="SemiBold"/>
-                        </Expander.Header>
-                        <StackPanel>
-                            <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
-                            <CheckBox Content="{loc:Loc Settings_GroupRawRendered}"
-                                      IsChecked="{Binding GroupRawAndRenderedPairs, Mode=TwoWay}"
-                                      Margin="0,0,0,8"/>
-                            <CheckBox Content="{loc:Loc Settings_ExpandStacked}"
-                                      IsChecked="{Binding ExpandPreviewStacks, Mode=TwoWay}"
-                                      IsEnabled="{Binding GroupRawAndRenderedPairs}"
-                                      Margin="0,0,0,10"/>
-
-                            <TextBlock Text="{loc:Loc Settings_DuplicateHandling}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding DuplicatePolicyOptions}" SelectedItem="{Binding DuplicatePolicy, Mode=TwoWay}" Margin="0,0,0,10"/>
-
-                            <TextBlock Text="{loc:Loc Settings_VerificationMode}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding VerificationModeOptions}" SelectedItem="{Binding VerificationMode, Mode=TwoWay}" Margin="0,0,0,10"/>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Button Content="{loc:Loc Settings_SavePreset}" Command="{Binding SavePresetCommand}" Style="{StaticResource PrefsOutlinedButtonStyle}" Margin="0,0,8,0"/>
-                                <Button Content="{loc:Loc Settings_LoadLatestPreset}" Command="{Binding LoadPresetCommand}" Style="{StaticResource PrefsOutlinedButtonStyle}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Expander>
-
-                    <Button Content="{loc:Loc Settings_SaveClose}" HorizontalAlignment="Right"
-                            Width="120" Click="CloseSettings_Click" IsDefault="True"
-                            Style="{StaticResource MaterialDesignRaisedButton}"/>
-                </StackPanel>
+                    <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                        <Separator Margin="0,0,0,16"/>
+                        <Button Content="{loc:Loc Settings_SaveClose}" HorizontalAlignment="Right"
+                                Width="120" Click="CloseSettings_Click" IsDefault="True"
+                                Style="{StaticResource DialogPrimaryButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
 
@@ -1180,7 +1390,7 @@
                                         <DockPanel Margin="0,2,0,2">
                                             <Button DockPanel.Dock="Right"
                                                     Content="{loc:Loc ScanExclusions_IncludeDrive}"
-                                                    Style="{StaticResource PrefsOutlinedButtonStyle}"
+                                                    Style="{StaticResource DialogOutlinedButtonStyle}"
                                                     Command="{Binding DataContext.RemoveDriveExclusionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding DeviceId}"
                                                     Padding="8,2"
@@ -1199,7 +1409,7 @@
                                         <DockPanel Margin="0,2,0,2">
                                             <Button DockPanel.Dock="Right"
                                                     Content="{loc:Loc ScanExclusions_RemoveFolder}"
-                                                    Style="{StaticResource PrefsOutlinedButtonStyle}"
+                                                    Style="{StaticResource DialogOutlinedButtonStyle}"
                                                     Command="{Binding DataContext.RemoveSkippedFolderRuleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Padding="8,2"
@@ -1213,7 +1423,7 @@
                     </ScrollViewer>
                     <Button Grid.Row="2" Content="{loc:Loc Btn_Close}" HorizontalAlignment="Right" Margin="0,16,0,0"
                             Width="120" Click="CloseScanExclusions_Click"
-                            Style="{StaticResource MaterialDesignRaisedButton}"/>
+                            Style="{StaticResource DialogPrimaryButtonStyle}"/>
                 </Grid>
             </Border>
         </Grid>

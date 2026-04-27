@@ -20,3 +20,12 @@ publish/
 
 ## Local scratch / agent build output
 .tmp/
+_launch_out/
+artifacts/
+_build_out/
+_build_audit/
+_build_audit2/
+_build_verify_out/
+_build_verify_tests_out/
+_test_audit/
+_b/

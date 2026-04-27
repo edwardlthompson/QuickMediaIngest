@@ -29,7 +29,9 @@ namespace QuickMediaIngest.Core
             _logger = logger;
         }
 
-        public BitmapSource? GetThumbnail(string filePath)
+        public BitmapSource? GetThumbnail(string filePath) => GetThumbnail(filePath, null);
+
+        public BitmapSource? GetThumbnail(string filePath, ThumbnailHints? hints)
         {
             if (!File.Exists(filePath)) return null;
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
@@ -58,7 +60,10 @@ namespace QuickMediaIngest.Core
                     }
                     return bitmap;
                 }
-                catch { /* If cache is corrupt, fall through to regenerate */ }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Thumbnail cache read failed; will regenerate. Path: {CachePath}.", cachePath);
+                }
             }
 
             BitmapSource? thumb = null;
@@ -71,7 +76,10 @@ namespace QuickMediaIngest.Core
                     var exifThumb = TryGetExifThumbnail(filePath);
                     if (exifThumb != null) thumb = exifThumb;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "EXIF embedded thumbnail read failed for {FilePath}.", filePath);
+                }
             }
 
             // 1b. For RAW/DNG, ask the Windows shell preview first (more consistent
@@ -84,7 +92,7 @@ namespace QuickMediaIngest.Core
                 {
                     try
                     {
-                        thumb = GetThumbnail(siblingRenderedPath);
+                        thumb = GetThumbnail(siblingRenderedPath, hints);
                     }
                     catch
                     {
@@ -95,6 +103,12 @@ namespace QuickMediaIngest.Core
                 if (thumb != null)
                 {
                     return thumb;
+                }
+
+                int deferMs = hints?.DeferRawShellMilliseconds ?? 0;
+                if (deferMs > 0)
+                {
+                    Thread.Sleep(deferMs);
                 }
 
                 try
@@ -121,7 +135,10 @@ namespace QuickMediaIngest.Core
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "WPF bitmap decode failed for {FilePath}.", filePath);
+                }
             }
 
             // 3. Windows Shell fallback
@@ -210,7 +227,7 @@ namespace QuickMediaIngest.Core
             }
         }
 
-        private static BitmapSource? TryGetExifThumbnail(string filePath)
+        private BitmapSource? TryGetExifThumbnail(string filePath)
         {
             try
             {
@@ -324,7 +341,10 @@ namespace QuickMediaIngest.Core
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "EXIF segment parse failed for {FilePath}.", filePath);
+            }
 
             return null;
         }

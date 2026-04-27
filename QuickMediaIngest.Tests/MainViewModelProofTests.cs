@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using QuickMediaIngest.Core;
+using QuickMediaIngest.Core.Services;
+using QuickMediaIngest.Data;
 using QuickMediaIngest.ViewModels;
 using Xunit;
 
@@ -19,6 +21,11 @@ namespace QuickMediaIngest.Tests
                 new Mock<IFileProviderFactory>().Object,
                 new Mock<IIngestEngineFactory>().Object,
                 new GroupBuilder(),
+                new Mock<IDatabaseService>().Object,
+                new Mock<IShootFilterService>().Object,
+                new Mock<IFtpWorkflowService>().Object,
+                new Mock<IUnifiedConcreteSourceScanService>().Object,
+                new Mock<IFtpCredentialStore>().Object,
                 new Mock<ILogger<MainViewModel>>().Object);
         }
 

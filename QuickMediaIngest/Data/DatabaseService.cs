@@ -182,5 +182,47 @@ namespace QuickMediaIngest.Data
                 }
             }
         }
+
+        /// <summary>
+        /// Runs <c>VACUUM</c> at most once per <paramref name="minimumDaysBetweenRuns"/> days to limit DB growth from churn.
+        /// </summary>
+        public void TryPeriodicVacuum(int minimumDaysBetweenRuns = 14)
+        {
+            try
+            {
+                string? dir = Path.GetDirectoryName(_dbPath);
+                if (string.IsNullOrEmpty(dir))
+                {
+                    return;
+                }
+
+                string stampPath = Path.Combine(dir, "last_sqlite_vacuum.txt");
+                if (File.Exists(stampPath))
+                {
+                    string text = File.ReadAllText(stampPath).Trim();
+                    if (DateTime.TryParse(text, out var last) &&
+                        (DateTime.UtcNow - last.ToUniversalTime()).TotalDays < minimumDaysBetweenRuns)
+                    {
+                        return;
+                    }
+                }
+
+                using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
+                {
+                    connection.Open();
+                    using (var cmd = new SQLiteCommand("VACUUM;", connection))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
+                _logger.LogInformation("SQLite VACUUM completed at {Path}.", _dbPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "SQLite periodic VACUUM skipped or failed.");
+            }
+        }
     }
 }

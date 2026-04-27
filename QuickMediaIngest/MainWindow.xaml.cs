@@ -19,10 +19,12 @@ using System.Windows.Data;
 using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Automation;
 using System.Windows.Media.Animation;
 using System.Threading;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Localization;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -39,10 +41,15 @@ namespace QuickMediaIngest
         private bool _isRibbonTileDragInProgress;
         private Border? _activeRibbonDraggedTile;
         private int _activeRibbonPreviewIndex = -1;
+        private double _savedShootGroupsScrollOffset;
+
         public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger)
         {
             InitializeComponent();
             DataContext = viewModel;
+            viewModel.GroupsListRebuildStarting += ViewModel_GroupsListRebuildStarting;
+            viewModel.GroupsListRebuildCompleted += ViewModel_GroupsListRebuildCompleted;
+            Closed += MainWindow_OnClosed;
             _logger = logger;
             _logger.LogInformation("Main window initialized.");
 
@@ -54,7 +61,103 @@ namespace QuickMediaIngest
                     ThemeToggle.IsChecked = App.CurrentIsDarkTheme;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not sync theme toggle at startup.");
+            }
+        }
+
+        private void MainWindow_OnClosed(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (DataContext is MainViewModel vm)
+                {
+                    vm.GroupsListRebuildStarting -= ViewModel_GroupsListRebuildStarting;
+                    vm.GroupsListRebuildCompleted -= ViewModel_GroupsListRebuildCompleted;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not unsubscribe group rebuild handlers.");
+            }
+        }
+
+        private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? root)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root is ScrollViewer sv)
+            {
+                return sv;
+            }
+
+            int count = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < count; i++)
+            {
+                ScrollViewer? found = FindDescendantScrollViewer(VisualTreeHelper.GetChild(root, i));
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        private double TryGetShootGroupsVerticalOffset()
+        {
+            try
+            {
+                if (GroupsListView == null)
+                {
+                    return 0;
+                }
+
+                ScrollViewer? scroll = FindDescendantScrollViewer(GroupsListView);
+                return scroll?.VerticalOffset ?? 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not read shoot list scroll offset.");
+                return 0;
+            }
+        }
+
+        private void TryRestoreShootGroupsVerticalOffset(double offset)
+        {
+            try
+            {
+                if (GroupsListView == null)
+                {
+                    return;
+                }
+
+                ScrollViewer? scroll = FindDescendantScrollViewer(GroupsListView);
+                if (scroll != null && offset >= 0)
+                {
+                    scroll.ScrollToVerticalOffset(offset);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not restore shoot list scroll offset.");
+            }
+        }
+
+        private void ViewModel_GroupsListRebuildStarting(object? sender, EventArgs e)
+        {
+            _savedShootGroupsScrollOffset = TryGetShootGroupsVerticalOffset();
+        }
+
+        private void ViewModel_GroupsListRebuildCompleted(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() => TryRestoreShootGroupsVerticalOffset(_savedShootGroupsScrollOffset)),
+                DispatcherPriority.Loaded);
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -90,6 +193,29 @@ namespace QuickMediaIngest
             catch
             {
                 // Ignore sidebar chrome timing during startup.
+            }
+
+            try
+            {
+                if (LiveAnnouncementHost != null)
+                {
+                    AutomationProperties.SetLiveSetting(LiveAnnouncementHost, AutomationLiveSetting.Polite);
+                    AutomationProperties.SetName(LiveAnnouncementHost, AppLocalizer.Get("A11y_StatusAnnouncements"));
+                }
+
+                if (ThemeToggle != null)
+                {
+                    AutomationProperties.SetName(ThemeToggle, AppLocalizer.Get("A11y_ThemeToggle"));
+                }
+
+                if (SidebarCollapseToggle != null)
+                {
+                    AutomationProperties.SetName(SidebarCollapseToggle, AppLocalizer.Get("A11y_SidebarCollapse"));
+                }
+            }
+            catch
+            {
+                // Ignore platforms where live regions are unavailable.
             }
         }
 
@@ -670,11 +796,12 @@ namespace QuickMediaIngest
                         var dialog = new Microsoft.Win32.OpenFolderDialog
                         {
                             InitialDirectory = initial,
-                            Title = "Select destination folder"
+                            Title = AppLocalizer.Get("Dlg_SelectDestinationFolder")
                         };
 
                         if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
                         {
+                            vm.DestinationPreset = "Custom";
                             vm.DestinationRoot = dialog.FolderName;
                         }
                     }
@@ -682,11 +809,14 @@ namespace QuickMediaIngest
                     {
                         // Fallback for environments where OpenFolderDialog is not available.
                         Process.Start(new ProcessStartInfo("explorer.exe", initial) { UseShellExecute = true });
-                        System.Windows.MessageBox.Show("Could not open the folder picker. Explorer was opened instead.", "Select Folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                        System.Windows.MessageBox.Show(AppLocalizer.Get("Msg_FolderPickerExplorerFallback"), AppLocalizer.Get("Msg_SelectFolder_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Browse destination folder failed.");
+            }
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)
@@ -708,6 +838,36 @@ namespace QuickMediaIngest
             if (DataContext is ViewModels.MainViewModel vm)
             {
                 vm.ShowScanExclusionsPanel = false;
+            }
+        }
+
+        private void CloseImportHistory_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+            {
+                vm.ShowImportHistoryDialog = false;
+            }
+        }
+
+        private void ImportHistory_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(this,
+                    AppLocalizer.Get("Msg_ClearImportHistory_Body"),
+                    AppLocalizer.Get("Msg_ClearImportHistory_Title"),
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (result == MessageBoxResult.Yes
+                    && DataContext is ViewModels.MainViewModel vm
+                    && vm.ClearImportHistoryCommand.CanExecute(null))
+                {
+                    vm.ClearImportHistoryCommand.Execute(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Clear import history confirmation failed.");
             }
         }
 
@@ -797,7 +957,7 @@ namespace QuickMediaIngest
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to open crash logs folder.");
-                System.Windows.MessageBox.Show("Unable to open crash logs folder." + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message), AppLocalizer.Get("Msg_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -835,6 +995,7 @@ namespace QuickMediaIngest
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to open logs folder.");
+                System.Windows.MessageBox.Show(AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message), AppLocalizer.Get("Msg_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -877,16 +1038,16 @@ namespace QuickMediaIngest
             }
 
             var result = MessageBox.Show(
-                "Warning: This will permanently remove files from the source after successful copy.",
-                "Delete After Import",
+                AppLocalizer.Get("Msg_DeleteAfterImport_ConfirmBody"),
+                AppLocalizer.Get("Msg_DeleteAfterImport_ConfirmTitle"),
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning);
 
             vm.DeleteAfterImportPromptDismissed = true;
 
-            if (result != MessageBoxResult.OK && sender is CheckBox checkBox)
+            if (result != MessageBoxResult.OK && sender is System.Windows.Controls.Primitives.ToggleButton tb)
             {
-                checkBox.IsChecked = false;
+                tb.IsChecked = false;
             }
         }
 
@@ -1056,12 +1217,12 @@ namespace QuickMediaIngest
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is QuickMediaIngest.ViewModels.UnifiedSourceItem)
+            if (value is QuickMediaIngest.UnifiedSourceItem)
             {
                 return PackIconKind.ViewGrid;
             }
 
-            if (value is QuickMediaIngest.ViewModels.FtpSourceItem)
+            if (value is QuickMediaIngest.FtpSourceItem)
             {
                 return PackIconKind.SourceBranch;
             }

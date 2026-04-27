@@ -28,9 +28,17 @@ namespace QuickMediaIngest.Tests
             string groupTitle = "Shoot 1";
 
             // Act
-            string result = engine.ResolveFileName(item, targetDir, namingTemplate, groupTitle);
+            string result = engine.ResolveFileName(
+                item,
+                targetDir,
+                namingTemplate,
+                groupTitle,
+                sequenceNumber: 1,
+                DuplicateHandlingMode.Suffix,
+                out bool skippedAsDuplicate);
 
             // Assert
+            Assert.False(skippedAsDuplicate);
             Assert.Contains("2024-03-20", result);
             Assert.Contains("IMG_1234", result);
             Assert.Contains("Shoot 1", result);

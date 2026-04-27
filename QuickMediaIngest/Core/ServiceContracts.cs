@@ -78,6 +78,11 @@ namespace QuickMediaIngest.Core
         /// Gets a thumbnail image for the specified file path.
         /// </summary>
         BitmapSource? GetThumbnail(string filePath);
+
+        /// <summary>
+        /// Gets a thumbnail with optional load hints (e.g. defer expensive RAW shell work).
+        /// </summary>
+        BitmapSource? GetThumbnail(string filePath, ThumbnailHints? hints);
     }
 
     /// <summary>
@@ -102,6 +107,9 @@ namespace QuickMediaIngest.Core
         List<ImportItem> Filter(List<ImportItem> items, List<WhitelistRule> rules);
     }
 
+    /// <summary>Result of an update check: <see cref="DownloadUrl"/> is set when a newer release is available.</summary>
+    public readonly record struct UpdateCheckResult(string? DownloadUrl, string? RemoteVersionTag);
+
     /// <summary>
     /// Checks for application updates.
     /// </summary>
@@ -110,7 +118,7 @@ namespace QuickMediaIngest.Core
         /// <summary>
         /// Checks for updates asynchronously.
         /// </summary>
-        Task<string?> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable");
+        Task<UpdateCheckResult> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable");
     }
 
     /// <summary>
@@ -202,5 +210,8 @@ namespace QuickMediaIngest.Data
         void SaveDeviceConfig(DeviceConfig config);
         List<WhitelistRule> GetWhitelist(string deviceId);
         void AddWhitelistRule(WhitelistRule rule);
+
+        /// <summary>Runs occasional <c>VACUUM</c> to control DB file growth.</summary>
+        void TryPeriodicVacuum(int minimumDaysBetweenRuns = 14);
     }
 }

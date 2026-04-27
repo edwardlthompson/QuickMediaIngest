@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System;
+using QuickMediaIngest.Localization;
 using System.Net.Http;
 using System.IO;
 using System.Windows;
@@ -10,8 +11,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Logging;
+using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
-using QuickMediaIngest.Localization;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -42,9 +43,12 @@ namespace QuickMediaIngest
                     string configDump = TryGetAppConfigDump();
                     File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n\nAppConfig:\n{configDump}\n");
                 }
-                catch { }
+                catch (Exception logEx)
+                {
+                    Trace.TraceWarning("Failed to persist UI crash artifact: {0}", logEx);
+                }
             });
-            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(AppLocalizer.Get("Msg_Unhandled_Error_Body"), AppLocalizer.Get("Msg_Unhandled_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         }
 
@@ -65,9 +69,12 @@ namespace QuickMediaIngest
                     string configDump = TryGetAppConfigDump();
                     File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n\nAppConfig:\n{configDump}\n");
                 }
-                catch { }
+                catch (Exception logEx)
+                {
+                    Trace.TraceWarning("Failed to persist domain crash artifact: {0}", logEx);
+                }
             });
-            System.Windows.MessageBox.Show($"An unexpected error occurred and was logged. A crash log has been saved to your logs folder.", "Unexpected Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(AppLocalizer.Get("Msg_Unhandled_Error_Body"), AppLocalizer.Get("Msg_Unhandled_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private static string TryGetAppConfigDump()
@@ -99,21 +106,25 @@ namespace QuickMediaIngest
             string baseDir = Path.Combine(appData, "QuickMediaIngest");
             string runMarker = Path.Combine(baseDir, "last_run.tmp");
             // Mark this run as started
-            try { Directory.CreateDirectory(baseDir); File.WriteAllText(runMarker, DateTime.Now.ToString("O")); } catch { }
+            try
+            {
+                Directory.CreateDirectory(baseDir);
+                File.WriteAllText(runMarker, DateTime.Now.ToString("O"));
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("Could not write run marker: {0}", ex);
+            }
 
             // Detect Windows system theme and apply it
             DetectAndApplySystemTheme();
 
             // Allow forcing a controlled test crash by creating a file named 'qmi_force_crash.txt' in the temp folder.
-            try
+            string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
+            if (File.Exists(crashMarker))
             {
-                string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
-                if (File.Exists(crashMarker))
-                {
-                    throw new Exception("Forced test crash for verification (qmi_force_crash.txt present)");
-                }
+                throw new Exception("Forced test crash for verification (qmi_force_crash.txt present)");
             }
-            catch { }
 
             var splash = new SplashWindow();
             splash.Show();
@@ -143,7 +154,10 @@ namespace QuickMediaIngest
                 string runMarker = Path.Combine(baseDir, "last_run.tmp");
                 if (File.Exists(runMarker)) File.Delete(runMarker);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("Could not remove run marker: {0}", ex);
+            }
             _serviceProvider?.Dispose();
             base.OnExit(e);
         }
@@ -181,6 +195,10 @@ namespace QuickMediaIngest
             services.AddSingleton<IFileProviderFactory, FileProviderFactory>();
             services.AddSingleton<IIngestEngineFactory, IngestEngineFactory>();
             services.AddSingleton<GroupBuilder>();
+            services.AddSingleton<IShootFilterService, ShootFilterService>();
+            services.AddSingleton<IFtpWorkflowService, FtpWorkflowService>();
+            services.AddSingleton<IUnifiedConcreteSourceScanService, UnifiedConcreteSourceScanService>();
+            services.AddSingleton<IFtpCredentialStore, WindowsFtpCredentialStore>();
 
             // Register loggers for all file providers
             services.AddSingleton(typeof(ILogger<AdbFileProvider>), sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger<AdbFileProvider>());
@@ -262,7 +280,10 @@ namespace QuickMediaIngest
                     System.Windows.Application.Current.Resources["MenuForegroundBrush"] = menuForeground;
                     System.Windows.Application.Current.Resources["MenuBackgroundBrush"] = menuBackground;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger?.LogDebug(ex, "Could not update theme resource brushes.");
+                }
 
                 ApplyChromePalette(useLightTheme);
             }

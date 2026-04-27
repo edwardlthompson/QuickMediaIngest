@@ -18,7 +18,7 @@ The app takes inspiration from classic import tools, with a **Material Design**-
 * **Rescan and refresh**: Sidebar and top bar actions refresh drives and rebuild the unified list; configurable **scan subfolders**.
 * **FTP sources**: Add servers from the sidebar, optional reconnect on startup, browse/test connection, preset folder paths.
 * **Drive inclusion**: Choose which fixed/removable volumes participate in quick scans (drive picker overlay).
-* **Verbose scan progress**: Overlay with folder/file counts, current path, FTP prescan phase, and overall progress—dismissed as soon as the merged list is ready so long preview loads do not block the UI (**v1.2.0**).
+* **Verbose scan progress**: Overlay with folder/file counts, current path, FTP prescan phase, and overall progress—dismissed as soon as the merged list is ready so long preview loads do not block the UI (**v1.2.1**).
 
 ### Exclusions and filtering
 
@@ -46,12 +46,13 @@ The app takes inspiration from classic import tools, with a **Material Design**-
 * **About & Updates**: Version, **build date**, check for updates (portable `.exe` or installer `.msi` channels), selective download with progress; **changelog** / **releases** links; logs folder and diagnostics shortcuts.
 * **Updater handoff**: External updater can wait for the app to exit before replacing files (reduces “file in use” install failures).
 
-### Look and feel (**v1.2.0** polish)
+### Look and feel (**v1.2.1**)
 
 * **Localization**: UI strings via `.resx` with **English**, **Spanish**, and **French**; language choice in **Preferences** (restart may be needed for some chrome).
-* **Consistent modal chrome**: FTP, drive picker, scan/import progress, About, skipped-folder summary, **Preferences**, and **Scan exclusions** share the same **blurred dimmed backdrop**; **Escape** closes the topmost overlay in a fixed order.
+* **Consistent modal chrome**: FTP, drive picker, scan/import progress, About, skipped-folder summary, **Preferences**, **Scan exclusions**, and **Import history** share the same **blurred dimmed backdrop**; **Escape** closes the topmost overlay in a fixed order; **F1** opens **keyboard shortcuts**.
 * **Scan summaries**: After a scan, paths skipped **only because of your exclusion rules** are explained separately from **FTP listing errors**; optional **don’t remind again** for exclusion-only summaries (saved in config).
-* **Sidebar**: Collapsible rail; **theme** toggle under the collapse control when expanded, **icon-only** theme when collapsed.
+* **Sidebar**: Collapsible rail; **theme** toggle under the collapse control when expanded, **icon-only** theme when collapsed; **Notifications** panel focuses on readiness + feed (update checks live under **About & Updates**).
+* **Updates**: Optional **desktop popup** when a **new GitHub release** is detected (see **CHANGELOG**).
 
 ---
 

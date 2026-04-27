@@ -77,8 +77,29 @@
   <data name="Settings_LanguageRestartHint" xml:space="preserve"><value>Redémarrez l’application pour appliquer la langue.</value></data>
   <data name="Settings_EmbedKeywords" xml:space="preserve"><value>Écrire les mots-clés dans les métadonnées à l’import</value></data>
   <data name="Settings_ConfirmImport" xml:space="preserve"><value>Confirmer avant de lancer l’import</value></data>
+  <data name="Settings_Section_LanguagePrompts" xml:space="preserve"><value>Langue et invites d’import</value></data>
   <data name="Settings_AdvancedHeader" xml:space="preserve"><value>Import et aperçus avancés</value></data>
   <data name="Settings_SaveClose" xml:space="preserve"><value>Enregistrer et fermer</value></data>
+
+  <data name="Settings_Preset" xml:space="preserve"><value>Préréglage</value></data>
+  <data name="Settings_Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Settings_Time" xml:space="preserve"><value>Heure</value></data>
+  <data name="Settings_Sequence" xml:space="preserve"><value>Séquence</value></data>
+  <data name="Settings_ShootName" xml:space="preserve"><value>Nom de séance</value></data>
+  <data name="Settings_OriginalName" xml:space="preserve"><value>Nom d’origine</value></data>
+  <data name="Settings_DateFormat" xml:space="preserve"><value>Format de date</value></data>
+  <data name="Settings_TimeFormat" xml:space="preserve"><value>Format de l’heure</value></data>
+  <data name="Settings_Separator" xml:space="preserve"><value>Séparateur</value></data>
+  <data name="Settings_ShootNameSample" xml:space="preserve"><value>Exemple de nom de séance</value></data>
+  <data name="Settings_ForceLowercase" xml:space="preserve"><value>Forcer la sortie en minuscules</value></data>
+  <data name="Settings_PreviewExamples" xml:space="preserve"><value>Aperçu (exemples)</value></data>
+  <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Rendu des vignettes</value></data>
+  <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Grouper RAW et rendus dans une même pile d’aperçus</value></data>
+  <data name="Settings_ExpandStacked" xml:space="preserve"><value>Déplier les piles RAW/rendus côte à côte</value></data>
+  <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Gestion des doublons</value></data>
+  <data name="Settings_VerificationMode" xml:space="preserve"><value>Mode de vérification</value></data>
+  <data name="Settings_SavePreset" xml:space="preserve"><value>Enregistrer le préréglage</value></data>
+  <data name="Settings_LoadLatestPreset" xml:space="preserve"><value>Charger le dernier préréglage</value></data>
 
   <data name="Lang_UseSystem" xml:space="preserve"><value>Langue de Windows</value></data>
   <data name="Lang_English" xml:space="preserve"><value>Anglais</value></data>
@@ -107,6 +128,69 @@
   <data name="Vm_StatusNothingToImport" xml:space="preserve"><value>Rien à importer.</value></data>
   <data name="Vm_StatusNoFilesSelected" xml:space="preserve"><value>Aucun fichier sélectionné pour l’import.</value></data>
   <data name="Vm_StatusImportCanceled" xml:space="preserve"><value>Import annulé.</value></data>
+
+  <data name="Ftp_AddSourceTitle" xml:space="preserve"><value>Ajouter une source FTP</value></data>
+  <data name="Ftp_Host" xml:space="preserve"><value>Hôte</value></data>
+  <data name="Ftp_Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Ftp_User" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="Ftp_Password" xml:space="preserve"><value>Mot de passe</value></data>
+  <data name="Ftp_RemoteFolder" xml:space="preserve"><value>Dossier distant</value></data>
+  <data name="Btn_Test" xml:space="preserve"><value>Tester</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Btn_Close" xml:space="preserve"><value>Fermer</value></data>
+
+  <data name="Import_InProgressTitle" xml:space="preserve"><value>Import en cours...</value></data>
+  <data name="Import_CurrentGroup" xml:space="preserve"><value>Groupe actuel :</value></data>
+  <data name="Import_FilesProcessed" xml:space="preserve"><value>Fichiers traités :</value></data>
+  <data name="Import_Succeeded" xml:space="preserve"><value>Réussis :</value></data>
+  <data name="Import_Failed" xml:space="preserve"><value>Échecs :</value></data>
+  <data name="Import_Elapsed" xml:space="preserve"><value>Écoulé :</value></data>
+  <data name="Import_EtaSpeed" xml:space="preserve"><value>ETA / Débit :</value></data>
+  <data name="Import_CurrentGroupProgress" xml:space="preserve"><value>Progression du groupe actuel</value></data>
+
+  <data name="About_Title" xml:space="preserve"><value>À propos d’Ingestion média rapide</value></data>
+  <data name="About_Description" xml:space="preserve"><value>Petit utilitaire pour importer rapidement photos et vidéos depuis téléphones et appareils photo.</value></data>
+  <data name="About_UpdateChecking" xml:space="preserve"><value>Vérification des mises à jour</value></data>
+  <data name="About_Package" xml:space="preserve"><value>Paquet :</value></data>
+  <data name="About_Interval" xml:space="preserve"><value>Intervalle :</value></data>
+  <data name="About_CheckUpdatesNow" xml:space="preserve"><value>Vérifier les mises à jour maintenant</value></data>
+  <data name="About_DownloadUpdate" xml:space="preserve"><value>Télécharger la mise à jour</value></data>
+  <data name="About_Speed" xml:space="preserve"><value>Vitesse :</value></data>
+  <data name="About_Eta" xml:space="preserve"><value>ETA :</value></data>
+  <data name="About_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="About_OpenLogsFolder" xml:space="preserve"><value>Ouvrir le dossier des journaux</value></data>
+  <data name="About_ReportBug" xml:space="preserve"><value>Signaler un problème</value></data>
+  <data name="About_Changelog" xml:space="preserve"><value>Journal des modifications</value></data>
+  <data name="About_Releases" xml:space="preserve"><value>Versions publiées</value></data>
+  <data name="About_BuildDate" xml:space="preserve"><value>Date de compilation :</value></data>
+
+  <data name="Vm_Ftp_DefaultDialogStatus" xml:space="preserve"><value>Saisissez les informations FTP du téléphone, puis testez ou parcourez les dossiers.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeTest" xml:space="preserve"><value>Saisissez un hôte FTP avant de tester.</value></data>
+  <data name="Vm_Ftp_PortRange" xml:space="preserve"><value>Le port FTP doit être compris entre 1 et 65535.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeBrowse" xml:space="preserve"><value>Saisissez un hôte FTP avant de parcourir les dossiers.</value></data>
+  <data name="Vm_Ftp_ChooseBrowsedFolder" xml:space="preserve"><value>Choisissez d’abord un dossier FTP après exploration.</value></data>
+  <data name="Vm_Status_SkippedFolderCopied" xml:space="preserve"><value>Rapport des dossiers ignorés copié dans le Presse-papiers.</value></data>
+
+  <data name="Vm_Status_NothingToRetry" xml:space="preserve"><value>Rien à réessayer.</value></data>
+  <data name="Vm_Status_NoFailedPreviews" xml:space="preserve"><value>Aucune vignette en échec à réessayer.</value></data>
+  <data name="Vm_Status_PreviewRetryFinished" xml:space="preserve"><value>Réessai des aperçus terminé.</value></data>
+  <data name="Vm_Status_LoadSourceBeforeClearPreviewCache" xml:space="preserve"><value>Chargez une source avant de vider le cache d’aperçus.</value></data>
+  <data name="Vm_Status_ThumbnailCacheClearedReloading" xml:space="preserve"><value>Cache des vignettes vidé. Rechargement des aperçus...</value></data>
+  <data name="Vm_Status_NoSourcesForUnified" xml:space="preserve"><value>Aucune source carte SD ou FTP disponible pour la vue unifiée.</value></data>
+  <data name="Vm_Status_UnifiedNoMedia" xml:space="preserve"><value>La vue unifiée ne contient aucun fichier multimédia.</value></data>
+  <data name="Vm_Status_ScanSourceFirst" xml:space="preserve"><value>Analysez une source avant de générer les aperçus.</value></data>
+  <data name="Vm_Status_SelectAtLeastOneGroup" xml:space="preserve"><value>Sélectionnez au moins un groupe de dossiers.</value></data>
+  <data name="Vm_Status_BuildingPreviews" xml:space="preserve"><value>Génération des aperçus pour les dossiers sélectionnés...</value></data>
+  <data name="Vm_Status_StartingImport" xml:space="preserve"><value>Démarrage de l’import...</value></data>
+  <data name="Vm_Status_NoFailedFilesToRetry" xml:space="preserve"><value>Aucun fichier en échec à réessayer.</value></data>
+  <data name="Vm_Status_NoPendingPlan" xml:space="preserve"><value>Aucun plan d’import en attente.</value></data>
+  <data name="Vm_Status_EmptyPendingPlan" xml:space="preserve"><value>Le plan d’import en attente est vide.</value></data>
+  <data name="Vm_Status_SelectFilesBeforeQueue" xml:space="preserve"><value>Sélectionnez des fichiers avant de mettre un import en file.</value></data>
+  <data name="Vm_Status_NoPresets" xml:space="preserve"><value>Aucun préréglage disponible.</value></data>
+  <data name="Vm_Status_PresetCouldNotLoad" xml:space="preserve"><value>Impossible de charger le préréglage.</value></data>
+  <data name="Vm_Status_BrowseOnlyLocal" xml:space="preserve"><value>Parcourir est disponible pour les sources locales. Pour FTP, saisissez un chemin distant (par ex. : /DCIM/Camera).</value></data>
+
   <data name="Scan_CurrentFolder" xml:space="preserve"><value>Dossier actuel :</value></data>
   <data name="Scan_FilesFoundInFolder" xml:space="preserve"><value>Fichiers trouvés dans le dossier :</value></data>
   <data name="Scan_FilesProcessedInFolder" xml:space="preserve"><value>Fichiers traités dans le dossier :</value></data>
@@ -137,4 +221,200 @@
   <data name="Vm_Status_ScanSummaryExcludedOnly" xml:space="preserve"><value>Analyse terminée : {0} chemin(s) ignoré(s) (exclusions).</value></data>
   <data name="Vm_Status_ScanSummaryWithFtpIssues" xml:space="preserve"><value>Analyse terminée : {0} chemin(s) exclus ; {1} problème(s) FTP — voir le résumé.</value></data>
   <data name="SkippedFolders_DontRemindExcluded" xml:space="preserve"><value>Ne plus afficher ce résumé lorsque les seuls dossiers ignorés correspondent à mes exclusions</value></data>
+
+  <data name="DriveSelect_Title" xml:space="preserve"><value>Sélectionner les lecteurs à analyser</value></data>
+  <data name="DriveSelect_Description" xml:space="preserve"><value>Choisissez quels lecteurs fixes et amovibles doivent être inclus dans les analyses rapides.</value></data>
+  <data name="DriveSelect_SaveAndScan" xml:space="preserve"><value>Enregistrer et analyser</value></data>
+  <data name="Btn_Copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="History_Export" xml:space="preserve"><value>Exporter</value></data>
+  <data name="History_Clear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="History_ColumnStarted" xml:space="preserve"><value>Début</value></data>
+  <data name="History_ColumnSummary" xml:space="preserve"><value>Résumé</value></data>
+  <data name="Toolbar_ViewSection" xml:space="preserve"><value>Affichage</value></data>
+  <data name="Toolbar_ViewSectionTooltip" xml:space="preserve"><value>Affichage et contrôles d’aperçu</value></data>
+  <data name="Toolbar_ExpandAllGroups" xml:space="preserve"><value>Développer tous les groupes</value></data>
+  <data name="Toolbar_ExpandAllGroupsTooltip" xml:space="preserve"><value>Développer ou réduire tous les groupes</value></data>
+  <data name="Toolbar_FilterFileTypeTooltip" xml:space="preserve"><value>Filtrer les aperçus par type de média</value></data>
+  <data name="Toolbar_RebuildPreviews" xml:space="preserve"><value>Reconstruire les aperçus</value></data>
+  <data name="Toolbar_RebuildPreviewsTooltip" xml:space="preserve"><value>Vider le cache des aperçus et reconstruire</value></data>
+  <data name="Sidebar_CollapseTooltip" xml:space="preserve"><value>Réduire ou développer la barre latérale</value></data>
+  <data name="Sidebar_Label" xml:space="preserve"><value>Barre latérale</value></data>
+  <data name="Theme_Label" xml:space="preserve"><value>Thème</value></data>
+  <data name="Theme_Tooltip" xml:space="preserve"><value>Basculer le thème clair/sombre</value></data>
+  <data name="Sidebar_Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Sidebar_NotificationFeed" xml:space="preserve"><value>Fil de notifications</value></data>
+  <data name="Onboarding_Title" xml:space="preserve"><value>Bienvenue dans Ingestion média rapide !</value></data>
+  <data name="Onboarding_Body" xml:space="preserve"><value>• Utilisez la barre latérale pour ajouter des cartes SD ou des sources FTP.
+• Utilisez le bouton Importer pour lancer l’importation.
+• Choisissez votre thème préféré dans les Paramètres.
+• Des infobulles et raccourcis clavier sont disponibles dans toute l’application.
+
+Vous pouvez revoir cette visite depuis Paramètres &gt; À propos.</value></data>
+  <data name="Onboarding_GotIt" xml:space="preserve"><value>Compris !</value></data>
+  <data name="Splash_StartingUp" xml:space="preserve"><value>Démarrage…</value></data>
+
+  <data name="Toolbar_ImportActions" xml:space="preserve"><value>Actions d’importation</value></data>
+  <data name="Toolbar_ImportActionsTooltip" xml:space="preserve"><value>Import, file d’attente, prévol, réessai, reprise, actualisation et suppression après import</value></data>
+  <data name="Shoot_GroupExpandTooltip" xml:space="preserve"><value>Développer ou réduire ce groupe de séance</value></data>
+  <data name="Sidebar_NotificationsIconTooltip" xml:space="preserve"><value>Ouvrir le volet Notifications</value></data>
+  <data name="A11y_RemoveFilterChip" xml:space="preserve"><value>Supprimer le filtre</value></data>
+
+  <data name="Msg_Error_Title" xml:space="preserve"><value>Erreur</value></data>
+  <data name="Msg_Unhandled_Error_Title" xml:space="preserve"><value>Erreur inattendue</value></data>
+  <data name="Msg_Unhandled_Error_Body" xml:space="preserve"><value>Une erreur inattendue s’est produite et a été consignée. Un journal de diagnostic a été enregistré dans votre dossier des journaux.</value></data>
+  <data name="Msg_SelectFolder_Title" xml:space="preserve"><value>Sélectionner un dossier</value></data>
+  <data name="Msg_FolderPickerExplorerFallback" xml:space="preserve"><value>Impossible d’ouvrir le sélecteur de dossier. L’Explorateur de fichiers a été ouvert à la place.</value></data>
+  <data name="Msg_ClearImportHistory_Title" xml:space="preserve"><value>Effacer l’historique d’import</value></data>
+  <data name="Msg_ClearImportHistory_Body" xml:space="preserve"><value>Effacer l’historique d’import ? Cette action est irréversible.</value></data>
+  <data name="Msg_OpenLogsFailed_Body" xml:space="preserve"><value>Impossible d’ouvrir le dossier des journaux de diagnostic. Détails : {0}</value></data>
+  <data name="Msg_DeleteAfterImport_ConfirmTitle" xml:space="preserve"><value>Supprimer après import</value></data>
+  <data name="Msg_DeleteAfterImport_ConfirmBody" xml:space="preserve"><value>Avertissement : les fichiers sources seront définitivement supprimés après une copie réussie vers la destination.</value></data>
+
+  <data name="Msg_ImportComplete_Title_Success" xml:space="preserve"><value>Import terminé</value></data>
+  <data name="Msg_ImportComplete_Title_Warning" xml:space="preserve"><value>Import terminé avec avertissements</value></data>
+  <data name="Msg_ImportComplete_Body_Success" xml:space="preserve"><value>{0} fichier(s) sur {1} importé(s) avec succès.</value></data>
+  <data name="Msg_ImportComplete_Body_Warning" xml:space="preserve"><value>{0} fichier(s) sur {1} importé(s). Échecs : {2}.</value></data>
+
+  <data name="Filter_FileType_NoFilter" xml:space="preserve"><value>(Aucun filtre)</value></data>
+  <data name="Filter_FileType_AllMedia" xml:space="preserve"><value>Tous les types de médias</value></data>
+  <data name="Filter_FileType_Images" xml:space="preserve"><value>Images</value></data>
+  <data name="Filter_FileType_Videos" xml:space="preserve"><value>Vidéos</value></data>
+  <data name="Filter_FileType_RAW" xml:space="preserve"><value>RAW</value></data>
+  <data name="Filter_FileType_JPEG" xml:space="preserve"><value>JPEG</value></data>
+  <data name="Vm_FilterChip_TypeLabel" xml:space="preserve"><value>Type : {0}</value></data>
+  <data name="Vm_FilterChip_KeywordLabel" xml:space="preserve"><value>Mot-clé : {0}</value></data>
+  <data name="Vm_FilterChip_DateFromLabel" xml:space="preserve"><value>Du : {0}</value></data>
+  <data name="Vm_FilterChip_DateToLabel" xml:space="preserve"><value>Au : {0}</value></data>
+
+  <data name="Vm_ExportImportHistoryTitle" xml:space="preserve"><value>Exporter l’historique d’import</value></data>
+  <data name="Vm_ExportImportHistoryFilter" xml:space="preserve"><value>Fichiers JSON (*.json)|*.json|Fichiers CSV (*.csv)|*.csv|Tous les fichiers (*.*)|*.*</value></data>
+  <data name="Vm_UpdateInterval_Daily" xml:space="preserve"><value>Quotidien</value></data>
+  <data name="Vm_UpdateInterval_Weekly" xml:space="preserve"><value>Hebdomadaire</value></data>
+  <data name="Vm_UpdateInterval_Monthly" xml:space="preserve"><value>Mensuel</value></data>
+  <data name="Vm_UpdateInterval_Off" xml:space="preserve"><value>Désactivé</value></data>
+
+  <data name="Sidebar_Section_Import" xml:space="preserve"><value>Import</value></data>
+  <data name="Sidebar_StartImport" xml:space="preserve"><value>Démarrer l’import</value></data>
+  <data name="Sidebar_DeselectAll" xml:space="preserve"><value>Tout désélectionner</value></data>
+  <data name="Sidebar_RescanDrives" xml:space="preserve"><value>Réanalyser les lecteurs</value></data>
+  <data name="Sidebar_RefreshUnified" xml:space="preserve"><value>Actualiser la vue unifiée</value></data>
+  <data name="Vm_Status_Ready" xml:space="preserve"><value>Prêt</value></data>
+  <data name="Vm_DefaultAlbumName" xml:space="preserve"><value>Nouvel album</value></data>
+  <data name="Vm_Scan_LoadingImportList" xml:space="preserve"><value>Chargement de la liste d’import…</value></data>
+  <data name="Vm_Scan_PreparingScan" xml:space="preserve"><value>Préparation de l’analyse…</value></data>
+  <data name="Dlg_SelectDestinationFolder" xml:space="preserve"><value>Choisir le dossier de destination</value></data>
+  <data name="Vm_ExportImportHistory_DefaultFileName" xml:space="preserve"><value>import-history.json</value></data>
+  <data name="Vm_ExportImportHistory_CsvHeader" xml:space="preserve"><value>Début,DuréeSecondes,FichiersSélectionnés,FichiersImportés,FichiersEnÉchec,Source,Destination</value></data>
+
+  <data name="Msg_ImportSummary_Title" xml:space="preserve"><value>Import summary</value></data>
+  <data name="Msg_ImportSummary_Body" xml:space="preserve"><value>Estimated transfer size about {0} MB. Approximate free space on destination volume: {1} GB. Continue with the normal confirmation step.</value></data>
+  <data name="Notify_ImportSessionStart" xml:space="preserve"><value>Import session started</value></data>
+  <data name="Msg_CancelImport_ConfirmTitle" xml:space="preserve"><value>Cancel import?</value></data>
+  <data name="Msg_CancelImport_ConfirmBody" xml:space="preserve"><value>Stop copying files and close the progress window? Partial files may remain in the destination.</value></data>
+  <data name="Btn_CancelImport" xml:space="preserve"><value>Cancel import</value></data>
+
+  <data name="Help_ShortcutsTitle" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="Help_ShortcutsIntro" xml:space="preserve"><value>These shortcuts work when the main window is focused.</value></data>
+  <data name="Help_ShortcutImport" xml:space="preserve"><value>Start import</value></data>
+  <data name="Help_ShortcutQueue" xml:space="preserve"><value>Queue current selection</value></data>
+  <data name="Help_ShortcutPreflight" xml:space="preserve"><value>Run preflight (writes a report under AppData)</value></data>
+  <data name="Help_ShortcutRefresh" xml:space="preserve"><value>Refresh sources / rescan lists</value></data>
+  <data name="Help_ShortcutSelectAll" xml:space="preserve"><value>Select all visible shoots</value></data>
+  <data name="Help_ShortcutFilter" xml:space="preserve"><value>Focus filter keywords</value></data>
+  <data name="Help_ShortcutEscape" xml:space="preserve"><value>Dismiss dialogs / overlays</value></data>
+  <data name="Help_ShortcutHelp" xml:space="preserve"><value>Open this shortcuts list</value></data>
+
+  <data name="DestPreset_Custom" xml:space="preserve"><value>Custom folder</value></data>
+  <data name="DestPreset_Pictures" xml:space="preserve"><value>Pictures / QuickMediaIngest</value></data>
+  <data name="DestPreset_LastSession" xml:space="preserve"><value>Last successful import folder</value></data>
+  <data name="Vm_Status_LastSessionDestinationUnavailable" xml:space="preserve"><value>No saved “last session” folder yet — run an import first or choose another preset.</value></data>
+
+  <data name="About_Glossary" xml:space="preserve"><value>Glossaire</value></data>
+  <data name="About_Glossary_TermPreflight" xml:space="preserve"><value>Prévol</value></data>
+  <data name="About_Glossary_DefPreflight" xml:space="preserve"><value>Estime la taille de la sélection et enregistre un rapport JSON avant la copie des fichiers.</value></data>
+  <data name="About_Glossary_TermUnified" xml:space="preserve"><value>Vue unifiée</value></data>
+  <data name="About_Glossary_DefUnified" xml:space="preserve"><value>Rassemble les lecteurs amovibles et les sources FTP dans une seule liste de navigation.</value></data>
+  <data name="About_Glossary_TermShoot" xml:space="preserve"><value>Séance</value></data>
+  <data name="About_Glossary_DefShoot" xml:space="preserve"><value>Un dossier daté ou un groupe de photos provenant d’une même séance.</value></data>
+
+  <data name="Empty_NoSourcesTitle" xml:space="preserve"><value>No sources yet. Add an FTP share or plug in a card reader to see shoots.</value></data>
+  <data name="Empty_FilterNoMatchTitle" xml:space="preserve"><value>No shoots match the current filters.</value></data>
+  <data name="Empty_ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="Empty_NoFilesTitle" xml:space="preserve"><value>No shoots loaded. Refresh sources or pick a different folder.</value></data>
+  <data name="Empty_FtpFailureTitle" xml:space="preserve"><value>Échec de la liste FTP</value></data>
+  <data name="Empty_FtpFailureBody" xml:space="preserve"><value>L’application n’a pas pu lire un ou plusieurs dossiers FTP. Vérifiez le partage Wi‑Fi sur l’appareil photo ou le téléphone, les identifiants et le chemin distant (essayez /DCIM ou /DCIM/Camera).</value></data>
+  <data name="Banner_PostDeleteRecovery" xml:space="preserve"><value>Les originaux ont été supprimés après l’import lorsque c’était possible. Les suppressions locales peuvent apparaître dans la Corbeille ; les sources FTP sont supprimées sur le serveur et ne peuvent pas être récupérées depuis ce PC.</value></data>
+  <data name="Btn_OpenRecycleBin" xml:space="preserve"><value>Ouvrir la Corbeille</value></data>
+
+  <data name="Notify_ClearFeed" xml:space="preserve"><value>Clear notifications</value></data>
+  <data name="Notify_MuteToggle" xml:space="preserve"><value>Mute until next import</value></data>
+
+  <data name="A11y_SidebarCollapse" xml:space="preserve"><value>Expand or collapse sidebar</value></data>
+  <data name="A11y_ThemeToggle" xml:space="preserve"><value>Toggle light or dark theme</value></data>
+  <data name="A11y_NotificationsIcon" xml:space="preserve"><value>Notifications area</value></data>
+  <data name="A11y_StatusAnnouncements" xml:space="preserve"><value>Import status announcements</value></data>
+
+  <data name="Settings_DestinationPreset" xml:space="preserve"><value>Quick destination</value></data>
+  <data name="Settings_ImportBehaviorSection" xml:space="preserve"><value>Import behavior</value></data>
+  <data name="Settings_OpenDestinationWhenDone" xml:space="preserve"><value>Open destination folder when import completes successfully</value></data>
+  <data name="Settings_ShowDiskSpaceSummary" xml:space="preserve"><value>Show disk space summary before confirming import</value></data>
+  <data name="Settings_ConfirmCancelImport" xml:space="preserve"><value>Ask for confirmation before cancelling an import</value></data>
+  <data name="Settings_SingleThreadImport" xml:space="preserve"><value>Single-thread copy (helps flaky USB readers)</value></data>
+  <data name="Settings_FileCooldownMs" xml:space="preserve"><value>Pause between files (milliseconds, 0 = off)</value></data>
+  <data name="Settings_OpenImportReportsFolder" xml:space="preserve"><value>Open import reports folder (_ImportReports)</value></data>
+
+  <data name="Vm_Status_ImportFailedShort" xml:space="preserve"><value>Échec de l’import</value></data>
+
+  <data name="Vm_Scan_LoadedFromCache" xml:space="preserve"><value>Chargé depuis le cache.</value></data>
+  <data name="Vm_Scan_UnifiedRefreshing" xml:space="preserve"><value>Rafraîchissement de la liste unifiée…</value></data>
+  <data name="Vm_Scan_UnifiedLoading" xml:space="preserve"><value>Chargement de la liste d’import unifiée…</value></data>
+  <data name="Vm_Scan_MergingSources" xml:space="preserve"><value>Fusion des sources SD et FTP…</value></data>
+  <data name="Vm_Scan_MergedSourcesProgress" xml:space="preserve"><value>{0}/{1} sources fusionnées…</value></data>
+  <data name="Vm_Scan_BuildingPreviewsDialogTitle" xml:space="preserve"><value>Génération des aperçus…</value></data>
+  <data name="Vm_Scan_BuildingPreviewsForFolders" xml:space="preserve"><value>Génération des aperçus pour {0} dossier(s) sélectionné(s)…</value></data>
+  <data name="Dlg_SelectFolderToScan" xml:space="preserve"><value>Sélectionner le dossier à analyser</value></data>
+  <data name="Vm_Status_PreflightComplete" xml:space="preserve"><value>Prévol terminé : {0} fichier(s), {1:0.00} Mo. Enregistré dans {2}.</value></data>
+  <data name="Vm_Status_ImportProgressLine" xml:space="preserve"><value>{0} {1} | total {2}/{3} | groupe {4}/{5}</value></data>
+  <data name="Vm_Import_StateCopying" xml:space="preserve"><value>Copie</value></data>
+  <data name="Vm_Import_StateFailed" xml:space="preserve"><value>Échec</value></data>
+  <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>Impossible d’associer la règle d’exclusion à une source. Réessayez une fois la liste chargée.</value></data>
+  <data name="Vm_SkippedFoldersReportTitle" xml:space="preserve"><value>Analyse FTP : dossiers ignorés</value></data>
+  <data name="Vm_Status_PreviewBuildFailed" xml:space="preserve"><value>Échec de la génération des aperçus : {0}</value></data>
+  <data name="Vm_Status_ScanPathNotFound" xml:space="preserve"><value>Chemin d’analyse introuvable : {0}</value></data>
+  <data name="Vm_Status_ScanningFtp" xml:space="preserve"><value>Analyse FTP : {0}…</value></data>
+  <data name="Vm_Status_ScanningLocal" xml:space="preserve"><value>Analyse : {0}…</value></data>
+  <data name="Vm_Scan_ProgressFtpFolders" xml:space="preserve"><value>Analyse des dossiers FTP dans {0}…</value></data>
+  <data name="Vm_Scan_ProgressLocalFolders" xml:space="preserve"><value>Analyse des dossiers locaux dans {0}…</value></data>
+  <data name="Vm_Scan_ProgressFoldersCount" xml:space="preserve"><value>Analyse des dossiers : {0}/{1}</value></data>
+  <data name="Vm_Scan_LoadingFtpPreviewsProgress" xml:space="preserve"><value>Chargement des aperçus FTP : {0}/{1}</value></data>
+  <data name="Vm_Scan_LoadingFtpPreviewsWithSkips" xml:space="preserve"><value>Chargement des aperçus FTP : {0}/{1} ({2} fichier(s) ignoré(s))</value></data>
+  <data name="Vm_Status_ScanComplete_LoadedPreviewsAuto" xml:space="preserve"><value>Analyse de {0} terminée. Aperçus chargés automatiquement.</value></data>
+  <data name="Vm_Status_ScanComplete_NoFtpImages" xml:space="preserve"><value>Analyse de {0} terminée. Aucune image FTP affichable.</value></data>
+  <data name="Vm_Status_ScanComplete_FtpPreviewsLoaded" xml:space="preserve"><value>Analyse de {0} terminée. Aperçus FTP chargés automatiquement {1}/{2}.</value></data>
+  <data name="Vm_Status_FtpPreviewsPartialBackground" xml:space="preserve"><value>Premiers aperçus FTP {0}/{1}. Chargement du reste en arrière-plan…</value></data>
+  <data name="Vm_Status_FtpBackgroundPreviewComplete" xml:space="preserve"><value>Chargement FTP en arrière-plan terminé. {0}/{1} aperçus chargés.</value></data>
+  <data name="Vm_Scan_LoadingPreviewsProgress" xml:space="preserve"><value>Chargement des aperçus : {0}/{1}</value></data>
+  <data name="Vm_Status_ScanComplete_NoUnifiedImages" xml:space="preserve"><value>Analyse de {0} terminée. Aucune image affichable.</value></data>
+  <data name="Vm_Scan_LoadingUnifiedPreviewsProgress" xml:space="preserve"><value>Chargement des aperçus unifiés : {0}/{1}</value></data>
+  <data name="Vm_Status_ScanComplete_UnifiedPreviews" xml:space="preserve"><value>Analyse de {0} terminée. Aperçus unifiés chargés automatiquement.</value></data>
+  <data name="Vm_Status_UnifiedLoadError" xml:space="preserve"><value>Erreur lors du chargement des sources unifiées : {0}</value></data>
+  <data name="About_Update_Checking" xml:space="preserve"><value>Recherche de mises à jour…</value></data>
+  <data name="Vm_Update_Available" xml:space="preserve"><value>Mise à jour disponible : {0}</value></data>
+  <data name="Vm_Update_FoundGithub" xml:space="preserve"><value>Mise à jour trouvée sur GitHub : {0}</value></data>
+  <data name="Vm_Update_PopupTitle" xml:space="preserve"><value>Mise à jour disponible</value></data>
+  <data name="Vm_Update_PopupBody" xml:space="preserve"><value>La version {0} est prête ({1}). Utilisez Aide → À propos pour télécharger et installer lorsque vous le souhaitez.</value></data>
+  <data name="Vm_Update_NoUpdates" xml:space="preserve"><value>Aucune mise à jour. L’application est à jour ({0}).</value></data>
+  <data name="Vm_Update_StatusNoUpdates" xml:space="preserve"><value>Aucune mise à jour pour {0}.</value></data>
+  <data name="Vm_Update_StartingDownload" xml:space="preserve"><value>Téléchargement…</value></data>
+  <data name="Vm_Update_DownloadingPercent" xml:space="preserve"><value>Téléchargement de la mise à jour… {0} %</value></data>
+  <data name="Vm_Update_DownloadingBytes" xml:space="preserve"><value>Téléchargement… {0:N0} Ko</value></data>
+  <data name="Vm_Update_DownloadComplete" xml:space="preserve"><value>Téléchargement terminé. Préparation du programme de mise à jour…</value></data>
+  <data name="Vm_Update_HandoffClosing" xml:space="preserve"><value>Transmission lancée. Fermeture pour installer la mise à jour…</value></data>
+  <data name="Vm_Update_OpenedBrowser" xml:space="preserve"><value>L’URL de mise à jour a été ouverte dans le navigateur.</value></data>
+  <data name="Vm_Update_DownloadFailed" xml:space="preserve"><value>Échec du téléchargement : {0}</value></data>
+
+  <data name="Vm_FtpPrescanProgress" xml:space="preserve"><value>Pré-analyse : {0}/{1} dossiers ({2} fichier(s) trouvé(s) pour l’instant, {3} ignoré(s)) | {4}</value></data>
+  <data name="Vm_FtpScanProgressDetail" xml:space="preserve"><value>Analyse : {0}/{1} fichiers | dossier actuel {2}/{3} | dossier {4}/{5} | ignorés {6} | {7}</value></data>
+
+  <data name="Ftp_PasswordVaultHint" xml:space="preserve"><value>Le mot de passe est enregistré dans le Gestionnaire d’informations d’identification Windows à l’enregistrement, pas dans config.json.</value></data>
 </root>

@@ -35,6 +35,15 @@ namespace QuickMediaIngest.Core
         /// Keywords to embed (comma/semicolon separated upstream).
         /// </summary>
         public IReadOnlyList<string>? ImportKeywords { get; set; }
+
+        /// <summary>Maximum concurrent copy operations for this ingest. 0 = derive from processor count (capped).</summary>
+        public int MaxConcurrentFileCopies { get; set; }
+
+        /// <summary>
+        /// Optional pause between finishing one file and starting the next when running sequentially
+        /// (helps flaky USB readers). Ignored unless copies run single-file or parallelism is 1.
+        /// </summary>
+        public int DelayBetweenFilesMilliseconds { get; set; }
     }
 
     /// <summary>
@@ -103,16 +112,18 @@ namespace QuickMediaIngest.Core
             _logger.LogInformation("Starting ingest for group {GroupTitle} with {FileCount} selected files into {DestinationRoot}.", group.Title, total, destinationRoot);
 
             var wall = Stopwatch.StartNew();
-            int parallelImports = Math.Clamp(Environment.ProcessorCount, 1, 8);
-            await Parallel.ForEachAsync(selectedItems, new ParallelOptions { MaxDegreeOfParallelism = parallelImports, CancellationToken = cancellationToken }, async (item, ct) =>
-            {
-                int itemIndex;
-                lock (progressLock)
-                {
-                    current++;
-                    itemIndex = current;
-                }
+            int parallelImports = options.MaxConcurrentFileCopies > 0
+                ? Math.Clamp(options.MaxConcurrentFileCopies, 1, 16)
+                : Math.Clamp(Environment.ProcessorCount, 1, 8);
 
+            // Cool-down implies sequential ingest so ordering and delays stay predictable on flaky media.
+            if (options.DelayBetweenFilesMilliseconds > 0)
+            {
+                parallelImports = 1;
+            }
+
+            async Task HandleOneItemAsync(ImportItem item, int itemIndex, CancellationToken ct)
+            {
                 string status = $"Copying {item.FileName} ({itemIndex}/{total})";
                 ProgressChanged?.Invoke((itemIndex * 100) / total, status);
 
@@ -151,7 +162,6 @@ namespace QuickMediaIngest.Core
                         MetadataKeywordWriter.TryApplyKeywords(destPath, options.ImportKeywords, _logger);
                     }
 
-                    // If delete-after-import is enabled, verify hash and size before deleting
                     if (deleteAfterImport && success && File.Exists(destPath))
                     {
                         try
@@ -182,6 +192,7 @@ namespace QuickMediaIngest.Core
                     errorMessage = ex.Message;
                     _logger.LogError(ex, "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.", item.FileName, item.SourcePath, destPath);
                 }
+
                 ItemProcessed?.Invoke(new IngestProgressInfo
                 {
                     GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
@@ -194,7 +205,42 @@ namespace QuickMediaIngest.Core
                     Success = success,
                     ErrorMessage = errorMessage
                 });
-            }); // End of Parallel.ForEachAsync
+            }
+
+            if (parallelImports <= 1)
+            {
+                int seqIndex = 0;
+                foreach (var item in selectedItems)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (seqIndex > 0 && options.DelayBetweenFilesMilliseconds > 0)
+                    {
+                        await Task.Delay(options.DelayBetweenFilesMilliseconds, cancellationToken);
+                    }
+
+                    seqIndex++;
+                    lock (progressLock)
+                    {
+                        current++;
+                    }
+
+                    await HandleOneItemAsync(item, seqIndex, cancellationToken);
+                }
+            }
+            else
+            {
+                await Parallel.ForEachAsync(selectedItems, new ParallelOptions { MaxDegreeOfParallelism = parallelImports, CancellationToken = cancellationToken }, async (item, ct) =>
+                {
+                    int itemIndex;
+                    lock (progressLock)
+                    {
+                        current++;
+                        itemIndex = current;
+                    }
+
+                    await HandleOneItemAsync(item, itemIndex, ct);
+                });
+            }
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
             wall.Stop();

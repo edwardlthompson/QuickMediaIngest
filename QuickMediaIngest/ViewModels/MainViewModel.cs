@@ -22,6 +22,9 @@ using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
+using QuickMediaIngest.Core.Services;
+using QuickMediaIngest.Data;
+using QuickMediaIngest;
 
 
 namespace QuickMediaIngest.ViewModels
@@ -41,11 +44,26 @@ namespace QuickMediaIngest.ViewModels
         public string Label { get; }
     }
 
+    /// <summary>Quick destination preset row (stable <see cref="Key"/> for config, localized <see cref="Label"/>).</summary>
+    public sealed class DestinationPresetOption
+    {
+        public DestinationPresetOption(string key, string label)
+        {
+            Key = key;
+            Label = label;
+        }
+
+        public string Key { get; }
+        public string Label { get; }
+    }
+
     /// <summary>One line in the sidebar notification feed.</summary>
     public sealed class NotificationFeedLine
     {
         public required string DisplayText { get; init; }
         public bool UseSuccessAccent { get; init; }
+        /// <summary>Visual separator line for a new import session.</summary>
+        public bool IsSessionDivider { get; init; }
     }
 
     /// <summary>
@@ -83,11 +101,11 @@ namespace QuickMediaIngest.ViewModels
 
     public partial class MainViewModel : ObservableObject
     {
-        private const string FilterTypeAllMedia = "All Media";
-        private const string FilterTypeImages = "Images";
-        private const string FilterTypeVideos = "Videos";
-        private const string FilterTypeRaw = "RAW";
-        private const string FilterTypeJpeg = "JPG/JPEG";
+        /// <summary>Fired before group rows are cleared (scroll snapshot for restore).</summary>
+        public event EventHandler? GroupsListRebuildStarting;
+
+        /// <summary>Fired after shoot groups have been rebuilt from items.</summary>
+        public event EventHandler? GroupsListRebuildCompleted;
 
         [RelayCommand]
         private void OpenImportHistory()
@@ -96,26 +114,36 @@ namespace QuickMediaIngest.ViewModels
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    var w = new QuickMediaIngest.ImportHistoryWindow();
-                    w.Owner = Application.Current.MainWindow;
-                    w.DataContext = this;
-                    w.Show();
+                    ShowSettingsDialog = false;
+                    ShowScanExclusionsPanel = false;
+                    ShowAboutDialog = false;
+                    ShowImportHistoryDialog = true;
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "OpenImportHistory UI activation failed.");
+            }
         }
+
+        [RelayCommand]
+        private void CloseImportHistory() => ShowImportHistoryDialog = false;
+
+        [ObservableProperty] private bool showImportHistoryDialog = false;
         [ObservableProperty] private bool showSettingsDialog = false;
         [ObservableProperty] private bool showScanExclusionsPanel = false;
 
         [RelayCommand] private void ToggleSettings()
         {
             ShowScanExclusionsPanel = false;
+            ShowImportHistoryDialog = false;
             ShowSettingsDialog = true;
         }
 
         [RelayCommand] private void OpenScanExclusions()
         {
             ShowSettingsDialog = false;
+            ShowImportHistoryDialog = false;
             ShowScanExclusionsPanel = true;
         }
 
@@ -143,26 +171,56 @@ namespace QuickMediaIngest.ViewModels
             SidebarSections.Clear();
             SidebarSections.Add(new SidebarSection
             {
-                Title = "Import",
+                Title = AppLocalizer.Get("Sidebar_Section_Import"),
                 IsExpanded = true,
                 Options =
                 {
-                    new SidebarOption { Label = "Start Import", Command = ImportCommand },
-                    new SidebarOption { Label = "Import History", Command = OpenImportHistoryCommand },
-                    new SidebarOption { Label = "Select All", Command = SelectAllCommand },
-                    new SidebarOption { Label = "Deselect All", Command = new RelayCommand(DeselectAllShoots) },
+                    new SidebarOption { Label = AppLocalizer.Get("Sidebar_StartImport"), Command = ImportCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Btn_ImportHistory"), Command = OpenImportHistoryCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Toolbar_SelectAll"), Command = SelectAllCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Sidebar_DeselectAll"), Command = new RelayCommand(DeselectAllShoots) },
                 }
             });
             SidebarSections.Add(new SidebarSection
             {
-                Title = "Sources",
+                Title = AppLocalizer.Get("Sidebar_Sources"),
                 Options =
                 {
-                    new SidebarOption { Label = "Add FTP Source", Command = ToggleAddFtpCommand },
-                    new SidebarOption { Label = "Rescan Drives", Command = RescanCommand },
-                    new SidebarOption { Label = "Refresh Unified", Command = RefreshUnifiedCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Btn_AddFtpSource"), Command = ToggleAddFtpCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Sidebar_RescanDrives"), Command = RescanCommand },
+                    new SidebarOption { Label = AppLocalizer.Get("Sidebar_RefreshUnified"), Command = RefreshUnifiedCommand },
                 }
             });
+        }
+
+        private void ApplyLocalizedShellStrings()
+        {
+            StatusMessage = AppLocalizer.Get("Vm_Status_Ready");
+            AlbumName = AppLocalizer.Get("Vm_DefaultAlbumName");
+            ScanDialogTitle = AppLocalizer.Get("Vm_Scan_LoadingImportList");
+            ScanProgressMessage = AppLocalizer.Get("Vm_Scan_PreparingScan");
+            RefreshDestinationPresetLabels();
+        }
+
+        private void RefreshDestinationPresetLabels()
+        {
+            _refreshingDestinationPresetLabels = true;
+            try
+            {
+                string selected = DestinationPreset;
+                DestinationPresetOptions.Clear();
+                DestinationPresetOptions.Add(new DestinationPresetOption("Custom", AppLocalizer.Get("DestPreset_Custom")));
+                DestinationPresetOptions.Add(new DestinationPresetOption("Pictures", AppLocalizer.Get("DestPreset_Pictures")));
+                DestinationPresetOptions.Add(new DestinationPresetOption("LastSession", AppLocalizer.Get("DestPreset_LastSession")));
+                if (!DestinationPresetOptions.Any(o => string.Equals(o.Key, selected, StringComparison.OrdinalIgnoreCase)))
+                {
+                    DestinationPreset = "Custom";
+                }
+            }
+            finally
+            {
+                _refreshingDestinationPresetLabels = false;
+            }
         }
 
         // Call this in constructor or initialization
@@ -235,20 +293,43 @@ namespace QuickMediaIngest.ViewModels
             IFileProviderFactory fileProviderFactory,
             IIngestEngineFactory ingestEngineFactory,
             GroupBuilder groupBuilder,
+            IDatabaseService databaseService,
+            IShootFilterService shootFilterService,
+            IFtpWorkflowService ftpWorkflowService,
+            IUnifiedConcreteSourceScanService unifiedConcreteSourceScanService,
+            IFtpCredentialStore ftpCredentialStore,
             ILogger<MainViewModel> logger)
         {
             _scanner = scanner;
             _ftpScanner = ftpScanner;
+            _shootFilterService = shootFilterService;
+            _ftpWorkflowService = ftpWorkflowService;
+            _unifiedConcreteSourceScanService = unifiedConcreteSourceScanService;
+            _ftpCredentialStore = ftpCredentialStore;
             _thumbnailService = thumbnailService;
             _updateService = updateService;
             _deviceWatcher = deviceWatcher;
             _fileProviderFactory = fileProviderFactory;
             _ingestEngineFactory = ingestEngineFactory;
             _groupBuilder = groupBuilder;
+            _databaseService = databaseService;
             _logger = logger;
 
             InitializeSidebarSections();
+            InitializeIntervalOptions();
+            ApplyLocalizedShellStrings();
             ImportHistoryRecords.CollectionChanged += (s, e) => OnPropertyChanged(nameof(RecentImportHistory));
+            Sources.CollectionChanged += (_, _) => RefreshUxEmptyStateHints();
+            Groups.CollectionChanged += (_, _) => RefreshUxEmptyStateHints();
+        }
+
+        private void InitializeIntervalOptions()
+        {
+            IntervalOptions.Clear();
+            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Daily"), Hours = 24 });
+            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Weekly"), Hours = 168 });
+            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Monthly"), Hours = 720 });
+            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Off"), Hours = -1 });
         }
 
         // Observable properties (must be at class scope, after constructor)
@@ -261,8 +342,8 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool isTestingFtp = false;
         [ObservableProperty] private bool showAddFtpDialog = false;
         [ObservableProperty] private bool settingsMenuExpanded = true;
-        [ObservableProperty] private string albumName = "New Album";
-        [ObservableProperty] private string statusMessage = "Ready";
+        [ObservableProperty] private string albumName = string.Empty;
+        [ObservableProperty] private string statusMessage = string.Empty;
         [ObservableProperty] private int progressPercent = 0;
         [ObservableProperty] private int totalFilesForImport = 0;
         [ObservableProperty] private int currentFileBeingImported = 0;
@@ -284,13 +365,17 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private int scannedFolders = 0;
         [ObservableProperty] private int totalFilesToScan = 0;
         [ObservableProperty] private int scannedFiles = 0;
-        [ObservableProperty] private string scanDialogTitle = "Loading Import List...";
-        [ObservableProperty] private string scanProgressMessage = "Preparing scan...";
+        [ObservableProperty] private string scanDialogTitle = string.Empty;
+        [ObservableProperty] private string scanProgressMessage = string.Empty;
         [ObservableProperty] private string currentScanFolder = "/";
         [ObservableProperty] private int currentScanFolderProcessedFiles = 0;
         [ObservableProperty] private int currentScanFolderTotalFiles = 0;
         [ObservableProperty] private object? selectedSource;
         [ObservableProperty] private string destinationRoot = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+        [ObservableProperty] private bool hasUnifiedFtpListingFailures;
+        [ObservableProperty] private bool hasLastFtpReconnectFailure;
+        [ObservableProperty] private bool showPostDeleteRecoveryBanner;
+
         [ObservableProperty] private bool deleteAfterImport = false;
         /// <summary>After the user responds once to the delete-after-import safety prompt (OK or Cancel), do not show it again.</summary>
         [ObservableProperty] private bool deleteAfterImportPromptDismissed;
@@ -350,7 +435,7 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool limitFtpThumbnailLoad = false;
         [ObservableProperty] private int ftpInitialThumbnailCount = 0;
         [ObservableProperty] private bool showSkippedFoldersDialog = false;
-        [ObservableProperty] private string skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
+        [ObservableProperty] private string skippedFoldersReportTitle = AppLocalizer.Get("Vm_SkippedFoldersReportTitle");
         [ObservableProperty] private string skippedFoldersReportText = string.Empty;
         /// <summary>When true, do not open the skipped-folder summary dialog when the only skips are paths excluded by user rules (FTP listing errors still show).</summary>
         [ObservableProperty] private bool suppressExcludedFolderScanReminders;
@@ -358,6 +443,67 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool showSkippedFoldersSuppressReminderOption;
         [ObservableProperty] private bool showDriveSelectionDialog = false;
         [ObservableProperty] private bool isDarkTheme = true;
+
+        /// <summary>Release tag for which the user was already alerted via update popup.</summary>
+        [ObservableProperty] private string lastNotifiedUpdateTag = string.Empty;
+        /// <summary>When true, Explorer opens your destination folder after import completes successfully.</summary>
+        [ObservableProperty] private bool openDestinationFolderWhenImportCompletes = true;
+        /// <summary>Shows disk space vs. selection size before the normal confirm-import step.</summary>
+        [ObservableProperty] private bool showCompactImportSummaryModal = true;
+        [ObservableProperty] private bool confirmCancelImportRequest = true;
+        [ObservableProperty] private int importCooldownBetweenFilesMs;
+        [ObservableProperty] private bool importSingleThreaded;
+        [ObservableProperty] private string destinationPreset = "Custom";
+        /// <summary>Folder used when preset is &quot;Last session&quot;.</summary>
+        [ObservableProperty] private string lastSessionDestinationRoot = string.Empty;
+        /// <summary>Announced to assistive tech on import completion/failure.</summary>
+        [ObservableProperty] private string accessibilityAnnouncement = string.Empty;
+
+        public ObservableCollection<DestinationPresetOption> DestinationPresetOptions { get; } = new();
+
+        public bool HasNoSidebarSources => Sources.Count == 0;
+
+        public bool HasEmptyFilterNoGroups =>
+            Groups.Count == 0 &&
+            (!string.IsNullOrWhiteSpace(FilterKeyword) ||
+             FilterStartDate.HasValue ||
+             FilterEndDate.HasValue ||
+             !string.IsNullOrWhiteSpace(FilterFileType));
+
+        public bool ShowShootGroupsList => Groups.Count > 0;
+
+        public bool ShowEmptyNoSourcesPanel => !ShowShootGroupsList && HasNoSidebarSources;
+
+        public bool ShowEmptyFilterPanel => !ShowShootGroupsList && !HasNoSidebarSources && HasEmptyFilterNoGroups;
+
+        public bool ShowEmptyFtpFailurePanel =>
+            !ShowShootGroupsList &&
+            !HasNoSidebarSources &&
+            !HasEmptyFilterNoGroups &&
+            (HasUnifiedFtpListingFailures || HasLastFtpReconnectFailure);
+
+        public bool ShowEmptyScanPanel =>
+            !ShowShootGroupsList &&
+            !HasNoSidebarSources &&
+            !HasEmptyFilterNoGroups &&
+            !ShowEmptyFtpFailurePanel;
+
+        public bool ShowShootListEmptyPlaceholder => !ShowShootGroupsList;
+
+        private void RefreshUxEmptyStateHints()
+        {
+            OnPropertyChanged(nameof(HasNoSidebarSources));
+            OnPropertyChanged(nameof(HasEmptyFilterNoGroups));
+            OnPropertyChanged(nameof(ShowShootGroupsList));
+            OnPropertyChanged(nameof(ShowShootListEmptyPlaceholder));
+            OnPropertyChanged(nameof(ShowEmptyNoSourcesPanel));
+            OnPropertyChanged(nameof(ShowEmptyFilterPanel));
+            OnPropertyChanged(nameof(ShowEmptyFtpFailurePanel));
+            OnPropertyChanged(nameof(ShowEmptyScanPanel));
+        }
+
+        private static string BuildShootExpansionKey(ItemGroup g) =>
+            $"{g.FolderPath ?? string.Empty}|{g.Title ?? string.Empty}|{g.StartDate.Ticks}";
 
         // Observable properties (must be at class scope, after constructor)
         /// <summary>
@@ -370,6 +516,17 @@ namespace QuickMediaIngest.ViewModels
 
             // Load configuration and import history (sync, but could be made async if needed)
             LoadConfig();
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    _databaseService.TryPeriodicVacuum();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "SQLite periodic VACUUM was skipped.");
+                }
+            });
             RebuildSkippedFolderRuleEntries();
             if (string.IsNullOrWhiteSpace(FtpDialogStatusMessage))
             {
@@ -405,9 +562,9 @@ namespace QuickMediaIngest.ViewModels
                                     Sources.Add(info.Name);
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // Ignore transient drive-event failures.
+                                _logger.LogDebug(ex, "Drive connect handler failed.");
                             }
                         });
                     };
@@ -429,9 +586,15 @@ namespace QuickMediaIngest.ViewModels
                     };
                     _deviceWatcher.Start();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Device watcher startup failed.");
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Initial drive scan or device watcher registration failed.");
+            }
 
             // Defer FTP reconnect so startup (splash → main window shown) does not contend with network I/O.
             _ = Application.Current.Dispatcher.BeginInvoke(
@@ -439,6 +602,8 @@ namespace QuickMediaIngest.ViewModels
                 System.Windows.Threading.DispatcherPriority.Background);
 
             _startupInitialized = true;
+
+            CheckUpdates();
 
             await Task.CompletedTask;
         }
@@ -475,13 +640,20 @@ namespace QuickMediaIngest.ViewModels
         // initialized in the constructor.
         private readonly ILocalScanner _scanner;
         private readonly IFtpScanner _ftpScanner;
+        private readonly IShootFilterService _shootFilterService;
+        private readonly IFtpWorkflowService _ftpWorkflowService;
+        private readonly IUnifiedConcreteSourceScanService _unifiedConcreteSourceScanService;
+        private readonly IFtpCredentialStore _ftpCredentialStore;
         private readonly IThumbnailService _thumbnailService;
         private readonly IUpdateService _updateService;
         private readonly IDeviceWatcher _deviceWatcher;
         private readonly IFileProviderFactory _fileProviderFactory;
         private readonly IIngestEngineFactory _ingestEngineFactory;
         private readonly GroupBuilder _groupBuilder;
+        private readonly IDatabaseService _databaseService;
         private readonly ILogger<MainViewModel> _logger;
+        private bool _loadingConfig = false;
+        private bool _refreshingDestinationPresetLabels = false;
         private bool _startupInitialized = false;
         private double _savedWindowWidth = 960;
         private double _savedWindowHeight = 620;
@@ -491,6 +663,8 @@ namespace QuickMediaIngest.ViewModels
         private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
+        private CancellationTokenSource? _importCancellationSource;
+        private readonly Dictionary<string, bool> _shootGroupExpandedMemory = new(StringComparer.OrdinalIgnoreCase);
         private readonly UnifiedSourceItem _unifiedSource = new();
         private bool _updatingNamingFromUi = false;
         private bool _suppressStatusFeedFromStatusMessage;
@@ -539,6 +713,81 @@ namespace QuickMediaIngest.ViewModels
         {
             SaveConfig();
             RefreshImportReadinessSummary();
+        }
+
+        partial void OnDestinationPresetChanged(string value)
+        {
+            if (_loadingConfig || _refreshingDestinationPresetLabels)
+            {
+                return;
+            }
+
+            switch (value)
+            {
+                case "Pictures":
+                    DestinationRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "QuickMediaIngest");
+                    break;
+                case "LastSession":
+                    if (!string.IsNullOrWhiteSpace(LastSessionDestinationRoot) &&
+                        Directory.Exists(LastSessionDestinationRoot))
+                    {
+                        DestinationRoot = LastSessionDestinationRoot;
+                    }
+                    else
+                    {
+                        StatusMessage = AppLocalizer.Get("Vm_Status_LastSessionDestinationUnavailable");
+                    }
+
+                    break;
+            }
+        }
+
+        partial void OnOpenDestinationFolderWhenImportCompletesChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
+        partial void OnShowCompactImportSummaryModalChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
+        partial void OnConfirmCancelImportRequestChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
+        partial void OnImportCooldownBetweenFilesMsChanged(int value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
+        partial void OnImportSingleThreadedChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
+        partial void OnLastSessionDestinationRootChanged(string value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
         }
         partial void OnDeleteAfterImportChanged(bool value)
         {
@@ -804,7 +1053,10 @@ namespace QuickMediaIngest.ViewModels
                 string path = GetImportHistoryPath();
                 if (File.Exists(path)) File.Delete(path);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Clear import history failed.");
+            }
         }
 
         [RelayCommand]
@@ -816,9 +1068,9 @@ namespace QuickMediaIngest.ViewModels
                 {
                     var dlg = new Microsoft.Win32.SaveFileDialog()
                     {
-                        Title = "Export Import History",
-                        Filter = "JSON files (*.json)|*.json|CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                        FileName = "import-history.json"
+                        Title = AppLocalizer.Get("Vm_ExportImportHistoryTitle"),
+                        Filter = AppLocalizer.Get("Vm_ExportImportHistoryFilter"),
+                        FileName = AppLocalizer.Get("Vm_ExportImportHistory_DefaultFileName")
                     };
 
                     bool? result = dlg.ShowDialog();
@@ -838,7 +1090,7 @@ namespace QuickMediaIngest.ViewModels
                                 return s;
                             }
 
-                            sb.AppendLine("StartedAt,DurationSeconds,FilesSelected,FilesImported,FailedFiles,Source,Destination");
+                            sb.AppendLine(AppLocalizer.Get("Vm_ExportImportHistory_CsvHeader"));
                             foreach (var r in ImportHistoryRecords)
                             {
                                 var fields = new[]
@@ -865,7 +1117,10 @@ namespace QuickMediaIngest.ViewModels
                     }
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Export import history failed.");
+            }
         }
         public ObservableCollection<string> CommonFtpFolders { get; } = new ObservableCollection<string>
         {
@@ -875,13 +1130,7 @@ namespace QuickMediaIngest.ViewModels
             "/Movies"
         };
         public ObservableCollection<FtpFolderOption> BrowsedFtpFolders { get; } = new ObservableCollection<FtpFolderOption>();
-                public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>
-        {
-            new UpdateIntervalOption { Display = "Daily", Hours = 24 },
-            new UpdateIntervalOption { Display = "Weekly", Hours = 168 },
-            new UpdateIntervalOption { Display = "Monthly", Hours = 720 },
-            new UpdateIntervalOption { Display = "Off", Hours = -1 }
-        };
+                public ObservableCollection<UpdateIntervalOption> IntervalOptions { get; } = new ObservableCollection<UpdateIntervalOption>();
 
         public ObservableCollection<string> PackageTypeOptions { get; } = new ObservableCollection<string>
         {
@@ -1135,7 +1384,10 @@ namespace QuickMediaIngest.ViewModels
                     return;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not open release URL for version {Version}; falling back to repo.", AppVersion);
+            }
 
             OpenUrl(repo);
         }
@@ -1177,6 +1429,67 @@ namespace QuickMediaIngest.ViewModels
             SaveConfig();
             Application.Current.Shutdown(0);
         }
+
+        [RelayCommand]
+        private void CancelActiveImport()
+        {
+            if (_importCancellationSource == null)
+            {
+                return;
+            }
+
+            if (ConfirmCancelImportRequest)
+            {
+                MessageBoxResult r = MessageBox.Show(
+                    AppLocalizer.Get("Msg_CancelImport_ConfirmBody"),
+                    AppLocalizer.Get("Msg_CancelImport_ConfirmTitle"),
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning);
+                if (r != MessageBoxResult.OK)
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                _importCancellationSource.Cancel();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Cancel import signaled.");
+            }
+        }
+
+        [RelayCommand]
+        private void ClearNotificationFeed() => NotificationFeed.Clear();
+
+        [RelayCommand]
+        private void ShowShortcutsHelp()
+        {
+            var owner = Application.Current.MainWindow;
+            var win = new QuickMediaIngest.ShortcutsHelpWindow { Owner = owner };
+            win.ShowDialog();
+        }
+
+        [RelayCommand]
+        private void OpenImportReportsFolder()
+        {
+            try
+            {
+                string dir = Path.Combine(DestinationRoot, "_ImportReports");
+                Directory.CreateDirectory(dir);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = dir,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not open _ImportReports folder.");
+            }
+        }
         [RelayCommand]
         private async Task RemoveDriveExclusion(string? deviceId) => await ExecuteRemoveDriveExclusionAsync(deviceId);
         [RelayCommand] private void RemoveSkippedFolderRule(SkippedFolderRuleEntry? entry) => ExecuteRemoveSkippedFolderRule(entry);
@@ -1209,23 +1522,40 @@ namespace QuickMediaIngest.ViewModels
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     IsCheckingForUpdate = true;
-                    UpdateStatus = "Checking for updates...";
+                    UpdateStatus = AppLocalizer.Get("About_Update_Checking");
                     UpdateProgress = 0.0;
                 });
 
-                var url = await _updateService.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
+                var checkResult = await _updateService.CheckForUpdateAsync(UpdateIntervalHours, force, UpdatePackageType);
+                string? url = checkResult.DownloadUrl;
 
                 if (!string.IsNullOrEmpty(url))
                 {
                     string assetLabel = GetUpdateAssetLabel(url);
+                    string notifyKey = !string.IsNullOrWhiteSpace(checkResult.RemoteVersionTag)
+                        ? checkResult.RemoteVersionTag!
+                        : url;
+
                      Application.Current.Dispatcher.Invoke(() =>
                      {
                          UpdateUrl = url;
                          ShowUpdateBanner = true;
                          IsUpdateAvailable = true;
-                         UpdateStatus = $"Update available: {assetLabel}";
-                         StatusMessage = $"Update found on GitHub: {assetLabel}";
+                         UpdateStatus = AppLocalizer.Format("Vm_Update_Available", assetLabel);
+                         StatusMessage = AppLocalizer.Format("Vm_Update_FoundGithub", assetLabel);
                          UpdateProgress = 0.0;
+
+                         bool shouldPopup = !string.Equals(notifyKey, LastNotifiedUpdateTag, StringComparison.OrdinalIgnoreCase);
+                         if (shouldPopup)
+                         {
+                             MessageBox.Show(
+                                 AppLocalizer.Format("Vm_Update_PopupBody", checkResult.RemoteVersionTag ?? "", assetLabel),
+                                 AppLocalizer.Get("Vm_Update_PopupTitle"),
+                                 MessageBoxButton.OK,
+                                 MessageBoxImage.Information);
+                             LastNotifiedUpdateTag = notifyKey;
+                             SaveConfig();
+                         }
                      });
                 }
                 else if (force)
@@ -1233,8 +1563,8 @@ namespace QuickMediaIngest.ViewModels
                     string expected = UpdatePackageType == "Installer" ? "QuickMediaIngest.msi" : "QuickMediaIngest.exe";
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                         StatusMessage = $"No updates found. App is up to date ({expected}).";
-                         UpdateStatus = $"No updates found for {expected}.";
+                         StatusMessage = AppLocalizer.Format("Vm_Update_NoUpdates", expected);
+                         UpdateStatus = AppLocalizer.Format("Vm_Update_StatusNoUpdates", expected);
                          IsUpdateAvailable = false;
                      });
                 }
@@ -1270,7 +1600,7 @@ namespace QuickMediaIngest.ViewModels
 
             IsDownloadingUpdate = true;
             UpdateProgress = 0.0;
-            UpdateStatus = "Starting download...";
+            UpdateStatus = AppLocalizer.Get("Vm_Update_StartingDownload");
             ShowUpdateBanner = false;
 
             try
@@ -1327,7 +1657,9 @@ namespace QuickMediaIngest.ViewModels
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 UpdateProgress = percent;
-                                UpdateStatus = contentLength.HasValue ? $"Downloading update... {percent}%" : $"Downloading... {totalRead / 1024:N0} KB";
+                                UpdateStatus = contentLength.HasValue
+                                    ? AppLocalizer.Format("Vm_Update_DownloadingPercent", percent)
+                                    : AppLocalizer.Format("Vm_Update_DownloadingBytes", totalRead / 1024);
                                 UpdateDownloadSpeedText = speedText;
                                 UpdateDownloadEtaText = etaText;
                             });
@@ -1336,7 +1668,7 @@ namespace QuickMediaIngest.ViewModels
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         UpdateProgress = 100.0;
-                        UpdateStatus = "Download complete. Preparing external updater...";
+                        UpdateStatus = AppLocalizer.Get("Vm_Update_DownloadComplete");
                     });
 
                     if (ext == ".msi" || ext == ".exe")
@@ -1365,7 +1697,7 @@ namespace QuickMediaIngest.ViewModels
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            UpdateStatus = "Update handoff started. Closing app to install update...";
+                            UpdateStatus = AppLocalizer.Get("Vm_Update_HandoffClosing");
                         });
                         Application.Current.Shutdown();
                     }
@@ -1374,7 +1706,7 @@ namespace QuickMediaIngest.ViewModels
                 {
                     // Non-executable update: open in browser
                     OpenUrl(UpdateUrl);
-                    Application.Current.Dispatcher.Invoke(() => UpdateStatus = "Opened update URL in browser.");
+                    Application.Current.Dispatcher.Invoke(() => UpdateStatus = AppLocalizer.Get("Vm_Update_OpenedBrowser"));
                 }
             }
             catch (Exception ex)
@@ -1382,7 +1714,7 @@ namespace QuickMediaIngest.ViewModels
                 _logger.LogError(ex, "Update download failed.");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    UpdateStatus = $"Update download failed: {ex.Message}";
+                    UpdateStatus = AppLocalizer.Format("Vm_Update_DownloadFailed", ex.Message);
                     IsUpdateAvailable = true;
                     ShowUpdateBanner = true;
                 });
@@ -1399,7 +1731,10 @@ namespace QuickMediaIngest.ViewModels
             {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not open URL: {Url}", url);
+            }
         }
 
         private static string BuildUpdateHandoffScript(string downloadedUpdatePath, string ext, string currentExePath, int currentPid, string packageType)
@@ -1502,7 +1837,7 @@ del /Q ""%~f0"" >nul 2>nul
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var result = await Task.Run(async () =>
-                    await _ftpScanner.TestConnectionAsync(
+                    await _ftpWorkflowService.TestConnectionAsync(
                         FtpHost,
                         FtpPort,
                         FtpUser,
@@ -1510,6 +1845,12 @@ del /Q ""%~f0"" >nul 2>nul
                         remotePath,
                         15,
                         timeout.Token));
+
+                if (result.Success)
+                {
+                    HasLastFtpReconnectFailure = false;
+                    RefreshUxEmptyStateHints();
+                }
 
                 StatusMessage = result.Success
                     ? $"FTP test successful. {result.Message} Use /DCIM or /DCIM/Camera for faster phone scans."
@@ -1634,7 +1975,7 @@ del /Q ""%~f0"" >nul 2>nul
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var result = await _ftpScanner.TestConnectionAsync(
+                var result = await _ftpWorkflowService.TestConnectionAsync(
                     FtpHost,
                     FtpPort,
                     FtpUser,
@@ -1645,9 +1986,14 @@ del /Q ""%~f0"" >nul 2>nul
 
                 if (!result.Success)
                 {
+                    HasLastFtpReconnectFailure = true;
+                    RefreshUxEmptyStateHints();
                     StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
                     return;
                 }
+
+                HasLastFtpReconnectFailure = false;
+                RefreshUxEmptyStateHints();
 
                 var ftp = new FtpSourceItem
                 {
@@ -1672,6 +2018,8 @@ del /Q ""%~f0"" >nul 2>nul
             }
             catch
             {
+                HasLastFtpReconnectFailure = true;
+                RefreshUxEmptyStateHints();
                 StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
             }
         }
@@ -1694,13 +2042,13 @@ del /Q ""%~f0"" >nul 2>nul
                 _logger.LogInformation("Loading source items for {SourceLabel}.", sourceLabel);
                 List<QuickMediaIngest.Core.Models.ImportItem> items;
                 ShowScanProgressDialog = true;
-                ScanDialogTitle = "Loading Import List...";
+                ScanDialogTitle = AppLocalizer.Get("Vm_Scan_LoadingImportList");
                 ScanProgressPercent = 0;
                 ScannedFolders = 0;
                 TotalFoldersToScan = 0;
                 ScannedFiles = 0;
                 TotalFilesToScan = 0;
-                ScanProgressMessage = "Preparing scan...";
+                ScanProgressMessage = AppLocalizer.Get("Vm_Scan_PreparingScan");
                 CurrentScanFolder = "/";
                 CurrentScanFolderProcessedFiles = 0;
                 CurrentScanFolderTotalFiles = 0;
@@ -1715,15 +2063,15 @@ del /Q ""%~f0"" >nul 2>nul
                     if (!forceRefresh && _sourceItemsCache.TryGetValue(sourceKey, out var cachedFtpItems))
                     {
                         items = CloneItems(cachedFtpItems);
-                        ScanProgressMessage = "Loaded from cache.";
+                        ScanProgressMessage = AppLocalizer.Get("Vm_Scan_LoadedFromCache");
                         ScannedFiles = items.Count;
                         TotalFilesToScan = items.Count;
                         ScanProgressPercent = 100;
                         goto BuildGroups;
                     }
 
-                    StatusMessage = $"Scanning FTP: {sourceLabel}...";
-                    ScanProgressMessage = $"Scanning FTP folders in {remotePath}...";
+                    StatusMessage = AppLocalizer.Format("Vm_Status_ScanningFtp", sourceLabel);
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_ProgressFtpFolders", remotePath);
 
                     items = await _ftpScanner.ScanAsync(
                         ftp.Host,
@@ -1746,19 +2094,39 @@ del /Q ""%~f0"" >nul 2>nul
                                 CurrentScanFolderProcessedFiles = progress.CurrentFolderProcessedFiles;
                                 CurrentScanFolderTotalFiles = progress.CurrentFolderTotalFiles;
 
+                                string noteSuffix = string.IsNullOrWhiteSpace(progress.Note) ? string.Empty : $" | {progress.Note}";
                                 if (progress.Phase == "Prescan")
                                 {
                                     ScanProgressPercent = 0;
-                                    string noteSuffix = string.IsNullOrWhiteSpace(progress.Note) ? string.Empty : $" | {progress.Note}";
-                                    ScanProgressMessage = $"Pre-scanning: {progress.ProcessedFolders}/{Math.Max(progress.TotalFolders, progress.ProcessedFolders)} folders (found {progress.TotalFiles} files so far, skipped {progress.SkippedFolders}) | {progress.CurrentFolder}{noteSuffix}";
+                                    int prescanFolderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
+                                    ScanProgressMessage = AppLocalizer.Format(
+                                            "Vm_FtpPrescanProgress",
+                                            progress.ProcessedFolders,
+                                            prescanFolderDenom,
+                                            progress.TotalFiles,
+                                            progress.SkippedFolders,
+                                            progress.CurrentFolder)
+                                        + noteSuffix;
                                 }
                                 else
                                 {
                                     ScanProgressPercent = progress.TotalFiles > 0
                                         ? (progress.ProcessedFiles * 100) / progress.TotalFiles
                                         : (progress.TotalFolders > 0 ? (progress.ProcessedFolders * 100) / progress.TotalFolders : 0);
-                                    string noteSuffix = string.IsNullOrWhiteSpace(progress.Note) ? string.Empty : $" | {progress.Note}";
-                                    ScanProgressMessage = $"Scanning: {progress.ProcessedFiles}/{Math.Max(progress.TotalFiles, progress.ProcessedFiles)} files | current folder {progress.CurrentFolderProcessedFiles}/{Math.Max(progress.CurrentFolderTotalFiles, progress.CurrentFolderProcessedFiles)} | folder {progress.ProcessedFolders}/{Math.Max(progress.TotalFolders, progress.ProcessedFolders)} | skipped {progress.SkippedFolders} | {progress.CurrentFolder}{noteSuffix}";
+                                    int fileDenom = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
+                                    int currentFolderDenom = Math.Max(progress.CurrentFolderTotalFiles, progress.CurrentFolderProcessedFiles);
+                                    int folderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
+                                    ScanProgressMessage = AppLocalizer.Format(
+                                            "Vm_FtpScanProgressDetail",
+                                            progress.ProcessedFiles,
+                                            fileDenom,
+                                            progress.CurrentFolderProcessedFiles,
+                                            currentFolderDenom,
+                                            progress.ProcessedFolders,
+                                            folderDenom,
+                                            progress.SkippedFolders,
+                                            progress.CurrentFolder)
+                                        + noteSuffix;
                                 }
 
                                 if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
@@ -1777,7 +2145,7 @@ del /Q ""%~f0"" >nul 2>nul
                     if (!forceRefresh && _sourceItemsCache.TryGetValue(sourceKey, out var cachedLocalItems))
                     {
                         items = CloneItems(cachedLocalItems);
-                        ScanProgressMessage = "Loaded from cache.";
+                        ScanProgressMessage = AppLocalizer.Get("Vm_Scan_LoadedFromCache");
                         ScannedFiles = items.Count;
                         TotalFilesToScan = items.Count;
                         ScanProgressPercent = 100;
@@ -1786,12 +2154,12 @@ del /Q ""%~f0"" >nul 2>nul
 
                     if (!Directory.Exists(localPath))
                     {
-                        StatusMessage = $"Scan path not found: {localPath}";
+                        StatusMessage = AppLocalizer.Format("Vm_Status_ScanPathNotFound", localPath);
                         return;
                     }
 
-                    StatusMessage = $"Scanning: {localPath}...";
-                    ScanProgressMessage = $"Scanning local folders in {localPath}...";
+                    StatusMessage = AppLocalizer.Format("Vm_Status_ScanningLocal", localPath);
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_ProgressLocalFolders", localPath);
                     CurrentScanFolder = localPath;
                     items = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders, (scanned, total) =>
                     {
@@ -1800,7 +2168,7 @@ del /Q ""%~f0"" >nul 2>nul
                             ScannedFolders = scanned;
                             TotalFoldersToScan = total;
                             ScanProgressPercent = total > 0 ? (scanned * 100) / total : 0;
-                            ScanProgressMessage = $"Scanning folders: {scanned}/{total}";
+                            ScanProgressMessage = AppLocalizer.Format("Vm_Scan_ProgressFoldersCount", scanned, total);
                             ScannedFiles = 0;
                             TotalFilesToScan = 0;
                             CurrentScanFolderProcessedFiles = 0;
@@ -1920,6 +2288,8 @@ BuildGroups:
 
         private void RebuildGroupsFromCurrentItems()
         {
+            GroupsListRebuildStarting?.Invoke(this, EventArgs.Empty);
+
             foreach (var existing in Groups)
             {
                 existing.PropertyChanged -= Group_PropertyChanged;
@@ -1933,6 +2303,7 @@ BuildGroups:
 
             if (_currentSourceItems.Count == 0)
             {
+                GroupsListRebuildCompleted?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
@@ -1953,6 +2324,12 @@ BuildGroups:
                     : (Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty);
                 group.SyncSelectionFromItems();
                 ApplyPreviewStacks(group.Items, ExpandPreviewStacks || group.ExpandStackedPairsInShoot, GroupRawAndRenderedPairs);
+                string expandKey = BuildShootExpansionKey(group);
+                if (_shootGroupExpandedMemory.TryGetValue(expandKey, out bool remembered))
+                {
+                    group.IsExpanded = remembered;
+                }
+
                 foreach (var item in group.Items)
                 {
                     string key = BuildItemKey(item);
@@ -1974,7 +2351,9 @@ BuildGroups:
             RefreshImportReadinessSummary();
             SyncActiveFilterChips();
             RefreshPreviewHealthSummary();
+            RefreshUxEmptyStateHints();
             StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
+            GroupsListRebuildCompleted?.Invoke(this, EventArgs.Empty);
         }
 
         private static readonly HashSet<string> RenderedPreviewExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -2149,33 +2528,20 @@ BuildGroups:
             // Update AvailableFileTypes
             var fileTypes = allItems.Select(i => i.FileType).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
             AvailableFileTypes.Clear();
-            AvailableFileTypes.Add(string.Empty); // (All)
-            AvailableFileTypes.Add(FilterTypeAllMedia);
-            AvailableFileTypes.Add(FilterTypeImages);
-            AvailableFileTypes.Add(FilterTypeVideos);
-            AvailableFileTypes.Add(FilterTypeRaw);
-            AvailableFileTypes.Add(FilterTypeJpeg);
+            AvailableFileTypes.Add(string.Empty);
+            AvailableFileTypes.Add(FilterFileTypeLocalization.AllMedia);
+            AvailableFileTypes.Add(FilterFileTypeLocalization.Images);
+            AvailableFileTypes.Add(FilterFileTypeLocalization.Videos);
+            AvailableFileTypes.Add(FilterFileTypeLocalization.Raw);
+            AvailableFileTypes.Add(FilterFileTypeLocalization.Jpeg);
             foreach (var t in fileTypes)
                 AvailableFileTypes.Add(t);
 
             // Set up the CollectionView for filtering
             var cvs = System.Windows.Data.CollectionViewSource.GetDefaultView(allItems);
+            var criteria = BuildFilterCriteria();
             cvs.Filter = o =>
-            {
-                if (o is not ImportItem item) return false;
-                // Date filter
-                if (FilterStartDate.HasValue && item.DateTaken < FilterStartDate.Value.Date)
-                    return false;
-                if (FilterEndDate.HasValue && item.DateTaken > FilterEndDate.Value.Date.AddDays(1).AddTicks(-1))
-                    return false;
-                // File type filter
-                if (!MatchesFileTypeFilter(item, FilterFileType))
-                    return false;
-                // Keyword filter (filename)
-                if (!string.IsNullOrWhiteSpace(FilterKeyword) && !item.FileName.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))
-                    return false;
-                return true;
-            };
+                o is ImportItem item && _shootFilterService.PassesToolbarRules(item, criteria);
             FilteredItemsView = cvs;
             cvs.Refresh();
         }
@@ -2209,59 +2575,57 @@ BuildGroups:
             foreach (var group in Groups)
             {
                 ApplyPreviewStacks(group.Items, ExpandPreviewStacks || group.ExpandStackedPairsInShoot, GroupRawAndRenderedPairs);
-                foreach (var item in group.Items)
-                {
-                    bool visible = true;
-                    if (FilterStartDate.HasValue && item.DateTaken < FilterStartDate.Value.Date)
-                    {
-                        visible = false;
-                    }
-                    if (visible && FilterEndDate.HasValue && item.DateTaken > FilterEndDate.Value.Date.AddDays(1).AddTicks(-1))
-                    {
-                        visible = false;
-                    }
-                    if (visible && !MatchesFileTypeFilter(item, FilterFileType))
-                    {
-                        visible = false;
-                    }
-                    if (visible && !string.IsNullOrWhiteSpace(FilterKeyword) && !item.FileName.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))
-                    {
-                        visible = false;
-                    }
-
-                    item.IsPreviewVisible = item.IsPreviewVisible && visible;
-                }
             }
+
+            _shootFilterService.ApplyToolbarFilters(Groups.ToList(), BuildFilterCriteria());
 
             RefreshPreviewHealthSummary();
+            RefreshUxEmptyStateHints();
         }
 
-        private static bool MatchesFileTypeFilter(ImportItem item, string selectedFilter)
+        private ShootFilterCriteria BuildFilterCriteria() =>
+            new()
+            {
+                FilterStartDate = FilterStartDate,
+                FilterEndDate = FilterEndDate,
+                FilterKeyword = FilterKeyword ?? string.Empty,
+                FilterFileType = FilterFileType ?? string.Empty
+            };
+
+        partial void OnHasUnifiedFtpListingFailuresChanged(bool value) => RefreshUxEmptyStateHints();
+
+        partial void OnHasLastFtpReconnectFailureChanged(bool value) => RefreshUxEmptyStateHints();
+
+        [RelayCommand]
+        private void OpenRecycleBin()
         {
-            if (string.IsNullOrWhiteSpace(selectedFilter))
+            try
             {
-                return true;
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = "shell:RecycleBinFolder",
+                    UseShellExecute = true
+                });
             }
-
-            string extension = item.FileType?.TrimStart('.').ToUpperInvariant() ?? string.Empty;
-            switch (selectedFilter)
+            catch (Exception ex)
             {
-                case FilterTypeAllMedia:
-                    return true;
-                case FilterTypeImages:
-                    return !item.IsVideo;
-                case FilterTypeVideos:
-                    return item.IsVideo;
-                case FilterTypeRaw:
-                    return RawPreviewExtensions.Contains($".{extension.ToLowerInvariant()}");
-                case FilterTypeJpeg:
-                    return extension is "JPG" or "JPEG";
-                default:
-                    return string.Equals(item.FileType, selectedFilter, StringComparison.OrdinalIgnoreCase);
+                _logger.LogDebug(ex, "Open Recycle Bin failed.");
             }
         }
 
-        private void AddNotificationFeedEntry(string? message, bool useSuccessAccent = false)
+        [RelayCommand]
+        private void DismissPostDeleteRecoveryBanner() => ShowPostDeleteRecoveryBanner = false;
+
+        [RelayCommand]
+        private void DismissFtpProblemHints()
+        {
+            HasUnifiedFtpListingFailures = false;
+            HasLastFtpReconnectFailure = false;
+            RefreshUxEmptyStateHints();
+        }
+
+        private void AddNotificationFeedEntry(string? message, bool useSuccessAccent = false, bool isSessionDivider = false)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
@@ -2271,7 +2635,8 @@ BuildGroups:
             void InsertEntry()
             {
                 string line = $"{DateTime.Now:HH:mm:ss} - {message.Trim()}";
-                if (NotificationFeed.Count > 0 &&
+                if (!isSessionDivider &&
+                    NotificationFeed.Count > 0 &&
                     string.Equals(NotificationFeed[0].DisplayText, line, StringComparison.Ordinal))
                 {
                     return;
@@ -2280,7 +2645,8 @@ BuildGroups:
                 NotificationFeed.Insert(0, new NotificationFeedLine
                 {
                     DisplayText = line,
-                    UseSuccessAccent = useSuccessAccent
+                    UseSuccessAccent = useSuccessAccent,
+                    IsSessionDivider = isSessionDivider
                 });
                 const int maxFeedEntries = 200;
                 while (NotificationFeed.Count > maxFeedEntries)
@@ -2343,6 +2709,12 @@ BuildGroups:
                 return;
             }
 
+            if (ShowImportHistoryDialog)
+            {
+                ShowImportHistoryDialog = false;
+                return;
+            }
+
             if (ShowScanProgressDialog)
             {
                 ShowScanProgressDialog = false;
@@ -2378,22 +2750,22 @@ BuildGroups:
             ActiveFilterChips.Clear();
             if (!string.IsNullOrWhiteSpace(FilterKeyword))
             {
-                ActiveFilterChips.Add(new FilterChipViewModel { Id = "keyword", Label = $"Keyword: {FilterKeyword}" });
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "keyword", Label = AppLocalizer.Format("Vm_FilterChip_KeywordLabel", FilterKeyword) });
             }
 
             if (!string.IsNullOrWhiteSpace(FilterFileType))
             {
-                ActiveFilterChips.Add(new FilterChipViewModel { Id = "type", Label = $"Type: {FilterFileType}" });
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "type", Label = AppLocalizer.Format("Vm_FilterChip_TypeLabel", FilterFileTypeLocalization.GetDisplayLabel(FilterFileType)) });
             }
 
             if (FilterStartDate.HasValue)
             {
-                ActiveFilterChips.Add(new FilterChipViewModel { Id = "start", Label = $"From: {FilterStartDate.Value:yyyy-MM-dd}" });
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "start", Label = AppLocalizer.Format("Vm_FilterChip_DateFromLabel", FilterStartDate.Value.ToString("d", CultureInfo.CurrentCulture)) });
             }
 
             if (FilterEndDate.HasValue)
             {
-                ActiveFilterChips.Add(new FilterChipViewModel { Id = "end", Label = $"To: {FilterEndDate.Value:yyyy-MM-dd}" });
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "end", Label = AppLocalizer.Format("Vm_FilterChip_DateToLabel", FilterEndDate.Value.ToString("d", CultureInfo.CurrentCulture)) });
             }
         }
 
@@ -2582,6 +2954,9 @@ BuildGroups:
             UiLanguageOptions.Add(new LanguageOption("en", AppLocalizer.Get("Lang_English")));
             UiLanguageOptions.Add(new LanguageOption("fr", AppLocalizer.Get("Lang_French")));
             UiLanguageOptions.Add(new LanguageOption("es", AppLocalizer.Get("Lang_Spanish")));
+            InitializeIntervalOptions();
+            InitializeSidebarSections();
+            ApplyLocalizedShellStrings();
         }
 
         [RelayCommand]
@@ -2609,7 +2984,7 @@ BuildGroups:
                     object? thumb = null;
                     try
                     {
-                        thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                        thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
                     }
                     catch (Exception ex)
                     {
@@ -2700,6 +3075,7 @@ BuildGroups:
             }
 
             group.IsExpanded = !group.IsExpanded;
+            _shootGroupExpandedMemory[BuildShootExpansionKey(group)] = group.IsExpanded;
         }
 
         [RelayCommand]
@@ -2736,7 +3112,7 @@ BuildGroups:
 
             await Task.Run(() =>
             {
-                var allItems = groups.SelectMany(g => g.Items).ToList();
+                var allItems = ThumbnailPreviewOrdering.OrderItemsForLocalPreviews(groups);
                 int total = allItems.Count;
 
                 if (total == 0)
@@ -2748,7 +3124,7 @@ BuildGroups:
                 {
                     TotalFilesToScan = total;
                     ScanProgressPercent = 0;
-                    ScanProgressMessage = $"Loading previews: 0/{total}";
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", 0, total);
                 });
 
                 int current = 0;
@@ -2767,7 +3143,7 @@ BuildGroups:
                             item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                             ScannedFiles = cCached;
                             ScanProgressPercent = total > 0 ? (cCached * 100) / total : 0;
-                            ScanProgressMessage = $"Loading previews: {cCached}/{total}";
+                            ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", cCached, total);
                         });
                         return;
                     }
@@ -2775,7 +3151,7 @@ BuildGroups:
                     object? thumb = null;
                     try
                     {
-                        thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                        thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
                     }
                     catch (Exception ex)
                     {
@@ -2797,14 +3173,14 @@ BuildGroups:
                         }
                         ScannedFiles = c;
                         ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
-                        ScanProgressMessage = $"Loading previews: {c}/{total}";
+                        ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", c, total);
                     });
                 });
 
                 Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
             });
 
-            StatusMessage = $"Scanning {sourceLabel} complete. Loaded previews automatically.";
+            StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_LoadedPreviewsAuto", sourceLabel);
             FtpThumbnailPhaseDetail = string.Empty;
         }
 
@@ -2816,7 +3192,7 @@ BuildGroups:
 
             if (allItems.Count == 0)
             {
-                StatusMessage = $"Scanning {sourceLabel} complete. No previewable FTP images found.";
+                StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_NoFtpImages", sourceLabel);
                 return;
             }
 
@@ -2835,11 +3211,11 @@ BuildGroups:
 
             if (remainingItems.Count == 0)
             {
-                StatusMessage = $"Scanning {sourceLabel} complete. Loaded FTP previews automatically {loadedInitial}/{total}.";
+                StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_FtpPreviewsLoaded", sourceLabel, loadedInitial, total);
                 return;
             }
 
-            StatusMessage = $"Loaded first {initialCount}/{total} FTP previews. Loading remaining previews in background...";
+            StatusMessage = AppLocalizer.Format("Vm_Status_FtpPreviewsPartialBackground", initialCount, total);
 
             _ = Task.Run(async () =>
             {
@@ -2848,7 +3224,7 @@ BuildGroups:
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    StatusMessage = $"Background FTP preview loading complete. Loaded {loadedTotal}/{total} previews.";
+                    StatusMessage = AppLocalizer.Format("Vm_Status_FtpBackgroundPreviewComplete", loadedTotal, total);
                 });
             });
         }
@@ -2916,7 +3292,7 @@ BuildGroups:
                             }
                             else
                             {
-                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
+                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath, BuildThumbnailHints()));
                                 if (thumb != null)
                                 {
                                     Interlocked.Increment(ref loadedCount);
@@ -2973,7 +3349,7 @@ BuildGroups:
                             CurrentScanFolderTotalFiles = items.Count;
                             if (updateScanProgressMessage)
                             {
-                                ScanProgressMessage = $"Loading FTP previews: {Math.Min(totalItemCount, startIndex + processed)}/{totalItemCount}";
+                                ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingFtpPreviewsProgress", Math.Min(totalItemCount, startIndex + processed), totalItemCount);
                             }
                         });
                     }
@@ -2983,7 +3359,7 @@ BuildGroups:
             {
                 if (skippedCount > 0)
                 {
-                    ScanProgressMessage = $"Loading FTP previews: {Math.Min(totalItemCount, startIndex + items.Count)}/{totalItemCount} (skipped {skippedCount} stalled/invalid file(s))";
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingFtpPreviewsWithSkips", Math.Min(totalItemCount, startIndex + items.Count), totalItemCount, skippedCount);
                 }
 
                 FtpThumbnailPhaseDetail = $"FTP previews: loaded {loadedCount}/{items.Count} in batch · skipped {skippedCount}";
@@ -3080,7 +3456,6 @@ BuildGroups:
 
         private async Task LoadUnifiedSourceItemsAsync(bool forceRefresh = false)
         {
-            var ftpListingFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var userExcludedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var concreteSources = Sources
                 .Where(s => s is string || s is FtpSourceItem)
@@ -3101,112 +3476,47 @@ BuildGroups:
 
             try
             {
+                HasUnifiedFtpListingFailures = false;
+                RefreshUxEmptyStateHints();
+
                 ShowScanProgressDialog = true;
-                ScanDialogTitle = forceRefresh ? "Refreshing Unified Import List..." : "Loading Unified Import List...";
+                ScanDialogTitle = forceRefresh
+                    ? AppLocalizer.Get("Vm_Scan_UnifiedRefreshing")
+                    : AppLocalizer.Get("Vm_Scan_UnifiedLoading");
                 ScanProgressPercent = 0;
                 ScannedFolders = 0;
                 TotalFoldersToScan = concreteSources.Count;
                 ScannedFiles = 0;
                 TotalFilesToScan = 0;
-                ScanProgressMessage = "Merging SD and FTP sources...";
+                ScanProgressMessage = AppLocalizer.Get("Vm_Scan_MergingSources");
                 CurrentScanFolder = "/";
                 CurrentScanFolderProcessedFiles = 0;
                 CurrentScanFolderTotalFiles = 0;
 
-                int sourcesDone = 0;
-                int totalSources = concreteSources.Count;
-
-                async Task<List<ImportItem>> ScanOneUnifiedSourceAsync(object src)
+                var mergeProgress = new Progress<(int Completed, int Total)>(tuple =>
                 {
-                    List<ImportItem> sourceItems;
-
-                    if (src is string drive)
+                    Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        string localPath = drive;
-                        string localKey = BuildSourceKey(localPath);
+                        ScannedFolders = Math.Max(ScannedFolders, tuple.Completed);
+                        ScanProgressPercent = tuple.Total > 0 ? (tuple.Completed * 100) / tuple.Total : 0;
+                        ScanProgressMessage = AppLocalizer.Format("Vm_Scan_MergedSourcesProgress", tuple.Completed, tuple.Total);
+                    });
+                });
 
-                        if (!forceRefresh && _sourceItemsCache.TryGetValue(localKey, out var cachedLocal))
-                        {
-                            sourceItems = CloneItems(cachedLocal);
-                        }
-                        else
-                        {
-                            if (!Directory.Exists(localPath))
-                            {
-                                sourceItems = new List<ImportItem>();
-                            }
-                            else
-                            {
-                                sourceItems = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders)).ConfigureAwait(false);
-                            }
+                UnifiedScanMergeResult merge = await _unifiedConcreteSourceScanService
+                    .MergeAllAsync(concreteSources, forceRefresh, ScanIncludeSubfolders, _sourceItemsCache, mergeProgress, CancellationToken.None)
+                    .ConfigureAwait(false);
 
-                            StampItems(sourceItems, localKey, false);
-                            _sourceItemsCache[localKey] = CloneItems(sourceItems);
-                        }
-                    }
-                    else if (src is FtpSourceItem ftp)
-                    {
-                        string ftpKey = BuildSourceKey(ftp);
+                HasUnifiedFtpListingFailures = merge.FtpListingFailures.Count > 0;
+                RefreshUxEmptyStateHints();
 
-                        if (!forceRefresh && _sourceItemsCache.TryGetValue(ftpKey, out var cachedFtp))
-                        {
-                            sourceItems = CloneItems(cachedFtp);
-                        }
-                        else
-                        {
-                            sourceItems = await _ftpScanner.ScanAsync(
-                                ftp.Host,
-                                ftp.Port,
-                                ftp.User,
-                                ftp.Pass,
-                                NormalizeFtpPath(ftp.RemoteFolder),
-                                ScanIncludeSubfolders,
-                                120,
-                                CancellationToken.None,
-                                progress =>
-                                {
-                                    if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        lock (ftpListingFailures)
-                                        {
-                                            ftpListingFailures.Add($"{progress.CurrentFolder} - {progress.Note}");
-                                        }
-                                    }
-                                }).ConfigureAwait(false);
-
-                            StampItems(sourceItems, ftpKey, true);
-                            _sourceItemsCache[ftpKey] = CloneItems(sourceItems);
-                        }
-                    }
-                    else
-                    {
-                        sourceItems = new List<ImportItem>();
-                    }
-
-                    int done = Interlocked.Increment(ref sourcesDone);
-                    await Application.Current.Dispatcher
-                        .InvokeAsync(() =>
-                        {
-                            ScannedFolders = Math.Max(ScannedFolders, done);
-                            int sh = ScannedFolders;
-                            ScanProgressPercent = totalSources > 0 ? (sh * 100) / totalSources : 0;
-                            ScanProgressMessage = $"Merged {sh}/{totalSources} sources...";
-                        })
-                        .Task
-                        .ConfigureAwait(false);
-
-                    return sourceItems;
-                }
-
-                List<ImportItem>[] parallelResults = await Task.WhenAll(concreteSources.Select(src => ScanOneUnifiedSourceAsync(src))).ConfigureAwait(false);
-
-                var unifiedItems = parallelResults.SelectMany(r => r).ToList();
+                HashSet<string> ftpListingFailures = merge.FtpListingFailures;
+                List<ImportItem> unifiedItems = merge.UnifiedItems;
 
                 ApplySkippedFolderFilters(unifiedItems, userExcludedFolders);
 
                 _currentSourceItems = unifiedItems;
 
-                // Parallel scans finish on thread pool; Groups / ObservableCollections must update on UI thread only.
                 List<ItemGroup> groupsForThumbnails = await Application.Current.Dispatcher
                     .InvokeAsync(() =>
                     {
@@ -3241,7 +3551,7 @@ BuildGroups:
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unified source load failed.");
-                StatusMessage = $"Error loading Unified sources: {ex.Message}";
+                StatusMessage = AppLocalizer.Format("Vm_Status_UnifiedLoadError", ex.Message);
             }
             finally
             {
@@ -3257,7 +3567,7 @@ BuildGroups:
 
             if (allItems.Count == 0)
             {
-                StatusMessage = $"Scanning {sourceLabel} complete. No previewable images found.";
+                StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_NoUnifiedImages", sourceLabel);
                 return;
             }
 
@@ -3270,7 +3580,7 @@ BuildGroups:
                     ScannedFiles = 0;
                     TotalFilesToScan = total;
                     ScanProgressPercent = 0;
-                    ScanProgressMessage = $"Loading Unified previews: 0/{total}";
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingUnifiedPreviewsProgress", 0, total);
                 })
                 .Task
                 .ConfigureAwait(false);
@@ -3291,7 +3601,7 @@ BuildGroups:
                     int shown = ScannedFiles;
                     TotalFilesToScan = total;
                     ScanProgressPercent = total > 0 ? (shown * 100) / total : 0;
-                    ScanProgressMessage = $"Loading Unified previews: {shown}/{total}";
+                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingUnifiedPreviewsProgress", shown, total);
                 });
             }
 
@@ -3334,7 +3644,7 @@ BuildGroups:
                         object? thumb = null;
                         try
                         {
-                            thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                            thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
                         }
                         catch (Exception ex)
                         {
@@ -3385,7 +3695,7 @@ BuildGroups:
                         bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds).ConfigureAwait(false);
                         if (downloaded)
                         {
-                            object? thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath), ct).ConfigureAwait(false);
+                            object? thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath, BuildThumbnailHints()), ct).ConfigureAwait(false);
                             await Application.Current.Dispatcher.InvokeAsync(() =>
                             {
                                 if (thumb != null)
@@ -3430,7 +3740,7 @@ BuildGroups:
             await Task.WhenAll(localTask, ftpTask).ConfigureAwait(false);
 
             Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
-            StatusMessage = $"Scanning {sourceLabel} complete. Loaded unified previews automatically.";
+            StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_UnifiedPreviews", sourceLabel);
         }
 
         private static void StampItems(List<ImportItem> items, string sourceId, bool isFtp)
@@ -3493,9 +3803,22 @@ BuildGroups:
             };
         }
 
+        private ThumbnailHints? BuildThumbnailHints()
+        {
+            int deferMs = ThumbnailPerformanceMode switch
+            {
+                "Low" => 48,
+                "Max" => 0,
+                "Ultra" => 0,
+                _ => 18
+            };
+
+            return deferMs > 0 ? new ThumbnailHints { DeferRawShellMilliseconds = deferMs } : null;
+        }
+
         private static string BuildSourceKey(FtpSourceItem ftp)
         {
-            return $"ftp|{ftp.Host}|{ftp.Port}|{NormalizeFtpPath(ftp.RemoteFolder)}";
+            return FtpPathNormalizer.BuildFtpSourceKey(ftp.Host, ftp.Port, ftp.RemoteFolder);
         }
 
         private static string BuildSourceKey(string localPath)
@@ -3521,13 +3844,13 @@ BuildGroups:
             try
             {
                 ShowScanProgressDialog = true;
-                ScanDialogTitle = "Building Previews...";
+                ScanDialogTitle = AppLocalizer.Get("Vm_Scan_BuildingPreviewsDialogTitle");
                 ScanProgressPercent = 0;
                 ScannedFolders = 0;
                 TotalFoldersToScan = selectedGroups.Count;
                 ScannedFiles = 0;
                 TotalFilesToScan = selectedGroups.SelectMany(g => g.Items).Count();
-                ScanProgressMessage = $"Building previews for {selectedGroups.Count} selected folder(s)...";
+                ScanProgressMessage = AppLocalizer.Format("Vm_Scan_BuildingPreviewsForFolders", selectedGroups.Count);
                 StatusMessage = AppLocalizer.Get("Vm_Status_BuildingPreviews");
 
                 string sourceLabel = SelectedSource is FtpSourceItem ftpSource
@@ -3539,7 +3862,7 @@ BuildGroups:
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Preview build failed: {ex.Message}";
+                StatusMessage = AppLocalizer.Format("Vm_Status_PreviewBuildFailed", ex.Message);
             }
             finally
             {
@@ -3564,6 +3887,8 @@ BuildGroups:
                 return;
             }
 
+            ShowPostDeleteRecoveryBanner = false;
+
             if (ConfirmBeforeImport)
             {
                 string confirmBody = BuildImportConfirmationMessage(selectedGroups, totalFiles);
@@ -3578,6 +3903,21 @@ BuildGroups:
                     StatusMessage = AppLocalizer.Get("Vm_StatusImportCanceled");
                     return;
                 }
+            }
+
+            if (ShowCompactImportSummaryModal)
+            {
+                long estBytes = ImportDestinationEstimator.SumSelectedBytes(selectedGroups);
+                long? free = ImportDestinationEstimator.TryGetFreeBytes(DestinationRoot);
+                string estMb = (estBytes / (1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture);
+                string freeGb = free.HasValue
+                    ? (free.Value / (1024d * 1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture)
+                    : "?";
+                MessageBox.Show(
+                    AppLocalizer.Format("Msg_ImportSummary_Body", estMb, freeGb),
+                    AppLocalizer.Get("Msg_ImportSummary_Title"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
 
             IsImporting = true;
@@ -3600,8 +3940,12 @@ BuildGroups:
             ProgressPercent = 0;
             _processedBytesForImport = 0;
 
+            AddNotificationFeedEntry(AppLocalizer.Get("Notify_ImportSessionStart"), isSessionDivider: true);
+
             _importStartedAtUtc = DateTime.UtcNow;
-            using var importCts = new CancellationTokenSource();
+            _importCancellationSource?.Dispose();
+            _importCancellationSource = new CancellationTokenSource();
+            var importCts = _importCancellationSource;
             var stopwatch = Stopwatch.StartNew();
             var timerTask = Task.Run(async () =>
             {
@@ -3707,22 +4051,13 @@ BuildGroups:
                         {
                             foreach (var group in selectedGroups)
                             {
-                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token, CreateIngestOptions(group));
-
-                                if (DeleteAfterImport)
-                                {
-                                    foreach (var item in group.Items.Where(i => i.IsSelected))
-                                    {
-                                        try
-                                        {
-                                            await provider.DeleteAsync(item.SourcePath, importCts.Token);
-                                        }
-                                        catch
-                                        {
-                                            // Ignore source-delete failures so import completion is not blocked.
-                                        }
-                                    }
-                                }
+                                await engine.IngestGroupAsync(
+                                    group,
+                                    DestinationRoot,
+                                    NamingTemplate,
+                                    importCts.Token,
+                                    CreateIngestOptions(group),
+                                    DeleteAfterImport);
                             }
                         });
                     }
@@ -3755,6 +4090,7 @@ BuildGroups:
                 try
                 {
                     StatusMessage = completionMsg;
+                    AccessibilityAnnouncement = completionMsg;
                     AddNotificationFeedEntry(completionMsg, useSuccessAccent: true);
                 }
                 finally
@@ -3762,10 +4098,15 @@ BuildGroups:
                     _suppressStatusFeedFromStatusMessage = false;
                 }
 
+                ShowPostDeleteRecoveryBanner =
+                    DeleteAfterImport &&
+                    ProcessedFilesForImport > FailedFilesForImport;
+
                 ShowWindowsImportCompletionNotification(CurrentFileBeingImported, TotalFilesForImport, FailedFilesForImport);
 
                 SaveImportHistoryRecord(stopwatch.Elapsed);
                 ExportImportReportArtifact(stopwatch.Elapsed, selectedGroups);
+                LastSessionDestinationRoot = DestinationRoot;
 
                 // Brief beat so the completion state is visible (avoids ~1s dead air from the old 1000ms delay).
                 await System.Threading.Tasks.Task.Delay(400);
@@ -3776,7 +4117,7 @@ BuildGroups:
                 {
                     // 1. Auto-open destination folder (non-blocking — Explorer startup does not extend import completion).
                     string destRoot = DestinationRoot;
-                    if (!string.IsNullOrWhiteSpace(destRoot) && Directory.Exists(destRoot))
+                    if (OpenDestinationFolderWhenImportCompletes && !string.IsNullOrWhiteSpace(destRoot) && Directory.Exists(destRoot))
                     {
                         _ = Task.Run(() =>
                         {
@@ -3788,14 +4129,17 @@ BuildGroups:
                                     UseShellExecute = true
                                 });
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                /* ignore open errors */
+                                _logger.LogDebug(ex, "Could not open destination folder in Explorer.");
                             }
                         });
                     }
                 }
-                catch { /* Ignore open errors */ }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Post-import open destination folder step failed.");
+                }
 
                 try
                 {
@@ -3808,11 +4152,22 @@ BuildGroups:
                         using var searcher = new System.Management.ManagementObjectSearcher(query);
                         foreach (System.Management.ManagementObject volume in searcher.Get())
                         {
-                            try { volume.InvokeMethod("Dismount", null); volume.InvokeMethod("Remove", null); } catch { }
+                            try
+                            {
+                                volume.InvokeMethod("Dismount", null);
+                                volume.InvokeMethod("Remove", null);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "WMI dismount/remove failed for volume.");
+                            }
                         }
                     }
                 }
-                catch { /* Ignore eject errors */ }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Post-import eject step failed.");
+                }
 
                 try
                 {
@@ -3880,6 +4235,9 @@ BuildGroups:
             {
                 _logger.LogError(ex, "Import failed.");
                 StatusMessage = $"Import failed: {ex.Message}";
+                string failAnnouncement = $"{AppLocalizer.Get("Vm_Status_ImportFailedShort")}: {ex.Message}";
+                AccessibilityAnnouncement = failAnnouncement;
+                AddNotificationFeedEntry(failAnnouncement);
             }
             finally
             {
@@ -3896,6 +4254,8 @@ BuildGroups:
                 ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
                 IsImporting = false;
                 ShowImportProgressDialog = false;
+                _importCancellationSource?.Dispose();
+                _importCancellationSource = null;
                 _logger.LogInformation("Import finished. Imported={ImportedCount}, Failed={FailedCount}", CurrentFileBeingImported, FailedFilesForImport);
             }
 
@@ -3932,7 +4292,11 @@ BuildGroups:
             Directory.CreateDirectory(folder);
             string path = Path.Combine(folder, $"preflight-{DateTime.Now:yyyyMMdd-HHmmss}.json");
             File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-            StatusMessage = $"Preflight complete: {selectedCount} files, {(totalBytes / (1024d * 1024d)):0.00} MB. Saved to {path}.";
+            StatusMessage = AppLocalizer.Format(
+                "Vm_Status_PreflightComplete",
+                selectedCount,
+                totalBytes / (1024d * 1024d),
+                path);
         }
 
         private void ExecuteRetryFailedImports()
@@ -4151,10 +4515,12 @@ BuildGroups:
 
         private static void ShowWindowsImportCompletionNotification(int importedCount, int totalCount, int failedCount)
         {
-            string title = failedCount > 0 ? "Import completed with warnings" : "Import completed";
+            string title = failedCount > 0
+                ? AppLocalizer.Get("Msg_ImportComplete_Title_Warning")
+                : AppLocalizer.Get("Msg_ImportComplete_Title_Success");
             string body = failedCount > 0
-                ? $"Imported {importedCount}/{totalCount}. Failed: {failedCount}."
-                : $"Imported {importedCount}/{totalCount} successfully.";
+                ? AppLocalizer.Format("Msg_ImportComplete_Body_Warning", importedCount, totalCount, failedCount)
+                : AppLocalizer.Format("Msg_ImportComplete_Body_Success", importedCount, totalCount);
 
             try
             {
@@ -4198,12 +4564,17 @@ BuildGroups:
             List<string> keywords = KeywordInputParser.Parse(group.KeywordsText);
             bool applyKeywords = EmbedKeywordsOnImport && keywords.Count > 0;
 
+            int maxCopy = ImportSingleThreaded ? 1 : 0;
+            int delayMs = Math.Max(0, ImportCooldownBetweenFilesMs);
+
             return new IngestOptions
             {
                 DuplicateHandling = duplicateMode,
                 VerificationMode = verification,
                 ApplyImportKeywords = applyKeywords,
-                ImportKeywords = applyKeywords ? keywords : null
+                ImportKeywords = applyKeywords ? keywords : null,
+                MaxConcurrentFileCopies = maxCopy,
+                DelayBetweenFilesMilliseconds = delayMs
             };
         }
 
@@ -4322,29 +4693,27 @@ BuildGroups:
                     CurrentImportGroupTitle = progress.GroupTitle;
                     ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
 
-                    string state = progress.Success ? "Copying" : "Failed";
-                    StatusMessage = $"{state} {progress.FileName} | overall {ProcessedFilesForImport}/{TotalFilesForImport} | group {progress.GroupCurrent}/{progress.GroupTotal}";
+                    string state = progress.Success
+                        ? AppLocalizer.Get("Vm_Import_StateCopying")
+                        : AppLocalizer.Get("Vm_Import_StateFailed");
+                    StatusMessage = AppLocalizer.Format(
+                        "Vm_Status_ImportProgressLine",
+                        state,
+                        progress.FileName,
+                        ProcessedFilesForImport,
+                        TotalFilesForImport,
+                        progress.GroupCurrent,
+                        progress.GroupTotal);
                 });
             };
 
-            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken, CreateIngestOptions(group));
-
-            if (!DeleteAfterImport)
-            {
-                return;
-            }
-
-            foreach (var item in items)
-            {
-                try
-                {
-                    await provider.DeleteAsync(item.SourcePath, cancellationToken);
-                }
-                catch
-                {
-                    // Ignore source-delete failures so import completion is not blocked.
-                }
-            }
+            await engine.IngestGroupAsync(
+                subsetGroup,
+                DestinationRoot,
+                NamingTemplate,
+                cancellationToken,
+                CreateIngestOptions(group),
+                DeleteAfterImport);
         }
 
         // ExecuteBrowseDestination removed along with its UI entry.
@@ -4365,7 +4734,7 @@ BuildGroups:
 
             var dialog = new Microsoft.Win32.OpenFolderDialog
             {
-                Title = "Select Folder To Scan",
+                Title = AppLocalizer.Get("Dlg_SelectFolderToScan"),
                 InitialDirectory = initialDirectory
             };
 
@@ -4470,7 +4839,7 @@ BuildGroups:
             string sourceId = ResolveSkipRuleSourceId(folderPath);
             if (string.IsNullOrWhiteSpace(sourceId))
             {
-                StatusMessage = "Could not attach skip rule to a source. Try again after the list finishes loading.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_SkipRuleAttachFailed");
                 return;
             }
             if (!_skippedFoldersBySource.TryGetValue(sourceId, out var entries))
@@ -4991,9 +5360,9 @@ BuildGroups:
                     ImportHistoryRecords.Add(record);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore history load errors.
+                _logger.LogWarning(ex, "Import history file could not be loaded.");
             }
         }
 
@@ -5001,210 +5370,6 @@ BuildGroups:
         {
             string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
             return Path.Combine(folder, "import-history.json");
-        }
-
-        public void SaveConfig()
-        {
-            try
-            {
-                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
-                Directory.CreateDirectory(folder);
-                string path = Path.Combine(folder, "config.json");
-                
-                var config = new AppConfig
-                {
-                    UpdateIntervalHours = UpdateIntervalHours,
-                    DestinationRoot = DestinationRoot,
-                    DeleteAfterImport = DeleteAfterImport,
-                    DeleteAfterImportPromptDismissed = DeleteAfterImportPromptDismissed,
-                    NamingTemplate = NamingTemplate,
-                    NamingPreset = NamingPreset,
-                    NamingDateFormat = NamingDateFormat,
-                    NamingTimeFormat = NamingTimeFormat,
-                    NamingSeparator = NamingSeparator,
-                    NamingIncludeSequence = NamingIncludeSequence,
-                    NamingShootNameSample = NamingShootNameSample,
-                    NamingLowercase = NamingLowercase,
-                    ThumbnailPerformanceMode = ThumbnailPerformanceMode,
-                    GroupRawAndRenderedPairs = GroupRawAndRenderedPairs,
-                    FtpHost = FtpHost,
-                    FtpPort = FtpPort,
-                    FtpUser = FtpUser,
-                    FtpPass = FtpPass,
-                    FtpRemoteFolder = FtpRemoteFolder,
-                    AutoReconnectLastFtp = AutoReconnectLastFtp,
-                    SettingsMenuExpanded = SettingsMenuExpanded,
-                    ScanPath = ScanPath,
-                    SelectAll = SelectAll,
-                    IsDarkTheme = IsDarkTheme,
-                    ThumbnailSize = ThumbnailSize,
-                    ScanIncludeSubfolders = ScanIncludeSubfolders,
-                    TimeBetweenShootsHours = TimeBetweenShootsHours,
-                    LimitFtpThumbnailLoad = LimitFtpThumbnailLoad,
-                    FtpInitialThumbnailCount = FtpInitialThumbnailCount,
-                    ExpandPreviewStacks = ExpandPreviewStacks,
-                    DuplicatePolicy = DuplicatePolicy,
-                    VerificationMode = VerificationMode,
-                    UiLanguage = UiLanguage,
-                    EmbedKeywordsOnImport = EmbedKeywordsOnImport,
-                    ConfirmBeforeImport = ConfirmBeforeImport,
-                    SuppressExcludedFolderScanReminders = SuppressExcludedFolderScanReminders,
-                    SettingsAdvancedExpanded = SettingsAdvancedExpanded,
-                    RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
-                    UpdatePackageType = UpdatePackageType,
-                    WindowWidth = _savedWindowWidth,
-                    WindowHeight = _savedWindowHeight,
-                    WindowMaximized = _savedWindowMaximized,
-                    WindowLeft = _savedWindowLeft,
-                    WindowTop = _savedWindowTop,
-                    IsFirstRun = this.IsFirstRun,
-                    SelectedDriveDeviceIds = _selectedDriveDeviceIds.ToList(),
-                    SkippedFoldersBySource = _skippedFoldersBySource.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList(), StringComparer.OrdinalIgnoreCase)
-                };
-                
-                string json = System.Text.Json.JsonSerializer.Serialize(config);
-                File.WriteAllText(path, json);
-            } catch { }
-        }
-
-        private void LoadConfig()
-        {
-            try
-            {
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "config.json");
-                if (File.Exists(path))
-                {
-                    string json = File.ReadAllText(path);
-                    var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(json);
-                    if (config != null)
-                    {
-                        UpdateIntervalHours = config.UpdateIntervalHours;
-                        if (!string.IsNullOrEmpty(config.DestinationRoot)) DestinationRoot = config.DestinationRoot;
-                        DeleteAfterImport = config.DeleteAfterImport;
-                        DeleteAfterImportPromptDismissed = config.DeleteAfterImportPromptDismissed;
-                        if (!string.IsNullOrEmpty(config.NamingTemplate)) NamingTemplate = config.NamingTemplate;
-                        if (!string.IsNullOrWhiteSpace(config.NamingPreset)) NamingPreset = config.NamingPreset;
-                        if (!string.IsNullOrWhiteSpace(config.NamingDateFormat)) NamingDateFormat = config.NamingDateFormat;
-                        if (!string.IsNullOrWhiteSpace(config.NamingTimeFormat)) NamingTimeFormat = config.NamingTimeFormat;
-                        if (!string.IsNullOrWhiteSpace(config.NamingSeparator)) NamingSeparator = config.NamingSeparator;
-                        NamingIncludeSequence = config.NamingIncludeSequence;
-                        if (!string.IsNullOrWhiteSpace(config.NamingShootNameSample)) NamingShootNameSample = config.NamingShootNameSample;
-                        NamingLowercase = config.NamingLowercase;
-                        if (!string.IsNullOrWhiteSpace(config.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = config.ThumbnailPerformanceMode;
-                        GroupRawAndRenderedPairs = config.GroupRawAndRenderedPairs;
-                        if (!string.IsNullOrWhiteSpace(config.FtpHost)) FtpHost = config.FtpHost;
-                        FtpPort = config.FtpPort > 0 ? config.FtpPort : 21;
-                        if (!string.IsNullOrWhiteSpace(config.FtpUser)) FtpUser = config.FtpUser;
-                        if (!string.IsNullOrWhiteSpace(config.FtpPass)) FtpPass = config.FtpPass;
-                        if (!string.IsNullOrWhiteSpace(config.FtpRemoteFolder)) FtpRemoteFolder = NormalizeFtpPath(config.FtpRemoteFolder);
-                        AutoReconnectLastFtp = config.AutoReconnectLastFtp;
-                        SettingsMenuExpanded = config.SettingsMenuExpanded;
-                        if (!string.IsNullOrWhiteSpace(config.ScanPath)) ScanPath = config.ScanPath;
-                        SelectAll = config.SelectAll;
-                        if (config.IsDarkTheme.HasValue)
-                        {
-                            IsDarkTheme = config.IsDarkTheme.Value;
-                            App.ApplyTheme(!IsDarkTheme);
-                        }
-                        if (config.ThumbnailSize > 0) ThumbnailSize = config.ThumbnailSize;
-                        ScanIncludeSubfolders = config.ScanIncludeSubfolders;
-                        TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
-                        LimitFtpThumbnailLoad = false;
-                        FtpInitialThumbnailCount = 0;
-                        ExpandPreviewStacks = config.ExpandPreviewStacks;
-                        if (!string.IsNullOrWhiteSpace(config.DuplicatePolicy)) DuplicatePolicy = config.DuplicatePolicy;
-                        if (!string.IsNullOrWhiteSpace(config.VerificationMode)) VerificationMode = config.VerificationMode;
-                        UiLanguage = config.UiLanguage ?? string.Empty;
-                        EmbedKeywordsOnImport = config.EmbedKeywordsOnImport;
-                        ConfirmBeforeImport = config.ConfirmBeforeImport;
-                        SuppressExcludedFolderScanReminders = config.SuppressExcludedFolderScanReminders;
-                        SettingsAdvancedExpanded = config.SettingsAdvancedExpanded;
-                        if (config.RibbonTileOrder is { Count: > 0 })
-                            _ribbonTileOrder = config.RibbonTileOrder;
-                        if (!string.IsNullOrEmpty(config.UpdatePackageType)) UpdatePackageType = config.UpdatePackageType;
-                        if (config.WindowWidth >= 400) _savedWindowWidth = config.WindowWidth;
-                        if (config.WindowHeight >= 300) _savedWindowHeight = config.WindowHeight;
-                        _savedWindowMaximized = config.WindowMaximized;
-                        if (config.WindowLeft.HasValue && config.WindowTop.HasValue &&
-                            !double.IsNaN(config.WindowLeft.Value) && !double.IsNaN(config.WindowTop.Value) &&
-                            !double.IsInfinity(config.WindowLeft.Value) && !double.IsInfinity(config.WindowTop.Value))
-                        {
-                            _savedWindowLeft = config.WindowLeft;
-                            _savedWindowTop = config.WindowTop;
-                        }
-
-                        OnPropertyChanged("UpdateIntervalHours");
-                        OnPropertyChanged("UpdatePackageType");
-                        OnPropertyChanged("DestinationRoot");
-                        OnPropertyChanged("DeleteAfterImport");
-                        OnPropertyChanged(nameof(DeleteAfterImportPromptDismissed));
-                        OnPropertyChanged(nameof(UiLanguage));
-                        OnPropertyChanged(nameof(EmbedKeywordsOnImport));
-                        OnPropertyChanged(nameof(ConfirmBeforeImport));
-                        OnPropertyChanged(nameof(SuppressExcludedFolderScanReminders));
-                        OnPropertyChanged(nameof(SettingsAdvancedExpanded));
-                        OnPropertyChanged("NamingTemplate");
-                        OnPropertyChanged("ScanPath");
-                        OnPropertyChanged("SelectAll");
-                        OnPropertyChanged("IsDarkTheme");
-                        OnPropertyChanged("ThumbnailSize");
-                        OnPropertyChanged("ScanIncludeSubfolders");
-                        OnPropertyChanged("TimeBetweenShootsHours");
-                        OnPropertyChanged("LimitFtpThumbnailLoad");
-                        OnPropertyChanged("FtpInitialThumbnailCount");
-                        this.IsFirstRun = config.IsFirstRun;
-                        _selectedDriveDeviceIds.Clear();
-                        foreach (var id in config.SelectedDriveDeviceIds ?? Enumerable.Empty<string>())
-                        {
-                            if (!string.IsNullOrWhiteSpace(id))
-                            {
-                                _selectedDriveDeviceIds.Add(id);
-                            }
-                        }
-                        if (_selectedDriveDeviceIds.Count == 0)
-                        {
-                            foreach (var oldPath in config.SelectedDrivePaths ?? Enumerable.Empty<string>())
-                            {
-                                if (!string.IsNullOrWhiteSpace(oldPath))
-                                {
-                                    _selectedDriveDeviceIds.Add($"path:{oldPath.ToUpperInvariant()}");
-                                }
-                            }
-                        }
-
-                        _skippedFoldersBySource.Clear();
-                        foreach (var kvp in config.SkippedFoldersBySource ?? new Dictionary<string, List<string>>())
-                        {
-                            if (string.IsNullOrWhiteSpace(kvp.Key))
-                            {
-                                continue;
-                            }
-
-                            _skippedFoldersBySource[kvp.Key] = kvp.Value?.Where(v => !string.IsNullOrWhiteSpace(v)).ToList() ?? new List<string>();
-                        }
-
-                        // Parse NamingTemplate to SelectedTokens
-                        Application.Current.Dispatcher.Invoke(() => {
-                            SelectedTokens.Clear();
-                            if (!string.IsNullOrEmpty(NamingTemplate))
-                            {
-                                var matches = System.Text.RegularExpressions.Regex.Matches(NamingTemplate, @"\[[^\]]+\]|[^\[\]]+");
-                                foreach (System.Text.RegularExpressions.Match m in matches)
-                                {
-                                    if (!string.IsNullOrEmpty(m.Value)) 
-                                    {
-                                        SelectedTokens.Add(new TokenItem { Value = m.Value });
-                                        if (m.Value.StartsWith("[") && m.Value.EndsWith("]"))
-                                        {
-                                            AvailableTokens.Remove(m.Value);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-            } catch { }
         }
 
         /// <summary>
@@ -5404,99 +5569,6 @@ BuildGroups:
         }
     }
 
-    public class FtpSourceItem
-    {
-        public string Host { get; set; } = string.Empty;
-        public int Port { get; set; } = 21;
-        public string User { get; set; } = "anonymous";
-        public string Pass { get; set; } = "anonymous";
-        public string RemoteFolder { get; set; } = "/DCIM";
-
-        public override string ToString() => $"FTP: {Host} ({RemoteFolder})";
-    }
-
-    public class UnifiedSourceItem
-    {
-        public override string ToString() => "Unified (SD + FTP)";
-    }
-
-    public class FtpFolderOption
-    {
-        public string Path { get; set; } = "/";
-        public string Label { get; set; } = string.Empty;
-    }
-
-    public class TokenInsertPayload
-    {
-        public string Token { get; set; } = string.Empty;
-        public int Index { get; set; } = -1;
-        public bool FromSelected { get; set; } = false;
-    }
-
-    public partial class MainViewModel : ObservableObject
-    {
-        [RelayCommand]
-        private void RemoveToken(TokenItem? item)
-        {
-            if (item == null) return;
-            if (SelectedTokens.Contains(item))
-            {
-                SelectedTokens.Remove(item);
-                UpdateNamingFromTokens();
-
-                var value = item.Value;
-                if (!string.IsNullOrEmpty(value) &&
-                    value.StartsWith("[") &&
-                    value.EndsWith("]") &&
-                    !AvailableTokens.Contains(value))
-                {
-                    AvailableTokens.Add(value);
-                }
-            }
-        }
-
-        [RelayCommand]
-        private void InsertToken(TokenInsertPayload? payload)
-        {
-            if (payload == null || string.IsNullOrEmpty(payload.Token)) return;
-
-            int insertIndex = payload.Index;
-            if (insertIndex < 0 || insertIndex > SelectedTokens.Count) insertIndex = SelectedTokens.Count;
-
-            if (payload.FromSelected)
-            {
-                int existingIndex = SelectedTokens.Select((item, index) => new { item, index })
-                    .FirstOrDefault(x => x.item.Value == payload.Token)?.index ?? -1;
-
-                if (existingIndex >= 0)
-                {
-                    var movingItem = SelectedTokens[existingIndex];
-                    SelectedTokens.RemoveAt(existingIndex);
-                    if (existingIndex < insertIndex) insertIndex--;
-                    if (insertIndex < 0) insertIndex = 0;
-                    if (insertIndex > SelectedTokens.Count) insertIndex = SelectedTokens.Count;
-                    SelectedTokens.Insert(insertIndex, movingItem);
-                    UpdateNamingFromTokens();
-                }
-                return;
-            }
-
-            // Prevent duplicate placeholders
-            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]") && SelectedTokens.Any(t => t.Value == payload.Token))
-            {
-                return;
-            }
-
-            SelectedTokens.Insert(insertIndex, new TokenItem { Value = payload.Token });
-            UpdateNamingFromTokens();
-
-            if (payload.Token.StartsWith("[") && payload.Token.EndsWith("]") && AvailableTokens.Contains(payload.Token))
-            {
-                AvailableTokens.Remove(payload.Token);
-            }
-        }
-    }
-
     public class ImportHistoryRecord
     {
         public DateTime StartedAtLocal { get; set; } = DateTime.Now;
@@ -5606,57 +5678,5 @@ BuildGroups:
         public string SourceId { get; set; } = string.Empty;
         public string FolderPath { get; set; } = string.Empty;
         public string Display => $"{SourceId} :: {FolderPath}";
-    }
-
-    public class AppConfig
-    {
-        public int UpdateIntervalHours { get; set; } = 24;
-        public string UpdatePackageType { get; set; } = "Portable";
-        public string DestinationRoot { get; set; } = string.Empty;
-        public bool DeleteAfterImport { get; set; }
-        public bool DeleteAfterImportPromptDismissed { get; set; }
-        public string NamingTemplate { get; set; } = "[Date]_[Time]_[Original]";
-        public string NamingPreset { get; set; } = "Recommended (Date + Shoot + Original)";
-        public string NamingDateFormat { get; set; } = "yyyy-MM-dd";
-        public string NamingTimeFormat { get; set; } = "HH-mm-ss";
-        public string NamingSeparator { get; set; } = "_";
-        public bool NamingIncludeSequence { get; set; } = false;
-        public string NamingShootNameSample { get; set; } = "my-shoot";
-        public bool NamingLowercase { get; set; } = true;
-        public string ThumbnailPerformanceMode { get; set; } = "Balanced";
-        public bool GroupRawAndRenderedPairs { get; set; } = false;
-        public string FtpHost { get; set; } = string.Empty;
-        public int FtpPort { get; set; } = 21;
-        public string FtpUser { get; set; } = string.Empty;
-        public string FtpPass { get; set; } = string.Empty;
-        public string FtpRemoteFolder { get; set; } = "/DCIM";
-        public bool AutoReconnectLastFtp { get; set; } = true;
-        public bool SettingsMenuExpanded { get; set; } = true;
-        public string ScanPath { get; set; } = string.Empty;
-        public bool SelectAll { get; set; } = true;
-        public bool? IsDarkTheme { get; set; }
-        public double ThumbnailSize { get; set; } = 120;
-        public bool ScanIncludeSubfolders { get; set; } = true;
-        public int TimeBetweenShootsHours { get; set; } = 4;
-        public bool LimitFtpThumbnailLoad { get; set; } = false;
-        public int FtpInitialThumbnailCount { get; set; } = 0;
-        public bool ExpandPreviewStacks { get; set; } = false;
-        public string DuplicatePolicy { get; set; } = "Suffix";
-        public string VerificationMode { get; set; } = "Fast";
-        public string UiLanguage { get; set; } = string.Empty;
-        public bool EmbedKeywordsOnImport { get; set; }
-        public bool ConfirmBeforeImport { get; set; }
-        public bool SuppressExcludedFolderScanReminders { get; set; }
-        public bool SettingsAdvancedExpanded { get; set; }
-        public List<string>? RibbonTileOrder { get; set; }
-            public double WindowWidth { get; set; } = 960;
-            public double WindowHeight { get; set; } = 620;
-            public bool WindowMaximized { get; set; } = false;
-            public double? WindowLeft { get; set; }
-            public double? WindowTop { get; set; }
-            public bool IsFirstRun { get; set; } = true;
-        public List<string> SelectedDriveDeviceIds { get; set; } = new();
-        public List<string> SelectedDrivePaths { get; set; } = new();
-        public Dictionary<string, List<string>> SkippedFoldersBySource { get; set; } = new();
     }
 }

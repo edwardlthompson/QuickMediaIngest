@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -26,9 +27,12 @@ namespace QuickMediaIngest.Core
             _cacheFile = Path.Combine(appFolder, "last_update_check.txt");
         }
 
-        public async Task<string?> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable")
+        public async Task<UpdateCheckResult> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable")
         {
-            if (!force && !ShouldCheck(intervalHours)) return null;
+            if (!force && !ShouldCheck(intervalHours))
+            {
+                return default;
+            }
 
             try
             {
@@ -79,7 +83,10 @@ namespace QuickMediaIngest.Core
                 SaveLastCheck();
 
                 var localVersion = typeof(UpdateService).Assembly.GetName().Version;
-                if (localVersion == null) return null;
+                if (localVersion == null)
+                {
+                    return default;
+                }
 
                 string versionText = remoteTag.TrimStart('v');
 
@@ -88,7 +95,7 @@ namespace QuickMediaIngest.Core
                     if (remoteVersion > localVersion)
                     {
                         _logger.LogInformation("Update available. LocalVersion={LocalVersion}, RemoteVersion={RemoteVersion}", localVersion, remoteVersion);
-                        return downloadUrl;
+                        return new UpdateCheckResult(downloadUrl, remoteTag);
                     }
                 }
             }
@@ -97,7 +104,7 @@ namespace QuickMediaIngest.Core
                 _logger.LogError(ex, "Update check failed.");
             }
 
-            return null;
+            return default;
         }
 
         private bool ShouldCheck(int intervalHours)
@@ -114,7 +121,10 @@ namespace QuickMediaIngest.Core
                     return (DateTime.Now - lastCheck).TotalHours >= intervalHours;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not read last update check timestamp; will check again.");
+            }
             
             return true;
         }
@@ -125,7 +135,10 @@ namespace QuickMediaIngest.Core
             {
                 File.WriteAllText(_cacheFile, DateTime.Now.ToString("o"));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not write last update check cache: {Path}.", _cacheFile);
+            }
         }
     }
 }

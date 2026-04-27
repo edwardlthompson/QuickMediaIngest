@@ -6,7 +6,7 @@
       <ImplicitUsings>enable</ImplicitUsings>
       <UseWPF>true</UseWPF>
       <ApplicationIcon>QuickMediaIngest.ico</ApplicationIcon>
-      <Version>1.2.0</Version>
+      <Version>1.2.1</Version>
       <NeutralLanguage>en</NeutralLanguage>
       <SatelliteResourceLanguages>fr;es</SatelliteResourceLanguages>
     </PropertyGroup>
@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.13.0" />
+    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.3.0" />
     <Resource Include="QuickMediaIngest.ico" />
     <Resource Include="Assets\AppIcon.png" />
     <None Include="Assets\AppIcon.source.png" />
