@@ -403,7 +403,8 @@ namespace QuickMediaIngest.Core
             request.Credentials = new NetworkCredential(user, pass);
             request.UseBinary = true;
             request.UsePassive = true;
-            request.KeepAlive = false;
+            // Reuse TCP connection across listing requests during the same scan (fewer round-trips).
+            request.KeepAlive = true;
             request.Timeout = Math.Max(5, timeoutSeconds) * 1000;
             request.ReadWriteTimeout = Math.Max(5, timeoutSeconds) * 1000;
 

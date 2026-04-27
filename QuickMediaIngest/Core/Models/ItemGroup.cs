@@ -13,7 +13,10 @@ namespace QuickMediaIngest.Core.Models
     public class ItemGroup : INotifyPropertyChanged
     {
         private string _title = string.Empty;
+        private string _keywordsText = string.Empty;
         private bool _isSelected = true;
+        private bool _expandStackedPairsInShoot;
+        private bool _isExpanded;
 
         /// <summary>
         /// The title of the group (e.g., "Shoot 1").
@@ -22,6 +25,15 @@ namespace QuickMediaIngest.Core.Models
         { 
             get => _title; 
             set { _title = value; OnPropertyChanged(); } 
+        }
+
+        /// <summary>
+        /// Optional keywords for this shoot (hashtags and/or comma-separated). Applied on import when embedding is enabled.
+        /// </summary>
+        public string KeywordsText
+        {
+            get => _keywordsText;
+            set { _keywordsText = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -75,6 +87,25 @@ namespace QuickMediaIngest.Core.Models
         /// The total size (in bytes) of all selected items in the group.
         /// </summary>
         public long TotalSize => Items.FindAll(i => i.IsSelected).ConvertAll(i => i.FileSize).Sum();
+
+        /// <summary>
+        /// When RAW/JPEG stacking is enabled, expands stacked pairs side-by-side for this shoot only.
+        /// </summary>
+        public bool ExpandStackedPairsInShoot
+        {
+            get => _expandStackedPairsInShoot;
+            set { _expandStackedPairsInShoot = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Controls whether this shoot group is expanded in the UI.
+        /// Defaults to collapsed for faster scanning.
+        /// </summary>
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set { _isExpanded = value; OnPropertyChanged(); }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)

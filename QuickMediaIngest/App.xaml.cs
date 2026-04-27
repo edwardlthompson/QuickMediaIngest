@@ -11,6 +11,7 @@ using Microsoft.Win32;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Localization;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -88,6 +89,7 @@ namespace QuickMediaIngest
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            LocalizationService.ApplyCultureFromConfigFileEarly();
             _serviceProvider = ConfigureServices();
             _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
             _logger.LogInformation("Application startup initiated.");
@@ -253,7 +255,8 @@ namespace QuickMediaIngest
                 System.Windows.Application.Current.Resources["AppAccentBrush"] = new System.Windows.Media.SolidColorBrush(accentColor);
                 // Update menu brushes to ensure visibility when switching themes
                 System.Windows.Media.SolidColorBrush menuForeground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1A1A1A")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
-                System.Windows.Media.SolidColorBrush menuBackground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E1E1E"));
+                // Light: soft gray toolbar band under white paper; dark: charcoal strip
+                System.Windows.Media.SolidColorBrush menuBackground = useLightTheme ? new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F5F5F5")) : new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E1E1E"));
                 try
                 {
                     System.Windows.Application.Current.Resources["MenuForegroundBrush"] = menuForeground;
@@ -304,9 +307,12 @@ namespace QuickMediaIngest
                 // Sidebar: slightly darker than main paper so layout reads clearly
                 SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#E8EAED"));
                 SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#5F6368"));
+                SetBrushColor(res, "SidebarTitle", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#202124"));
+                SetBrushColor(res, "SidebarMenuItem", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1565C0"));
 
                 SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
-                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                // White control faces (buttons, rows) on gray toolbar / sidebar — was same as bar and read as solid "black" MD blocks
+                SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
                 SetThemeColor(res, "Theme.BarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F5F5F5"));
                 SetThemeColor(res, "Theme.CardBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FAFAFA"));
                 SetThemeColor(res, "Theme.TextPrimary", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#212121"));
@@ -326,6 +332,8 @@ namespace QuickMediaIngest
             {
                 SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#232323"));
                 SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#9E9E9E"));
+                SetBrushColor(res, "SidebarTitle", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFDEB"));
+                SetBrushColor(res, "SidebarMenuItem", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFEB3B"));
 
                 SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1E1E1E"));
                 SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
@@ -344,6 +352,52 @@ namespace QuickMediaIngest
                 SetThemeColor(res, "Theme.Error", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#F44336"));
                 SetThemeColor(res, "Theme.ExcelYellow", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFEB3B"));
             }
+
+            // SolidColorBrush resources in Themes/Brushes.xaml bind Color from Theme.* — replacing the Color
+            // resource does not always invalidate those brushes under mixed merged dictionaries.
+            SyncThemeSolidBrushesFromColors(res);
+        }
+
+        /// <summary>
+        /// Copies each Theme.* Color into matching Theme.*.Brush so chrome (sidebar rows, toolbar buttons)
+        /// picks up light/dark palette updates immediately.
+        /// </summary>
+        private static void SyncThemeSolidBrushesFromColors(ResourceDictionary rd)
+        {
+            static void SyncPair(ResourceDictionary dictionary, string colorKey, string brushKey)
+            {
+                if (dictionary[colorKey] is not System.Windows.Media.Color themeColor)
+                {
+                    return;
+                }
+
+                switch (dictionary[brushKey])
+                {
+                    case SolidColorBrush existing when !existing.IsFrozen:
+                        existing.Color = themeColor;
+                        break;
+                    default:
+                        dictionary[brushKey] = new SolidColorBrush(themeColor);
+                        break;
+                }
+            }
+
+            SyncPair(rd, "Theme.Background", "Theme.Background.Brush");
+            SyncPair(rd, "Theme.Surface", "Theme.Surface.Brush");
+            SyncPair(rd, "Theme.BarBackground", "Theme.BarBackground.Brush");
+            SyncPair(rd, "Theme.CardBackground", "Theme.CardBackground.Brush");
+            SyncPair(rd, "Theme.TextPrimary", "Theme.TextPrimary.Brush");
+            SyncPair(rd, "Theme.TextSecondary", "Theme.TextSecondary.Brush");
+            SyncPair(rd, "Theme.TextTertiary", "Theme.TextTertiary.Brush");
+            SyncPair(rd, "Theme.Accent", "Theme.Accent.Brush");
+            SyncPair(rd, "Theme.AccentLight", "Theme.AccentLight.Brush");
+            SyncPair(rd, "Theme.Divider", "Theme.Divider.Brush");
+            SyncPair(rd, "Theme.Hover", "Theme.Hover.Brush");
+            SyncPair(rd, "Theme.Border", "Theme.Border.Brush");
+            SyncPair(rd, "Theme.Success", "Theme.Success.Brush");
+            SyncPair(rd, "Theme.Warning", "Theme.Warning.Brush");
+            SyncPair(rd, "Theme.Error", "Theme.Error.Brush");
+            SyncPair(rd, "Theme.ExcelYellow", "Theme.ExcelYellow.Brush");
         }
     }
 }

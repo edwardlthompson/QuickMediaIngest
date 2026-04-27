@@ -36,14 +36,13 @@
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Quick Media Ingest"
+                               Style="{StaticResource AppHeadingLargeTextStyle}"
                                FontSize="26"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource MaterialDesignBody}"
                                HorizontalAlignment="Left"/>
                     <TextBlock Text="Starting up..."
+                               Style="{StaticResource AppMutedTextStyle}"
                                FontSize="14"
                                Margin="0,6,0,0"
-                               Foreground="{DynamicResource Theme.TextTertiary.Brush}"
                                HorizontalAlignment="Left"/>
                 </StackPanel>
             </Grid>

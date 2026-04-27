@@ -21,6 +21,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media.Animation;
 using System.Threading;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.ViewModels;
 
@@ -54,8 +55,11 @@ namespace QuickMediaIngest
                 }
             }
             catch { }
+        }
 
-            // Loaded += MainWindow_Loaded;
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Deferred from constructor: avoids extra work on the critical path during XAML/build of the logical tree.
             try
             {
                 var showOnLaunch = Environment.GetEnvironmentVariable("QMI_SHOW_FTP_ON_LAUNCH");
@@ -65,18 +69,28 @@ namespace QuickMediaIngest
                     _logger.LogInformation("Debug: showing Add FTP dialog on launch due to QMI_SHOW_FTP_ON_LAUNCH=1");
                     try
                     {
-                        // Force the overlay visible in case binding/visual tree timing prevents it from showing
-                        AddFtpOverlay.Visibility = System.Windows.Visibility.Visible;
+                        AddFtpOverlay.Visibility = Visibility.Visible;
                         AddFtpOverlay.BringIntoView();
                     }
-                    catch { }
+                    catch
+                    {
+                        // Ignore overlay timing issues.
+                    }
                 }
             }
-            catch { }
-        }
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            // OnboardingDialog removed
+            catch
+            {
+                // Ignore debug launcher failures.
+            }
+
+            try
+            {
+                ApplySidebarCollapsedChrome(SidebarCollapseToggle?.IsChecked == true);
+            }
+            catch
+            {
+                // Ignore sidebar chrome timing during startup.
+            }
         }
 
         private void AddFtpOverlay_Loaded(object sender, RoutedEventArgs e)
@@ -208,6 +222,8 @@ namespace QuickMediaIngest
             {
                 vm.SaveWindowState(Width, Height, false, Left, Top);
             }
+
+            vm.SaveConfig();
         }
 
         private void RibbonTileHandle_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -687,14 +703,28 @@ namespace QuickMediaIngest
             }
         }
 
+        private void CloseScanExclusions_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+            {
+                vm.ShowScanExclusionsPanel = false;
+            }
+        }
+
         private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == System.Windows.Input.Key.Escape)
+            if (e.Key == System.Windows.Input.Key.F
+                && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                if (DataContext is ViewModels.MainViewModel vm && vm.ShowSettingsDialog)
+                try
                 {
-                    vm.ShowSettingsDialog = false;
+                    FilterKeywordTextBox?.Focus();
+                    FilterKeywordTextBox?.SelectAll();
                     e.Handled = true;
+                }
+                catch
+                {
+                    // Ignore focus issues during startup or template changes.
                 }
             }
         }
@@ -861,6 +891,134 @@ namespace QuickMediaIngest
         }
 
         private sealed record TokenDragPayload(string Token, bool FromSelected);
+
+        private void SidebarCollapseToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplySidebarCollapsedChrome(SidebarCollapseToggle?.IsChecked == true);
+        }
+
+        /// <summary>
+        /// Collapsed rail: narrow column; centered collapse control; Exit only as icon in SettingsCollapsedRail (footer Exit hidden).
+        /// </summary>
+        private void ApplySidebarCollapsedChrome(bool isCollapsed)
+        {
+            if (SidebarColumn != null)
+            {
+                SidebarColumn.Width = new GridLength(isCollapsed ? 64 : 260);
+            }
+
+            if (SidebarExpandedContent != null)
+            {
+                SidebarExpandedContent.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (SidebarCollapsedRail != null)
+            {
+                SidebarCollapsedRail.Visibility = isCollapsed ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (SettingsExpandedPanel != null)
+            {
+                SettingsExpandedPanel.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (SettingsCollapsedRail != null)
+            {
+                SettingsCollapsedRail.Visibility = isCollapsed ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (SidebarAppNameText != null)
+            {
+                SidebarAppNameText.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (SidebarAppVersionText != null)
+            {
+                SidebarAppVersionText.Visibility = Visibility.Visible;
+            }
+
+            if (SidebarLogoCollapsed != null)
+            {
+                SidebarLogoCollapsed.Visibility = isCollapsed ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (SidebarHeaderLabelText != null)
+            {
+                SidebarHeaderLabelText.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            // Footer Exit visibility is bound via Style + DataTrigger to SidebarCollapseToggle.IsChecked (declarative).
+
+            // Pin collapse toggle to center column when narrow; span full width when expanded (layout beats Style Stretch alone).
+            if (SidebarCollapseToggle != null && SidebarCollapseToggleHostGrid != null)
+            {
+                if (isCollapsed)
+                {
+                    Grid.SetColumn(SidebarCollapseToggle, 1);
+                    Grid.SetColumnSpan(SidebarCollapseToggle, 1);
+                    SidebarCollapseToggle.HorizontalAlignment = HorizontalAlignment.Center;
+                    SidebarCollapseToggle.HorizontalContentAlignment = HorizontalAlignment.Center;
+                }
+                else
+                {
+                    Grid.SetColumn(SidebarCollapseToggle, 0);
+                    Grid.SetColumnSpan(SidebarCollapseToggle, 3);
+                    SidebarCollapseToggle.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    SidebarCollapseToggle.HorizontalContentAlignment = HorizontalAlignment.Left;
+                }
+            }
+
+            if (SidebarHeaderToggleIcon != null)
+            {
+                SidebarHeaderToggleIcon.Margin = isCollapsed ? new Thickness(0) : new Thickness(0, 0, 6, 0);
+            }
+
+            if (SidebarHeaderGrid != null)
+            {
+                SidebarHeaderGrid.Margin = isCollapsed ? new Thickness(6, 12, 6, 8) : new Thickness(12, 12, 12, 8);
+            }
+
+            if (SidebarTitlePanel != null)
+            {
+                SidebarTitlePanel.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+            }
+
+            if (SidebarAppVersionText != null)
+            {
+                SidebarAppVersionText.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            }
+
+            if (SidebarLogoCollapsed != null)
+            {
+                SidebarLogoCollapsed.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            }
+
+            // Icon-only theme lives on SidebarCollapsedRail when collapsed; hide label row to avoid duplicate + layout overflow.
+            if (SidebarThemeHeaderBorder != null)
+            {
+                SidebarThemeHeaderBorder.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
+        private void ThemeIconButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ThemeToggle == null)
+            {
+                return;
+            }
+
+            ThemeToggle.IsChecked = !(ThemeToggle.IsChecked ?? false);
+        }
+
+        private void CollapsedSourceButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm || sender is not FrameworkElement element || element.Tag is null)
+            {
+                return;
+            }
+
+            vm.SelectedSource = element.Tag;
+        }
     }
 }
 
@@ -886,6 +1044,50 @@ namespace QuickMediaIngest
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             return value is bool isImporting && isImporting ? "Importing..." : "Import";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class SourceToIconKindConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is QuickMediaIngest.ViewModels.UnifiedSourceItem)
+            {
+                return PackIconKind.ViewGrid;
+            }
+
+            if (value is QuickMediaIngest.ViewModels.FtpSourceItem)
+            {
+                return PackIconKind.SourceBranch;
+            }
+
+            if (value is string drivePath)
+            {
+                try
+                {
+                    var driveInfo = new DriveInfo(drivePath);
+                    if (driveInfo.DriveType == DriveType.Removable)
+                    {
+                        return PackIconKind.Sd;
+                    }
+
+                    if (driveInfo.DriveType == DriveType.Fixed)
+                    {
+                        return PackIconKind.Harddisk;
+                    }
+                }
+                catch
+                {
+                    // Fallback for non-drive strings.
+                }
+            }
+
+            return PackIconKind.Folder;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

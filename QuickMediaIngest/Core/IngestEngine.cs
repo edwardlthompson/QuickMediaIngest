@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +27,14 @@ namespace QuickMediaIngest.Core
     {
         public DuplicateHandlingMode DuplicateHandling { get; set; } = DuplicateHandlingMode.Suffix;
         public ImportVerificationMode VerificationMode { get; set; } = ImportVerificationMode.Fast;
+        /// <summary>
+        /// When true, writes keywords (EXIF/XMP or sidecar) to each successfully copied destination file.
+        /// </summary>
+        public bool ApplyImportKeywords { get; set; }
+        /// <summary>
+        /// Keywords to embed (comma/semicolon separated upstream).
+        /// </summary>
+        public IReadOnlyList<string>? ImportKeywords { get; set; }
     }
 
     /// <summary>
@@ -93,7 +102,9 @@ namespace QuickMediaIngest.Core
 
             _logger.LogInformation("Starting ingest for group {GroupTitle} with {FileCount} selected files into {DestinationRoot}.", group.Title, total, destinationRoot);
 
-            await Parallel.ForEachAsync(selectedItems, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken }, async (item, ct) =>
+            var wall = Stopwatch.StartNew();
+            int parallelImports = Math.Clamp(Environment.ProcessorCount, 1, 8);
+            await Parallel.ForEachAsync(selectedItems, new ParallelOptions { MaxDegreeOfParallelism = parallelImports, CancellationToken = cancellationToken }, async (item, ct) =>
             {
                 int itemIndex;
                 lock (progressLock)
@@ -122,6 +133,7 @@ namespace QuickMediaIngest.Core
                             GroupCurrent = itemIndex,
                             GroupTotal = total,
                             SourcePath = item.SourcePath,
+                            DestinationPath = string.Empty,
                             FileName = item.FileName,
                             FileSizeBytes = item.FileSize,
                             Success = true,
@@ -132,7 +144,12 @@ namespace QuickMediaIngest.Core
 
                     await _provider.CopyAsync(item.SourcePath, destPath, ct);
                     success = true;
-                    _logger.LogInformation("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
+                    _logger.LogDebug("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
+
+                    if (success && File.Exists(destPath) && options.ApplyImportKeywords && options.ImportKeywords is { Count: > 0 })
+                    {
+                        MetadataKeywordWriter.TryApplyKeywords(destPath, options.ImportKeywords, _logger);
+                    }
 
                     // If delete-after-import is enabled, verify hash and size before deleting
                     if (deleteAfterImport && success && File.Exists(destPath))
@@ -171,6 +188,7 @@ namespace QuickMediaIngest.Core
                     GroupCurrent = itemIndex,
                     GroupTotal = total,
                     SourcePath = item.SourcePath,
+                    DestinationPath = destPath,
                     FileName = item.FileName,
                     FileSizeBytes = item.FileSize,
                     Success = success,
@@ -179,7 +197,12 @@ namespace QuickMediaIngest.Core
             }); // End of Parallel.ForEachAsync
 
             ProgressChanged?.Invoke(100, "Ingest Completed!");
-            _logger.LogInformation("Completed ingest for group {GroupTitle}.", group.Title);
+            wall.Stop();
+            _logger.LogInformation(
+                "Completed ingest for group {GroupTitle}. WallTimeMs={WallMs}, Parallelism={Parallelism}",
+                group.Title,
+                wall.Elapsed.TotalMilliseconds,
+                parallelImports);
         }
 
         // Computes SHA256 hash of a file
@@ -321,6 +344,10 @@ namespace QuickMediaIngest.Core
         public int GroupCurrent { get; set; }
         public int GroupTotal { get; set; }
         public string SourcePath { get; set; } = string.Empty;
+        /// <summary>
+        /// Final on-disk destination path when the file was copied or attempted.
+        /// </summary>
+        public string DestinationPath { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public long FileSizeBytes { get; set; }
         public bool Success { get; set; }

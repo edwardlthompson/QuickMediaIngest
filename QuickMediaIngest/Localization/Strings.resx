@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Main_WindowTitle" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_AppName" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_Sources" xml:space="preserve"><value>Sources</value></data>
+  <data name="Sidebar_SettingsHeader" xml:space="preserve"><value>Settings</value></data>
+  <data name="Btn_Preferences" xml:space="preserve"><value>Preferences</value></data>
+  <data name="Btn_AddFtpSource" xml:space="preserve"><value>Add FTP Source</value></data>
+  <data name="Btn_ImportHistory" xml:space="preserve"><value>Import History</value></data>
+  <data name="Btn_AboutUpdates" xml:space="preserve"><value>About &amp; Updates</value></data>
+  <data name="Btn_Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Btn_Exit_Tooltip" xml:space="preserve"><value>Save settings and close the application</value></data>
+  <data name="Sidebar_ScanExclusions" xml:space="preserve"><value>Scan exclusions</value></data>
+  <data name="Sidebar_ScanExclusionsTooltip" xml:space="preserve"><value>Excluded drives and ignored folders (blacklist)</value></data>
+  <data name="ScanExclusions_Title" xml:space="preserve"><value>Scan exclusions</value></data>
+  <data name="ScanExclusions_Subtitle" xml:space="preserve"><value>Manage drives and folders that are hidden from scans. Removing a skipped folder here makes it eligible again after you refresh sources.</value></data>
+  <data name="ScanExclusions_DrivesHeading" xml:space="preserve"><value>Excluded drives</value></data>
+  <data name="ScanExclusions_DrivesHint" xml:space="preserve"><value>Fixed drives are off by default. Use Include to allow a drive in future scans.</value></data>
+  <data name="ScanExclusions_FoldersHeading" xml:space="preserve"><value>Ignored folders (blacklist)</value></data>
+  <data name="ScanExclusions_FoldersHint" xml:space="preserve"><value>Paths skipped from the shoot list or sidebar. Remove a rule to show that folder again after refresh.</value></data>
+  <data name="ScanExclusions_IncludeDrive" xml:space="preserve"><value>Include</value></data>
+  <data name="ScanExclusions_RemoveFolder" xml:space="preserve"><value>Remove rule</value></data>
+
+  <data name="Toolbar_Import" xml:space="preserve"><value>Import</value></data>
+  <data name="Toolbar_ImportTooltip" xml:space="preserve"><value>Start import for selected photos</value></data>
+  <data name="Toolbar_Queue" xml:space="preserve"><value>Queue</value></data>
+  <data name="Toolbar_QueueTooltip" xml:space="preserve"><value>Queue selected files for import</value></data>
+  <data name="Toolbar_Preflight" xml:space="preserve"><value>Preflight</value></data>
+  <data name="Toolbar_PreflightTooltip" xml:space="preserve"><value>Run dry-run preflight report</value></data>
+  <data name="Toolbar_RetryFailed" xml:space="preserve"><value>Retry Failed</value></data>
+  <data name="Toolbar_RetryFailedTooltip" xml:space="preserve"><value>Retry failed files from last import</value></data>
+  <data name="Toolbar_ResumePending" xml:space="preserve"><value>Resume Pending</value></data>
+  <data name="Toolbar_ResumePendingTooltip" xml:space="preserve"><value>Resume pending import plan</value></data>
+  <data name="Toolbar_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Toolbar_RefreshTooltip" xml:space="preserve"><value>Rescan drives and refresh unified</value></data>
+  <data name="Toolbar_SelectAll" xml:space="preserve"><value>Select All</value></data>
+  <data name="Toolbar_SelectAllTooltip" xml:space="preserve"><value>Select or deselect all shoots</value></data>
+  <data name="Toolbar_DeleteAfterImport" xml:space="preserve"><value>Delete After Import</value></data>
+  <data name="Toolbar_DeleteAfterImportTooltip" xml:space="preserve"><value>Delete originals after verified import</value></data>
+  <data name="Toolbar_GroupBy" xml:space="preserve"><value>Group by:</value></data>
+  <data name="Toolbar_GroupByTooltip" xml:space="preserve"><value>Adjust shoot grouping gap in hours</value></data>
+  <data name="Toolbar_ThumbTooltip" xml:space="preserve"><value>Adjust thumbnail size</value></data>
+  <data name="Toolbar_Filter" xml:space="preserve"><value>Filter:</value></data>
+  <data name="Toolbar_FilterTooltip" xml:space="preserve"><value>Ctrl+F focuses this box</value></data>
+  <data name="Toolbar_FilterHint" xml:space="preserve"><value>Search keywords</value></data>
+  <data name="Toolbar_RetryPreviews" xml:space="preserve"><value>Retry previews</value></data>
+  <data name="Toolbar_RetryPreviewsTooltip" xml:space="preserve"><value>Reload thumbnails that failed</value></data>
+  <data name="Toolbar_ResetPreviewCache" xml:space="preserve"><value>Reset preview cache</value></data>
+  <data name="Toolbar_ResetPreviewCacheTooltip" xml:space="preserve"><value>Clear disk thumbnail cache and reload</value></data>
+  <data name="Toolbar_RemoveFilterTooltip" xml:space="preserve"><value>Remove filter</value></data>
+
+  <data name="Shoot_HintName" xml:space="preserve"><value>Shoot name</value></data>
+  <data name="Shoot_HintKeywords" xml:space="preserve"><value>#keywords, comma-separated — per shoot</value></data>
+  <data name="Shoot_ToggleStackLayout" xml:space="preserve"><value>Toggle stack layout</value></data>
+  <data name="Shoot_ToggleStackTooltip" xml:space="preserve"><value>Expand or collapse RAW/JPEG stacks for this shoot only</value></data>
+  <data name="Shoot_SelectShoot" xml:space="preserve"><value>Select Shoot</value></data>
+  <data name="Shoot_SourceFolderLabel" xml:space="preserve"><value>Source Folder:</value></data>
+  <data name="Shoot_StartLabel" xml:space="preserve"><value>Start:</value></data>
+  <data name="Shoot_EndLabel" xml:space="preserve"><value>End:</value></data>
+  <data name="Shoot_FilesLabel" xml:space="preserve"><value>Files:</value></data>
+  <data name="Shoot_IgnoreFolder" xml:space="preserve"><value>Ignore folder…</value></data>
+  <data name="Shoot_IgnoreFolderTooltip" xml:space="preserve"><value>Add this folder to the skip list (hide from scans). Manage under Preferences → Scan exclusions.</value></data>
+  <data name="Menu_SkipFolderFuture" xml:space="preserve"><value>Skip this folder in future scans</value></data>
+
+  <data name="Details_GroupDetails" xml:space="preserve"><value>Group Details</value></data>
+
+  <data name="Settings_MainTitle" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_SaveDestination" xml:space="preserve"><value>Save Destination</value></data>
+  <data name="Settings_Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="Settings_FileNamingScheme" xml:space="preserve"><value>File Naming Scheme</value></data>
+  <data name="Settings_DisplayLanguage" xml:space="preserve"><value>Display language</value></data>
+  <data name="Settings_LanguageRestartHint" xml:space="preserve"><value>Restart the application to apply the display language.</value></data>
+  <data name="Settings_EmbedKeywords" xml:space="preserve"><value>Write keywords into file metadata on import</value></data>
+  <data name="Settings_ConfirmImport" xml:space="preserve"><value>Confirm before starting import</value></data>
+  <data name="Settings_AdvancedHeader" xml:space="preserve"><value>Advanced import &amp; previews</value></data>
+  <data name="Settings_SaveClose" xml:space="preserve"><value>Save &amp; Close</value></data>
+
+  <data name="Lang_UseSystem" xml:space="preserve"><value>Use Windows language</value></data>
+  <data name="Lang_English" xml:space="preserve"><value>English</value></data>
+  <data name="Lang_French" xml:space="preserve"><value>French</value></data>
+  <data name="Lang_Spanish" xml:space="preserve"><value>Spanish</value></data>
+
+  <data name="Success_Banner" xml:space="preserve"><value>Import successful! Files have been added to your destination folder.</value></data>
+
+  <data name="Vm_PreviewHealth" xml:space="preserve"><value>Preview health — loaded {0}, failed {1}, pending {2}</value></data>
+  <data name="Vm_Readiness_Line" xml:space="preserve"><value>{0} file(s) selected · Destination: {1} · Dup: {2} · Verify: {3} · Delete after import: {4} · Keywords: {5}</value></data>
+  <data name="Vm_Readiness_KwOff" xml:space="preserve"><value>Off</value></data>
+  <data name="Vm_Readiness_KwOn" xml:space="preserve"><value>On ({0} shoot(s) with keywords)</value></data>
+  <data name="Vm_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Vm_No" xml:space="preserve"><value>No</value></data>
+
+  <data name="Vm_ConfirmImportTitle" xml:space="preserve"><value>Confirm import</value></data>
+  <data name="Vm_ConfirmImport_Line1" xml:space="preserve"><value>Import {0} file(s) (~{1} MB)?</value></data>
+  <data name="Vm_ConfirmImport_Destination" xml:space="preserve"><value>Destination:</value></data>
+  <data name="Vm_ConfirmImport_DupPolicy" xml:space="preserve"><value>Duplicate policy:</value></data>
+  <data name="Vm_ConfirmImport_Verify" xml:space="preserve"><value>Verification:</value></data>
+  <data name="Vm_ConfirmImport_DeleteAfter" xml:space="preserve"><value>Delete originals after import:</value></data>
+  <data name="Vm_ConfirmImport_KeywordsHeader" xml:space="preserve"><value>Keywords by shoot:</value></data>
+  <data name="Vm_ConfirmImport_NoKeywords" xml:space="preserve"><value>(none — enable embedding and add keywords next to shoot names)</value></data>
+  <data name="Vm_Confirm_ShootKeywords" xml:space="preserve"><value>{0}: {1}</value></data>
+
+  <data name="Vm_StatusNothingToImport" xml:space="preserve"><value>Nothing to import.</value></data>
+  <data name="Vm_StatusNoFilesSelected" xml:space="preserve"><value>No files selected to import.</value></data>
+  <data name="Vm_StatusImportCanceled" xml:space="preserve"><value>Import canceled.</value></data>
+
+  <data name="Ftp_AddSourceTitle" xml:space="preserve"><value>Add FTP Source</value></data>
+  <data name="Ftp_Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Ftp_Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Ftp_User" xml:space="preserve"><value>User</value></data>
+  <data name="Ftp_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Ftp_RemoteFolder" xml:space="preserve"><value>Remote Folder</value></data>
+  <data name="Btn_Test" xml:space="preserve"><value>Test</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Btn_Close" xml:space="preserve"><value>Close</value></data>
+
+  <data name="Import_InProgressTitle" xml:space="preserve"><value>Import In Progress...</value></data>
+  <data name="Import_CurrentGroup" xml:space="preserve"><value>Current Group:</value></data>
+  <data name="Import_FilesProcessed" xml:space="preserve"><value>Files Processed:</value></data>
+  <data name="Import_Succeeded" xml:space="preserve"><value>Succeeded:</value></data>
+  <data name="Import_Failed" xml:space="preserve"><value>Failed:</value></data>
+  <data name="Import_Elapsed" xml:space="preserve"><value>Elapsed:</value></data>
+  <data name="Import_EtaSpeed" xml:space="preserve"><value>ETA / Speed:</value></data>
+  <data name="Import_CurrentGroupProgress" xml:space="preserve"><value>Current Group Progress</value></data>
+
+  <data name="About_Title" xml:space="preserve"><value>About Quick Media Ingest</value></data>
+  <data name="About_Description" xml:space="preserve"><value>A small utility to quickly import photos and videos from phones and cameras.</value></data>
+  <data name="About_UpdateChecking" xml:space="preserve"><value>Update Checking</value></data>
+  <data name="About_Package" xml:space="preserve"><value>Package:</value></data>
+  <data name="About_Interval" xml:space="preserve"><value>Interval:</value></data>
+  <data name="About_CheckUpdatesNow" xml:space="preserve"><value>Check for Updates Now</value></data>
+  <data name="About_DownloadUpdate" xml:space="preserve"><value>Download Update</value></data>
+  <data name="About_Speed" xml:space="preserve"><value>Speed:</value></data>
+  <data name="About_Eta" xml:space="preserve"><value>ETA:</value></data>
+  <data name="About_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="About_OpenLogsFolder" xml:space="preserve"><value>Open Logs Folder</value></data>
+  <data name="About_ReportBug" xml:space="preserve"><value>Report a Bug</value></data>
+  <data name="About_Changelog" xml:space="preserve"><value>Changelog</value></data>
+  <data name="About_Releases" xml:space="preserve"><value>Releases</value></data>
+  <data name="About_BuildDate" xml:space="preserve"><value>Build Date:</value></data>
+
+  <data name="Settings_Preset" xml:space="preserve"><value>Preset</value></data>
+  <data name="Settings_Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Settings_Time" xml:space="preserve"><value>Time</value></data>
+  <data name="Settings_Sequence" xml:space="preserve"><value>Sequence</value></data>
+  <data name="Settings_ShootName" xml:space="preserve"><value>Shoot Name</value></data>
+  <data name="Settings_OriginalName" xml:space="preserve"><value>Original Name</value></data>
+  <data name="Settings_DateFormat" xml:space="preserve"><value>Date Format</value></data>
+  <data name="Settings_TimeFormat" xml:space="preserve"><value>Time Format</value></data>
+  <data name="Settings_Separator" xml:space="preserve"><value>Separator</value></data>
+  <data name="Settings_ShootNameSample" xml:space="preserve"><value>Shoot Name Sample</value></data>
+  <data name="Settings_ForceLowercase" xml:space="preserve"><value>Force lowercase output</value></data>
+  <data name="Settings_PreviewExamples" xml:space="preserve"><value>Preview (examples)</value></data>
+  <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Thumbnail Performance</value></data>
+  <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Group RAW + rendered files into a single preview stack</value></data>
+  <data name="Settings_ExpandStacked" xml:space="preserve"><value>Expand stacked RAW/rendered previews side-by-side</value></data>
+  <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Duplicate Handling</value></data>
+  <data name="Settings_VerificationMode" xml:space="preserve"><value>Verification Mode</value></data>
+  <data name="Settings_SavePreset" xml:space="preserve"><value>Save Preset</value></data>
+  <data name="Settings_LoadLatestPreset" xml:space="preserve"><value>Load Latest Preset</value></data>
+
+  <data name="Vm_Ftp_DefaultDialogStatus" xml:space="preserve"><value>Enter your phone FTP details, then test or browse folders.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeTest" xml:space="preserve"><value>Enter an FTP host before testing.</value></data>
+  <data name="Vm_Ftp_PortRange" xml:space="preserve"><value>FTP port must be between 1 and 65535.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeBrowse" xml:space="preserve"><value>Enter an FTP host before browsing folders.</value></data>
+  <data name="Vm_Ftp_ChooseBrowsedFolder" xml:space="preserve"><value>Choose a browsed FTP folder first.</value></data>
+  <data name="Vm_Status_SkippedFolderCopied" xml:space="preserve"><value>Skipped-folder report copied to clipboard.</value></data>
+  <data name="Vm_SkippedScan_TitleExcludedOnly" xml:space="preserve"><value>Excluded folders ({0})</value></data>
+  <data name="Vm_SkippedScan_TitleFtpOnly" xml:space="preserve"><value>FTP listing issues ({0})</value></data>
+  <data name="Vm_SkippedScan_TitleCombined" xml:space="preserve"><value>Scan summary • {0}</value></data>
+  <data name="Vm_SkippedScan_SectionExcluded" xml:space="preserve"><value>Folders omitted because they match your Scan exclusions (expected):
+
+{0}</value></data>
+  <data name="Vm_SkippedScan_SectionFtp" xml:space="preserve"><value>FTP could not list these folders (connection or server issue):
+
+{0}</value></data>
+  <data name="Vm_SkippedScan_FtpTip" xml:space="preserve"><value>Retry when the connection is stable. Use Scan exclusions only if you intend to hide a folder from results.</value></data>
+  <data name="Vm_Status_ScanExcludedFoldersOnlySummary" xml:space="preserve"><value>{0} path(s) omitted per your Scan exclusions—results updated.</value></data>
+  <data name="Vm_Status_ScanSummaryExcludedOnly" xml:space="preserve"><value>Scan finished: {0} path(s) omitted per Scan exclusions.</value></data>
+  <data name="Vm_Status_ScanSummaryWithFtpIssues" xml:space="preserve"><value>Scan finished: {0} excluded path(s); {1} FTP listing issue(s)—see summary.</value></data>
+  <data name="SkippedFolders_DontRemindExcluded" xml:space="preserve"><value>Do not show this summary again when skipped folders are only due to my exclusions</value></data>
+  <data name="Vm_Status_NothingToRetry" xml:space="preserve"><value>Nothing to retry.</value></data>
+  <data name="Vm_Status_NoFailedPreviews" xml:space="preserve"><value>No failed previews to retry.</value></data>
+  <data name="Vm_Status_PreviewRetryFinished" xml:space="preserve"><value>Preview retry finished.</value></data>
+  <data name="Vm_Status_LoadSourceBeforeClearPreviewCache" xml:space="preserve"><value>Load a source before clearing the preview cache.</value></data>
+  <data name="Vm_Status_ThumbnailCacheClearedReloading" xml:space="preserve"><value>Thumbnail cache cleared. Reloading previews...</value></data>
+  <data name="Vm_Status_NoSourcesForUnified" xml:space="preserve"><value>No SD card or FTP sources available for Unified view.</value></data>
+  <data name="Vm_Status_UnifiedNoMedia" xml:space="preserve"><value>Unified view contains no media files.</value></data>
+  <data name="Vm_Status_ScanSourceFirst" xml:space="preserve"><value>Scan a source first, then build previews.</value></data>
+  <data name="Vm_Status_SelectAtLeastOneGroup" xml:space="preserve"><value>Select at least one folder group first.</value></data>
+  <data name="Vm_Status_BuildingPreviews" xml:space="preserve"><value>Building previews for selected folders...</value></data>
+  <data name="Vm_Status_StartingImport" xml:space="preserve"><value>Starting Import...</value></data>
+  <data name="Vm_Status_NoFailedFilesToRetry" xml:space="preserve"><value>No failed files to retry.</value></data>
+  <data name="Vm_Status_NoPendingPlan" xml:space="preserve"><value>No pending import plan found.</value></data>
+  <data name="Vm_Status_EmptyPendingPlan" xml:space="preserve"><value>Pending import plan is empty.</value></data>
+  <data name="Vm_Status_SelectFilesBeforeQueue" xml:space="preserve"><value>Select files before queueing an import.</value></data>
+  <data name="Vm_Status_NoPresets" xml:space="preserve"><value>No presets available.</value></data>
+  <data name="Vm_Status_PresetCouldNotLoad" xml:space="preserve"><value>Preset could not be loaded.</value></data>
+  <data name="Vm_Status_BrowseOnlyLocal" xml:space="preserve"><value>Browse is available for local sources. For FTP, type a remote path (for example: /DCIM/Camera).</value></data>
+  <data name="Scan_CurrentFolder" xml:space="preserve"><value>Current Folder:</value></data>
+  <data name="Scan_FilesFoundInFolder" xml:space="preserve"><value>Files Found In Folder:</value></data>
+  <data name="Scan_FilesProcessedInFolder" xml:space="preserve"><value>Files Processed In Folder:</value></data>
+  <data name="Scan_ScannedFolders" xml:space="preserve"><value>Scanned Folders:</value></data>
+  <data name="Scan_TotalFolders" xml:space="preserve"><value>Total Folders:</value></data>
+  <data name="Scan_ScannedFiles" xml:space="preserve"><value>Scanned Files:</value></data>
+  <data name="Scan_TotalFiles" xml:space="preserve"><value>Total Files:</value></data>
+  <data name="Import_OverallProgress" xml:space="preserve"><value>Overall Progress:</value></data>
+  <data name="Import_GroupFiles" xml:space="preserve"><value>Group Files:</value></data>
+  <data name="Import_GroupTotal" xml:space="preserve"><value>Group Total:</value></data>
+  <data name="Import_OverallTotalFiles" xml:space="preserve"><value>Overall Total Files:</value></data>
+  <data name="Import_FailedInLastRun" xml:space="preserve"><value>Failed In Last Run:</value></data>
+  <data name="Import_QueuedJobs" xml:space="preserve"><value>Queued Jobs:</value></data>
+  <data name="About_Version" xml:space="preserve"><value>Version:</value></data>
+  <data name="Preview_Failed" xml:space="preserve"><value>Preview failed</value></data>
+</root>

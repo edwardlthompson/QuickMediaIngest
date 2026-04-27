@@ -17,3 +17,6 @@ Desktop.ini
 
 ## Ignore Publish outputs
 publish/
+
+## Local scratch / agent build output
+.tmp/

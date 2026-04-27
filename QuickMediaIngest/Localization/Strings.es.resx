@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Main_WindowTitle" xml:space="preserve"><value>Importación rápida de medios</value></data>
+  <data name="Sidebar_AppName" xml:space="preserve"><value>Importación rápida de medios</value></data>
+  <data name="Sidebar_Sources" xml:space="preserve"><value>Fuentes</value></data>
+  <data name="Sidebar_SettingsHeader" xml:space="preserve"><value>Configuración</value></data>
+  <data name="Btn_Preferences" xml:space="preserve"><value>Preferencias</value></data>
+  <data name="Btn_AddFtpSource" xml:space="preserve"><value>Agregar fuente FTP</value></data>
+  <data name="Btn_ImportHistory" xml:space="preserve"><value>Historial de importación</value></data>
+  <data name="Btn_AboutUpdates" xml:space="preserve"><value>Acerca de y actualizaciones</value></data>
+  <data name="Btn_Exit" xml:space="preserve"><value>Salir</value></data>
+  <data name="Btn_Exit_Tooltip" xml:space="preserve"><value>Guardar la configuración y cerrar la aplicación</value></data>
+  <data name="Sidebar_ScanExclusions" xml:space="preserve"><value>Exclusiones de escaneo</value></data>
+  <data name="Sidebar_ScanExclusionsTooltip" xml:space="preserve"><value>Unidades excluidas y carpetas ignoradas (lista negra)</value></data>
+  <data name="ScanExclusions_Title" xml:space="preserve"><value>Exclusiones de escaneo</value></data>
+  <data name="ScanExclusions_Subtitle" xml:space="preserve"><value>Administre unidades y carpetas ocultas en los escaneos. Si quita una carpeta omitida, volverá a estar disponible al actualizar las fuentes.</value></data>
+  <data name="ScanExclusions_DrivesHeading" xml:space="preserve"><value>Unidades excluidas</value></data>
+  <data name="ScanExclusions_DrivesHint" xml:space="preserve"><value>Las unidades fijas están desactivadas por defecto. Use Incluir para permitir una unidad en futuros escaneos.</value></data>
+  <data name="ScanExclusions_FoldersHeading" xml:space="preserve"><value>Carpetas ignoradas (lista negra)</value></data>
+  <data name="ScanExclusions_FoldersHint" xml:space="preserve"><value>Rutas omitidas en la lista de sesiones o la barra lateral. Quite una regla para volver a mostrar esa carpeta tras actualizar.</value></data>
+  <data name="ScanExclusions_IncludeDrive" xml:space="preserve"><value>Incluir</value></data>
+  <data name="ScanExclusions_RemoveFolder" xml:space="preserve"><value>Quitar regla</value></data>
+
+  <data name="Toolbar_Import" xml:space="preserve"><value>Importar</value></data>
+  <data name="Toolbar_ImportTooltip" xml:space="preserve"><value>Iniciar la importación de las fotos seleccionadas</value></data>
+  <data name="Toolbar_Queue" xml:space="preserve"><value>En cola</value></data>
+  <data name="Toolbar_QueueTooltip" xml:space="preserve"><value>Poner en cola los archivos seleccionados</value></data>
+  <data name="Toolbar_Preflight" xml:space="preserve"><value>Prevuelo</value></data>
+  <data name="Toolbar_PreflightTooltip" xml:space="preserve"><value>Ejecutar informe de prueba sin copiar</value></data>
+  <data name="Toolbar_RetryFailed" xml:space="preserve"><value>Reintentar fallidos</value></data>
+  <data name="Toolbar_RetryFailedTooltip" xml:space="preserve"><value>Reintentar archivos fallidos de la última importación</value></data>
+  <data name="Toolbar_ResumePending" xml:space="preserve"><value>Reanudar pendiente</value></data>
+  <data name="Toolbar_ResumePendingTooltip" xml:space="preserve"><value>Reanudar el plan de importación pendiente</value></data>
+  <data name="Toolbar_Refresh" xml:space="preserve"><value>Actualizar</value></data>
+  <data name="Toolbar_RefreshTooltip" xml:space="preserve"><value>Volver a escanear unidades y actualizar vista unificada</value></data>
+  <data name="Toolbar_SelectAll" xml:space="preserve"><value>Seleccionar todo</value></data>
+  <data name="Toolbar_SelectAllTooltip" xml:space="preserve"><value>Seleccionar o deseleccionar todas las sesiones</value></data>
+  <data name="Toolbar_DeleteAfterImport" xml:space="preserve"><value>Eliminar después de importar</value></data>
+  <data name="Toolbar_DeleteAfterImportTooltip" xml:space="preserve"><value>Eliminar originales tras la importación verificada</value></data>
+  <data name="Toolbar_GroupBy" xml:space="preserve"><value>Agrupar por:</value></data>
+  <data name="Toolbar_GroupByTooltip" xml:space="preserve"><value>Ajustar intervalo entre sesiones en horas</value></data>
+  <data name="Toolbar_ThumbTooltip" xml:space="preserve"><value>Ajustar tamaño de miniaturas</value></data>
+  <data name="Toolbar_Filter" xml:space="preserve"><value>Filtro:</value></data>
+  <data name="Toolbar_FilterTooltip" xml:space="preserve"><value>Ctrl+F enfoca este campo</value></data>
+  <data name="Toolbar_FilterHint" xml:space="preserve"><value>Buscar palabras clave</value></data>
+  <data name="Toolbar_RetryPreviews" xml:space="preserve"><value>Reintentar vistas previas</value></data>
+  <data name="Toolbar_RetryPreviewsTooltip" xml:space="preserve"><value>Recargar miniaturas que fallaron</value></data>
+  <data name="Toolbar_ResetPreviewCache" xml:space="preserve"><value>Restablecer caché de vista previa</value></data>
+  <data name="Toolbar_ResetPreviewCacheTooltip" xml:space="preserve"><value>Borrar caché de miniaturas y recargar</value></data>
+  <data name="Toolbar_RemoveFilterTooltip" xml:space="preserve"><value>Quitar filtro</value></data>
+
+  <data name="Shoot_HintName" xml:space="preserve"><value>Nombre de la sesión</value></data>
+  <data name="Shoot_HintKeywords" xml:space="preserve"><value>#palabrasclave, separadas por comas — por sesión</value></data>
+  <data name="Shoot_ToggleStackLayout" xml:space="preserve"><value>Alternar diseño de pila</value></data>
+  <data name="Shoot_ToggleStackTooltip" xml:space="preserve"><value>Expandir o contraer pilas RAW/JPEG solo para esta sesión</value></data>
+  <data name="Shoot_SelectShoot" xml:space="preserve"><value>Seleccionar sesión</value></data>
+  <data name="Shoot_SourceFolderLabel" xml:space="preserve"><value>Carpeta de origen:</value></data>
+  <data name="Shoot_StartLabel" xml:space="preserve"><value>Inicio:</value></data>
+  <data name="Shoot_EndLabel" xml:space="preserve"><value>Fin:</value></data>
+  <data name="Shoot_FilesLabel" xml:space="preserve"><value>Archivos:</value></data>
+  <data name="Shoot_IgnoreFolder" xml:space="preserve"><value>Ignorar carpeta…</value></data>
+  <data name="Shoot_IgnoreFolderTooltip" xml:space="preserve"><value>Añadir esta carpeta a la lista de omisión (ocultar en escaneos). Gestionar en Preferencias → Exclusiones de escaneo.</value></data>
+  <data name="Menu_SkipFolderFuture" xml:space="preserve"><value>Omitir esta carpeta en futuros escaneos</value></data>
+
+  <data name="Details_GroupDetails" xml:space="preserve"><value>Detalles del grupo</value></data>
+
+  <data name="Settings_MainTitle" xml:space="preserve"><value>Configuración</value></data>
+  <data name="Settings_SaveDestination" xml:space="preserve"><value>Destino de guardado</value></data>
+  <data name="Settings_Browse" xml:space="preserve"><value>Examinar</value></data>
+  <data name="Settings_FileNamingScheme" xml:space="preserve"><value>Esquema de nombres de archivo</value></data>
+  <data name="Settings_DisplayLanguage" xml:space="preserve"><value>Idioma de la interfaz</value></data>
+  <data name="Settings_LanguageRestartHint" xml:space="preserve"><value>Reinicia la aplicación para aplicar el idioma de la interfaz.</value></data>
+  <data name="Settings_EmbedKeywords" xml:space="preserve"><value>Escribir palabras clave en los metadatos al importar</value></data>
+  <data name="Settings_ConfirmImport" xml:space="preserve"><value>Confirmar antes de iniciar la importación</value></data>
+  <data name="Settings_AdvancedHeader" xml:space="preserve"><value>Importación y vistas previas avanzadas</value></data>
+  <data name="Settings_SaveClose" xml:space="preserve"><value>Guardar y cerrar</value></data>
+
+  <data name="Lang_UseSystem" xml:space="preserve"><value>Usar idioma de Windows</value></data>
+  <data name="Lang_English" xml:space="preserve"><value>Inglés</value></data>
+  <data name="Lang_French" xml:space="preserve"><value>Francés</value></data>
+  <data name="Lang_Spanish" xml:space="preserve"><value>Español</value></data>
+
+  <data name="Success_Banner" xml:space="preserve"><value>¡Importación exitosa! Los archivos se agregaron a la carpeta de destino.</value></data>
+
+  <data name="Vm_PreviewHealth" xml:space="preserve"><value>Estado de vistas previas — cargadas {0}, fallidas {1}, pendientes {2}</value></data>
+  <data name="Vm_Readiness_Line" xml:space="preserve"><value>{0} archivo(s) seleccionado(s) · Destino: {1} · Duplicados: {2} · Verificación: {3} · Eliminar después de importar: {4} · Palabras clave: {5}</value></data>
+  <data name="Vm_Readiness_KwOff" xml:space="preserve"><value>Desactivado</value></data>
+  <data name="Vm_Readiness_KwOn" xml:space="preserve"><value>Activado ({0} sesión(es) con palabras clave)</value></data>
+  <data name="Vm_Yes" xml:space="preserve"><value>Sí</value></data>
+  <data name="Vm_No" xml:space="preserve"><value>No</value></data>
+
+  <data name="Vm_ConfirmImportTitle" xml:space="preserve"><value>Confirmar importación</value></data>
+  <data name="Vm_ConfirmImport_Line1" xml:space="preserve"><value>¿Importar {0} archivo(s) (~{1} MB)?</value></data>
+  <data name="Vm_ConfirmImport_Destination" xml:space="preserve"><value>Destino:</value></data>
+  <data name="Vm_ConfirmImport_DupPolicy" xml:space="preserve"><value>Política de duplicados:</value></data>
+  <data name="Vm_ConfirmImport_Verify" xml:space="preserve"><value>Verificación:</value></data>
+  <data name="Vm_ConfirmImport_DeleteAfter" xml:space="preserve"><value>Eliminar originales después de importar:</value></data>
+  <data name="Vm_ConfirmImport_KeywordsHeader" xml:space="preserve"><value>Palabras clave por sesión:</value></data>
+  <data name="Vm_ConfirmImport_NoKeywords" xml:space="preserve"><value>(ninguna — habilita la escritura y agrega palabras clave junto al nombre de la sesión)</value></data>
+  <data name="Vm_Confirm_ShootKeywords" xml:space="preserve"><value>{0}: {1}</value></data>
+
+  <data name="Vm_StatusNothingToImport" xml:space="preserve"><value>No hay nada para importar.</value></data>
+  <data name="Vm_StatusNoFilesSelected" xml:space="preserve"><value>No hay archivos seleccionados para importar.</value></data>
+  <data name="Vm_StatusImportCanceled" xml:space="preserve"><value>Importación cancelada.</value></data>
+
+  <data name="Ftp_AddSourceTitle" xml:space="preserve"><value>Agregar fuente FTP</value></data>
+  <data name="Ftp_Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Ftp_Port" xml:space="preserve"><value>Puerto</value></data>
+  <data name="Ftp_User" xml:space="preserve"><value>Usuario</value></data>
+  <data name="Ftp_Password" xml:space="preserve"><value>Contraseña</value></data>
+  <data name="Ftp_RemoteFolder" xml:space="preserve"><value>Carpeta remota</value></data>
+  <data name="Btn_Test" xml:space="preserve"><value>Probar</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Btn_Close" xml:space="preserve"><value>Cerrar</value></data>
+
+  <data name="Import_InProgressTitle" xml:space="preserve"><value>Importación en progreso...</value></data>
+  <data name="Import_CurrentGroup" xml:space="preserve"><value>Grupo actual:</value></data>
+  <data name="Import_FilesProcessed" xml:space="preserve"><value>Archivos procesados:</value></data>
+  <data name="Import_Succeeded" xml:space="preserve"><value>Correctos:</value></data>
+  <data name="Import_Failed" xml:space="preserve"><value>Fallidos:</value></data>
+  <data name="Import_Elapsed" xml:space="preserve"><value>Transcurrido:</value></data>
+  <data name="Import_EtaSpeed" xml:space="preserve"><value>ETA / Velocidad:</value></data>
+  <data name="Import_CurrentGroupProgress" xml:space="preserve"><value>Progreso del grupo actual</value></data>
+
+  <data name="About_Title" xml:space="preserve"><value>Acerca de Quick Media Ingest</value></data>
+  <data name="About_Description" xml:space="preserve"><value>Una utilidad pequeña para importar fotos y videos rápidamente desde teléfonos y cámaras.</value></data>
+  <data name="About_UpdateChecking" xml:space="preserve"><value>Comprobación de actualizaciones</value></data>
+  <data name="About_Package" xml:space="preserve"><value>Paquete:</value></data>
+  <data name="About_Interval" xml:space="preserve"><value>Intervalo:</value></data>
+  <data name="About_CheckUpdatesNow" xml:space="preserve"><value>Buscar actualizaciones ahora</value></data>
+  <data name="About_DownloadUpdate" xml:space="preserve"><value>Descargar actualización</value></data>
+  <data name="About_Speed" xml:space="preserve"><value>Velocidad:</value></data>
+  <data name="About_Eta" xml:space="preserve"><value>ETA:</value></data>
+  <data name="About_Diagnostics" xml:space="preserve"><value>Diagnóstico</value></data>
+  <data name="About_OpenLogsFolder" xml:space="preserve"><value>Abrir carpeta de registros</value></data>
+  <data name="About_ReportBug" xml:space="preserve"><value>Reportar un error</value></data>
+  <data name="About_Changelog" xml:space="preserve"><value>Registro de cambios</value></data>
+  <data name="About_Releases" xml:space="preserve"><value>Lanzamientos</value></data>
+  <data name="About_BuildDate" xml:space="preserve"><value>Fecha de compilación:</value></data>
+
+  <data name="Settings_Preset" xml:space="preserve"><value>Preajuste</value></data>
+  <data name="Settings_Date" xml:space="preserve"><value>Fecha</value></data>
+  <data name="Settings_Time" xml:space="preserve"><value>Hora</value></data>
+  <data name="Settings_Sequence" xml:space="preserve"><value>Secuencia</value></data>
+  <data name="Settings_ShootName" xml:space="preserve"><value>Nombre de sesión</value></data>
+  <data name="Settings_OriginalName" xml:space="preserve"><value>Nombre original</value></data>
+  <data name="Settings_DateFormat" xml:space="preserve"><value>Formato de fecha</value></data>
+  <data name="Settings_TimeFormat" xml:space="preserve"><value>Formato de hora</value></data>
+  <data name="Settings_Separator" xml:space="preserve"><value>Separador</value></data>
+  <data name="Settings_ShootNameSample" xml:space="preserve"><value>Ejemplo de nombre de sesión</value></data>
+  <data name="Settings_ForceLowercase" xml:space="preserve"><value>Forzar salida en minúsculas</value></data>
+  <data name="Settings_PreviewExamples" xml:space="preserve"><value>Vista previa (ejemplos)</value></data>
+  <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Rendimiento de miniaturas</value></data>
+  <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Agrupar RAW y renderizados en una sola pila de vista previa</value></data>
+  <data name="Settings_ExpandStacked" xml:space="preserve"><value>Expandir pilas RAW/renderizado lado a lado</value></data>
+  <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Gestión de duplicados</value></data>
+  <data name="Settings_VerificationMode" xml:space="preserve"><value>Modo de verificación</value></data>
+  <data name="Settings_SavePreset" xml:space="preserve"><value>Guardar preajuste</value></data>
+  <data name="Settings_LoadLatestPreset" xml:space="preserve"><value>Cargar último preajuste</value></data>
+
+  <data name="Vm_Ftp_DefaultDialogStatus" xml:space="preserve"><value>Ingresa los datos FTP de tu teléfono y luego prueba o explora carpetas.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeTest" xml:space="preserve"><value>Ingresa un host FTP antes de probar.</value></data>
+  <data name="Vm_Ftp_PortRange" xml:space="preserve"><value>El puerto FTP debe estar entre 1 y 65535.</value></data>
+  <data name="Vm_Ftp_EnterHostBeforeBrowse" xml:space="preserve"><value>Ingresa un host FTP antes de explorar carpetas.</value></data>
+  <data name="Vm_Ftp_ChooseBrowsedFolder" xml:space="preserve"><value>Primero elige una carpeta FTP explorada.</value></data>
+  <data name="Vm_Status_SkippedFolderCopied" xml:space="preserve"><value>Informe de carpetas omitidas copiado al portapapeles.</value></data>
+  <data name="Vm_SkippedScan_TitleExcludedOnly" xml:space="preserve"><value>Carpetas excluidas ({0})</value></data>
+  <data name="Vm_SkippedScan_TitleFtpOnly" xml:space="preserve"><value>Problemas de listado FTP ({0})</value></data>
+  <data name="Vm_SkippedScan_TitleCombined" xml:space="preserve"><value>Resumen del escaneo • {0}</value></data>
+  <data name="Vm_SkippedScan_SectionExcluded" xml:space="preserve"><value>Carpetas omitidas porque coinciden con sus exclusiones de escaneo (esperado):
+
+{0}</value></data>
+  <data name="Vm_SkippedScan_SectionFtp" xml:space="preserve"><value>FTP no pudo listar estas carpetas (conexión o servidor):
+
+{0}</value></data>
+  <data name="Vm_SkippedScan_FtpTip" xml:space="preserve"><value>Vuelva a intentar cuando la conexión sea estable. Use exclusiones solo si desea ocultar una carpeta de los resultados.</value></data>
+  <data name="Vm_Status_ScanExcludedFoldersOnlySummary" xml:space="preserve"><value>{0} ruta(s) omitidas según sus exclusiones—resultados actualizados.</value></data>
+  <data name="Vm_Status_ScanSummaryExcludedOnly" xml:space="preserve"><value>Escaneo terminado: {0} ruta(s) omitidas por exclusiones.</value></data>
+  <data name="Vm_Status_ScanSummaryWithFtpIssues" xml:space="preserve"><value>Escaneo terminado: {0} ruta(s) excluidas; {1} problema(s) de listado FTP—ver resumen.</value></data>
+  <data name="SkippedFolders_DontRemindExcluded" xml:space="preserve"><value>No volver a mostrar este resumen cuando solo se omitan carpetas por mis exclusiones</value></data>
+  <data name="Vm_Status_NothingToRetry" xml:space="preserve"><value>No hay nada para reintentar.</value></data>
+  <data name="Vm_Status_NoFailedPreviews" xml:space="preserve"><value>No hay vistas previas fallidas para reintentar.</value></data>
+  <data name="Vm_Status_PreviewRetryFinished" xml:space="preserve"><value>Reintento de vistas previas finalizado.</value></data>
+  <data name="Vm_Status_LoadSourceBeforeClearPreviewCache" xml:space="preserve"><value>Carga una fuente antes de limpiar la caché de vista previa.</value></data>
+  <data name="Vm_Status_ThumbnailCacheClearedReloading" xml:space="preserve"><value>Caché de miniaturas borrada. Recargando vistas previas...</value></data>
+  <data name="Vm_Status_NoSourcesForUnified" xml:space="preserve"><value>No hay fuentes SD o FTP disponibles para la vista unificada.</value></data>
+  <data name="Vm_Status_UnifiedNoMedia" xml:space="preserve"><value>La vista unificada no contiene archivos multimedia.</value></data>
+  <data name="Vm_Status_ScanSourceFirst" xml:space="preserve"><value>Primero escanea una fuente y luego genera vistas previas.</value></data>
+  <data name="Vm_Status_SelectAtLeastOneGroup" xml:space="preserve"><value>Selecciona al menos un grupo de carpetas.</value></data>
+  <data name="Vm_Status_BuildingPreviews" xml:space="preserve"><value>Generando vistas previas para las carpetas seleccionadas...</value></data>
+  <data name="Vm_Status_StartingImport" xml:space="preserve"><value>Iniciando importación...</value></data>
+  <data name="Vm_Status_NoFailedFilesToRetry" xml:space="preserve"><value>No hay archivos fallidos para reintentar.</value></data>
+  <data name="Vm_Status_NoPendingPlan" xml:space="preserve"><value>No se encontró un plan de importación pendiente.</value></data>
+  <data name="Vm_Status_EmptyPendingPlan" xml:space="preserve"><value>El plan de importación pendiente está vacío.</value></data>
+  <data name="Vm_Status_SelectFilesBeforeQueue" xml:space="preserve"><value>Selecciona archivos antes de poner una importación en cola.</value></data>
+  <data name="Vm_Status_NoPresets" xml:space="preserve"><value>No hay preajustes disponibles.</value></data>
+  <data name="Vm_Status_PresetCouldNotLoad" xml:space="preserve"><value>No se pudo cargar el preajuste.</value></data>
+  <data name="Vm_Status_BrowseOnlyLocal" xml:space="preserve"><value>Examinar está disponible para fuentes locales. Para FTP, escribe una ruta remota (por ejemplo: /DCIM/Camera).</value></data>
+  <data name="Scan_CurrentFolder" xml:space="preserve"><value>Carpeta actual:</value></data>
+  <data name="Scan_FilesFoundInFolder" xml:space="preserve"><value>Archivos encontrados en la carpeta:</value></data>
+  <data name="Scan_FilesProcessedInFolder" xml:space="preserve"><value>Archivos procesados en la carpeta:</value></data>
+  <data name="Scan_ScannedFolders" xml:space="preserve"><value>Carpetas escaneadas:</value></data>
+  <data name="Scan_TotalFolders" xml:space="preserve"><value>Total de carpetas:</value></data>
+  <data name="Scan_ScannedFiles" xml:space="preserve"><value>Archivos escaneados:</value></data>
+  <data name="Scan_TotalFiles" xml:space="preserve"><value>Total de archivos:</value></data>
+  <data name="Import_OverallProgress" xml:space="preserve"><value>Progreso general:</value></data>
+  <data name="Import_GroupFiles" xml:space="preserve"><value>Archivos del grupo:</value></data>
+  <data name="Import_GroupTotal" xml:space="preserve"><value>Total del grupo:</value></data>
+  <data name="Import_OverallTotalFiles" xml:space="preserve"><value>Total general de archivos:</value></data>
+  <data name="Import_FailedInLastRun" xml:space="preserve"><value>Fallidos en la última ejecución:</value></data>
+  <data name="Import_QueuedJobs" xml:space="preserve"><value>Tareas en cola:</value></data>
+  <data name="About_Version" xml:space="preserve"><value>Versión:</value></data>
+  <data name="Preview_Failed" xml:space="preserve"><value>Vista previa fallida</value></data>
+</root>

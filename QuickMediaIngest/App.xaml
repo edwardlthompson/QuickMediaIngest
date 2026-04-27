@@ -111,6 +111,373 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <!-- Shared application theming styles -->
+            <Style x:Key="AppTextPrimaryStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource Theme.TextPrimary.Brush}"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+            <Style x:Key="SidebarHeaderTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource SidebarTitle}"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+            <Style x:Key="SidebarIconStyle" TargetType="materialDesign:PackIcon">
+                <Setter Property="Foreground" Value="{DynamicResource SidebarMenuItem}"/>
+                <Setter Property="Width" Value="16"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <!-- Icon-only rail: avoid MaterialDesignFlatButton (inherits dark-theme fills under mixed themes) -->
+            <Style x:Key="SidebarChromeIconButtonStyle" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="6"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Foreground" Value="{DynamicResource SidebarMenuItem}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ChromeIconBd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                    CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ChromeIconBd" Property="Background" Value="{DynamicResource Theme.Hover.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ChromeIconBd" Property="Opacity" Value="0.88"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ChromeIconBd" Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="SidebarActionButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Padding" Value="8,2"/>
+            </Style>
+            <Style x:Key="SidebarRowContainerStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="Margin" Value="8,2,0,2"/>
+                <Setter Property="MinHeight" Value="34"/>
+            </Style>
+            <Style x:Key="SidebarRowButtonStyle" TargetType="Button">
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource SidebarTitle}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="SidebarButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="SidebarButtonBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="SidebarButtonBorder" Property="Background" Value="{DynamicResource Theme.Hover.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="SidebarButtonBorder" Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="SidebarRowToggleStyle" TargetType="ToggleButton">
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource SidebarTitle}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="SidebarToggleBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="SidebarToggleBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="SidebarToggleBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="SidebarToggleBorder" Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ViewSectionCheckBoxStyle" TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <!-- No MaterialDesignFlatButton base: prevents dark-primary fills when BaseTheme is Light -->
+            <Style x:Key="TopBarActionButtonStyle" TargetType="Button">
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Theme.Hover.Brush}"/>
+                                    <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- Dialog / overlay outlined actions: tie to Theme.* after brush sync (avoids MD primary bleed on light chrome) -->
+            <Style x:Key="PrefsOutlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                <Setter Property="Foreground" Value="{DynamicResource Theme.TextPrimary.Brush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="10,5" />
+            </Style>
+            <Style x:Key="TopBarSectionCardStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Margin" Value="0,0,8,4"/>
+            </Style>
+            <Style x:Key="TopBarSectionCardLastStyle" TargetType="Border" BasedOn="{StaticResource TopBarSectionCardStyle}">
+                <Setter Property="Margin" Value="0,0,0,4"/>
+            </Style>
+            <Style x:Key="TopBarControlsWrapStyle" TargetType="WrapPanel">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="TopBarControlContainerStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="MinHeight" Value="34"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0,0,6,6"/>
+            </Style>
+            <Style x:Key="TopBarControlContainerLastStyle" TargetType="Border" BasedOn="{StaticResource TopBarControlContainerStyle}">
+                <Setter Property="Margin" Value="0,0,0,6"/>
+            </Style>
+            <Style x:Key="TopBarActionToggleStyle" TargetType="ToggleButton">
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="MinWidth" Value="28"/>
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="ToggleBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                    <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="{DynamicResource Theme.Accent.Brush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ToggleBorder" Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="TopBarDangerToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource TopBarActionToggleStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource Theme.Error.Brush}"/>
+                <Setter Property="MinWidth" Value="130"/>
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="TopBarFieldTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+            </Style>
+            <Style x:Key="TopBarFieldComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+            </Style>
+            <Style x:Key="AppHeadingLargeTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="22"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </Style>
+            <Style x:Key="AppHeadingTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+            <Style x:Key="AppBodyTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+            <Style x:Key="AppMutedTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource Theme.TextSecondary.Brush}"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+            <Style x:Key="AppDialogTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource AppHeadingTextStyle}">
+                <Setter Property="FontSize" Value="18"/>
+            </Style>
+            <Style x:Key="AppSubheadingTextStyle" TargetType="TextBlock" BasedOn="{StaticResource AppHeadingTextStyle}">
+                <Setter Property="FontSize" Value="13"/>
+            </Style>
+            <Style x:Key="AppCaptionTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="11"/>
+            </Style>
+            <Style x:Key="AppMicroTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="10"/>
+            </Style>
+            <Style x:Key="SidebarTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SidebarHeaderTextStyle}">
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </Style>
+            <Style x:Key="SidebarSectionTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SidebarHeaderTextStyle}">
+                <Setter Property="FontSize" Value="15"/>
+            </Style>
+            <Style x:Key="AppButtonControlStyle" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+            <Style x:Key="AppCheckBoxControlStyle" TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+            <Style x:Key="AppComboBoxControlStyle" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+            </Style>
+            <Style x:Key="AppTextBoxControlStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Background" Value="{DynamicResource Theme.Surface.Brush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border.Brush}"/>
+            </Style>
+
+            <!-- Default buttons: full chrome (Material implicit alone leaves dark fills on light BaseTheme) -->
+            <Style TargetType="Button" BasedOn="{StaticResource TopBarActionButtonStyle}" />
+            <Style TargetType="CheckBox" BasedOn="{StaticResource AppCheckBoxControlStyle}" />
+            <Style TargetType="ComboBox" BasedOn="{StaticResource AppComboBoxControlStyle}" />
+            <Style TargetType="TextBox" BasedOn="{StaticResource AppTextBoxControlStyle}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
