@@ -2,112 +2,114 @@
   <img src="QuickMediaIngest/Assets/AppIcon.png" alt="Quick Media Ingest icon" width="160" height="160">
 </p>
 
-<h1 align="center">⚡ Quick Media Ingest</h1>
+<h1 align="center">Quick Media Ingest</h1>
 
-**Quick Media Ingest** is a lightning-fast, open-source media importer built for photographers and videographers. It is designed to rapidly ingest photos and videos from SD cards, local drives, and **Android FTP Servers** into structured, customized folder hierarchies.
+**Quick Media Ingest** is a fast, open-source media importer for photographers and videographers. Ingest photos and videos from **SD cards**, **local drives**, and **FTP** (including common **phone / camera Wi‑Fi** shares) into **dated, shoot-based** destination folders with **configurable file naming**, **metadata options**, and **safety checks**.
 
-Inspired by the workflow efficiency of classic Windows Essentials Photo Gallery, but modernized with **Android Material Design**, **Dark Mode support**, and advanced **Whitelisting/Blacklisting** controls.
-
----
-
-
-## 🚀 Key Features
-
-* **⚡ High-Speed Ingestion**: Multi-threaded asynchronous copying with hash/size verification and safe collision suffixing.
-* **📂 Unified Scanner (Local + FTP)**: Select SD/local/FTP directly, or use `Unified (SD + FTP)` to merge all active sources into one timeline.
-* **🔄 One-Click Source Refresh**: Top-bar `Refresh` performs a full rescan and can force thumbnail cache rebuild when refreshing sources.
-* **🧭 Verbose Scan Progress Overlay**: Real-time folder/file progress with current folder, per-folder counts, total counts, and scan phase details.
-* **🖼️ Auto Preview Loading (Photos + Videos)**: Local, FTP, and Unified previews load automatically during scan without a separate manual preview pass.
-* **📷 RAW-Friendly Preview Strategy**: RAW files prefer companion rendered previews (`.jpg/.jpeg/.heic/.heif`) when available for visual parity; shell fallback remains for codec-backed formats.
-* **🗂️ Preview Stacks + Compare Mode**: RAW+rendered pairs can stay stacked by default, or be expanded side-by-side for quick visual comparison.
-* **🎚️ Adjustable Preview Throughput**: Thumbnail Performance modes `Low`, `Balanced`, `Max`, and `Ultra` tune local and FTP thumbnail worker counts.
-* **🧹 Dynamic Shoot Grouping**: Grouping by adjustable time gap (hours) with fast regrouping from cached scan data.
-* **📝 Shoot-Level Editing**: Rename shoot titles inline and use shoot name tokens in filename templates.
-* **🧠 Advanced Filename Templates**: Date/time (including milliseconds), sequence token support, separator controls, lowercase option, live preview examples, and stronger millisecond fallback when source metadata is second-only.
-* **🔐 Delete-After-Import Safety**: Warning prompt appears once, remembers acknowledgement/cancel, and persists state.
-* **🧪 Preflight + Reports**: Run import preflight checks and export import result artifacts (`json` + `txt`) for auditing.
-* **📋 Queue, Retry, and Resume**: Queue import jobs, retry failed files, and resume pending import plans after interruption.
-* **🧷 Duplicate + Verification Policies**: Choose duplicate handling (`Suffix`, `Skip`, `OverwriteIfNewer`) and verification mode (`Fast` size-check or `Strict` hash verification).
-* **🎛️ Presets + Live Filters**: Save/load workflow presets and filter preview surfaces by keyword/type while reviewing.
-* **💾 Persistent App State**: Remembers theme, settings menu expansion, window size/position/state, thumbnail zoom, naming options, and FTP reconnect preferences.
-* **🧾 Build Metadata in About**: About dialog surfaces app version and build date from the deployed executable.
-* **📝 In-App Changelog + Release Links**: About dialog includes one-click access to GitHub changelog and release pages.
-* **🌐 FTP Reconnect on Startup**: Attempts non-blocking reconnect to the last FTP source and reports unobtrusively if unavailable.
-* **⬆️ Flexible Updates**: In-app updater supports both **Portable (.exe)** and **Installer (.msi)** channels with selectable check intervals, explicit selected-asset status, and restart-safe external handoff to avoid in-use install failures.
-
-## 🛠️ Usage
-
-1. **Connect Sources**: Insert SD/local media and/or add an FTP source.
-2. **Pick View**: Select a single source or `Unified (SD + FTP)` for a merged import surface.
-3. **Scan + Preview**: Watch detailed scan progress while shoots and previews populate automatically.
-4. **Review Shoots**: Rename shoots, review source folders/date ranges, and select shoots/items.
-5. **Preflight/Queue (Optional)**: Run `Preflight`, queue a batch with `Queue`, or resume pending jobs.
-6. **Import**: Use `Import` and monitor verbose overall + per-group progress, ETA, speed, and failed-item list.
-7. **Retry/Report**: Retry failed files quickly and review generated import reports in destination `_ImportReports`.
-8. **Refresh When Needed**: Use top-bar `Refresh` to force full source/preview refresh and cache rebuild.
+The app takes inspiration from classic import tools, with a **Material Design**-influenced **dark / light** theme, a **unified** view that can merge **removable + FTP** sources, and **exclusion / blacklist** rules so you control what never appears in the list.
 
 ---
 
-## ⚙️ Settings Surface
+## Key features
 
-The sidebar `Settings` expander includes:
+### Sources and scanning
 
-* **Preferences**
+* **Single source or Unified (SD + FTP)**: Pick one drive, one FTP source, or **Unified** to merge all active local and FTP sources into one review surface.
+* **Rescan and refresh**: Sidebar and top bar actions refresh drives and rebuild the unified list; configurable **scan subfolders**.
+* **FTP sources**: Add servers from the sidebar, optional reconnect on startup, browse/test connection, preset folder paths.
+* **Drive inclusion**: Choose which fixed/removable volumes participate in quick scans (drive picker overlay).
+* **Verbose scan progress**: Overlay with folder/file counts, current path, FTP prescan phase, and overall progress—dismissed as soon as the merged list is ready so long preview loads do not block the UI (**v1.2.0**).
+
+### Exclusions and filtering
+
+* **Scan exclusions**: Dedicated sidebar entry opens a panel to **exclude whole drives** from scans and maintain a **per-source folder blacklist** (paths under a source hidden from results until you remove the rule).
+* **Shoot-level “ignore folder”**: From a shoot, add a folder to the blacklist without opening Preferences first.
+* **Shoot grouping**: Adjustable **hours-between-shoots** slider on the toolbar; cached rescans reuse stored file lists where possible.
+
+### Previews
+
+* **Auto thumbnails**: Local, FTP, and Unified loads generate previews for images and videos during/after scan (performance modes from **Low** through **Ultra** tune worker counts).
+* **RAW-aware**: Prefer sidecar JPEG/HEIF next to RAW when present; shell-provided thumbnails where codecs allow.
+* **Stacks vs expand**: Optionally **stack RAW + rendered** in one preview row or **expand side-by-side** for comparison.
+
+### Import pipeline
+
+* **Selections**: Select shoots or individual files; naming template with **date, time (incl. milliseconds when available), sequence, shoot name, original name**, separators, presets, live examples.
+* **Safety**: Optional **confirmation before import**; **duplicate policies** (`Suffix`, `Skip`, `OverwriteIfNewer`); **verification** (`Fast` size vs `Strict` hash).
+* **Delete after import**: Toggle with first-run warning; persisted acknowledgement.
+* **Embed keywords**: Optional writing of keywords into metadata on copy (when enabled).
+* **Reports**: `_ImportReports` artifacts (JSON/text) under the destination; notification feed and status lines for last run summary.
+* **Advanced workflow**: **Preflight**, **Queue**, **Retry failed**, **Resume pending plan** after interruption.
+
+### Updates and diagnostics
+
+* **About & Updates**: Version, **build date**, check for updates (portable `.exe` or installer `.msi` channels), selective download with progress; **changelog** / **releases** links; logs folder and diagnostics shortcuts.
+* **Updater handoff**: External updater can wait for the app to exit before replacing files (reduces “file in use” install failures).
+
+### Look and feel (**v1.2.0** polish)
+
+* **Localization**: UI strings via `.resx` with **English**, **Spanish**, and **French**; language choice in **Preferences** (restart may be needed for some chrome).
+* **Consistent modal chrome**: FTP, drive picker, scan/import progress, About, skipped-folder summary, **Preferences**, and **Scan exclusions** share the same **blurred dimmed backdrop**; **Escape** closes the topmost overlay in a fixed order.
+* **Scan summaries**: After a scan, paths skipped **only because of your exclusion rules** are explained separately from **FTP listing errors**; optional **don’t remind again** for exclusion-only summaries (saved in config).
+* **Sidebar**: Collapsible rail; **theme** toggle under the collapse control when expanded, **icon-only** theme when collapsed.
+
+---
+
+## Usage (quick path)
+
+1. Add **sources** (drives appear from Windows; add **FTP** if needed).
+2. Choose **one source** or **Unified (SD + FTP)**.
+3. **Scan** (toolbar / context as needed)—review **shoots**, rename titles, set **keywords** per shoot if you use that workflow.
+4. Optionally **Preflight** or **Queue** batches.
+5. **Import**—watch overall and per-group progress, ETA, speed, failures.
+6. Use **Refresh** when you swap cards or want a forced rescan.
+
+---
+
+## Settings (sidebar)
+
+The **Settings** expander includes:
+
+* **Preferences** — destination, naming, language, thumbnail performance, stacks, duplicate/verification, keyword embedding, confirm-before-import, advanced options, presets.
+* **Scan exclusions** — excluded drives and ignored folder rules (blacklist).
 * **Add FTP Source**
 * **Import History**
 * **About & Updates**
 
-Preferences currently include destination path, naming template controls, thumbnail performance mode, stack expansion mode, duplicate policy, verification mode, and preset save/load controls.
+**Theme** (dark/light) lives **under the sidebar collapse control** in the header (not inside this list).
 
 ---
 
-## 🛠️ Build & Development
+## Build and development
 
-Built using **.NET 8 (C#)** and **WPF**.
+* **.NET 8**, **WPF**, **C#**, **Windows** desktop.
 
-To build a **Single-File Portable Executable** locally:
+Single-file portable test build:
 
 ```bash
 build_local_test.bat
 ```
 
-This creates a local test build at:
-`publish/local-test/QuickMediaIngest.exe`
+Output: `publish/local-test/QuickMediaIngest.exe`
 
-### ✅ Automatic Local Test Build
+`build_and_push.bat` / `create_release_tag.bat` can drive versioning and release tagging; CI may build portable EXE + MSI and publish GitHub releases (see repo workflows).
 
-The local test app is now built automatically when running:
+### Version
 
-* `build_and_push.bat`
-* `create_release_tag.bat`
-
-### 🔢 Automatic Versioning
-
-`build_and_push.bat` now auto-selects a Semantic Version bump using release heuristics:
-
-* **Major**: explicit breaking-change markers (e.g., `BREAKING CHANGE`, `feat!:`).
-* **Minor**: feature-level changes (e.g., `feat:` commits or newly added app-surface files).
-* **Patch**: fixes, maintenance, or docs/tooling changes.
-
-If needed, you can override the automatic choice by setting `VERSION_BUMP=patch`, `VERSION_BUMP=minor`, or `VERSION_BUMP=major` before running the script.
-
-### 🤖 CI/CD (GitHub Actions)
-
-Pushes to `main` now automatically:
-
-* Build portable EXE + MSI.
-* Check the version in the project file.
-* Create and push tag `v<Version>` if it does not already exist.
-* Publish a GitHub Release with build artifacts.
-
-This prevents the "version bumped but no GitHub Release appeared" issue.
+The shipping version is set in **`QuickMediaIngest/QuickMediaIngest.csproj`** (`<Version>`) and shown in the app **About** dialog.
 
 ---
 
-## 🤝 Contributing
+## Theme QA
 
-Contributions are welcome! Please feel free to open Issues or submit Pull Requests for visual/feature enhancements.
+Before large UI changes, see **`docs/THEME_QA_CHECKLIST.md`** (if present).
 
-## 📄 License
+---
 
-This project is free and open source. A formal license file is not currently included.
+## Contributing
+
+Issues and pull requests are welcome for workflow, UI, and reliability improvements.
+
+## License
+
+This project is free and open source. A formal license file may be added later.

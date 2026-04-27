@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Media;
@@ -19,11 +21,42 @@ using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
+using QuickMediaIngest.Localization;
 
 
 namespace QuickMediaIngest.ViewModels
 {
-    
+    /// <summary>
+    /// One entry in the display language list (code = BCP 47, empty = use Windows language).
+    /// </summary>
+    public sealed class LanguageOption
+    {
+        public LanguageOption(string code, string label)
+        {
+            Code = code;
+            Label = label;
+        }
+
+        public string Code { get; }
+        public string Label { get; }
+    }
+
+    /// <summary>One line in the sidebar notification feed.</summary>
+    public sealed class NotificationFeedLine
+    {
+        public required string DisplayText { get; init; }
+        public bool UseSuccessAccent { get; init; }
+    }
+
+    /// <summary>
+    /// Active filter chip shown in the main toolbar.
+    /// </summary>
+    public sealed class FilterChipViewModel
+    {
+        public string Id { get; init; } = string.Empty;
+        public string Label { get; init; } = string.Empty;
+    }
+
     public class SidebarOption
     {
         public string Label { get; set; } = string.Empty;
@@ -50,6 +83,12 @@ namespace QuickMediaIngest.ViewModels
 
     public partial class MainViewModel : ObservableObject
     {
+        private const string FilterTypeAllMedia = "All Media";
+        private const string FilterTypeImages = "Images";
+        private const string FilterTypeVideos = "Videos";
+        private const string FilterTypeRaw = "RAW";
+        private const string FilterTypeJpeg = "JPG/JPEG";
+
         [RelayCommand]
         private void OpenImportHistory()
         {
@@ -66,18 +105,36 @@ namespace QuickMediaIngest.ViewModels
             catch { }
         }
         [ObservableProperty] private bool showSettingsDialog = false;
+        [ObservableProperty] private bool showScanExclusionsPanel = false;
 
-        [RelayCommand] private void ToggleSettings() => ShowSettingsDialog = true;
+        [RelayCommand] private void ToggleSettings()
+        {
+            ShowScanExclusionsPanel = false;
+            ShowSettingsDialog = true;
+        }
+
+        [RelayCommand] private void OpenScanExclusions()
+        {
+            ShowSettingsDialog = false;
+            ShowScanExclusionsPanel = true;
+        }
+
+        [RelayCommand] private void CloseScanExclusions() => ShowScanExclusionsPanel = false;
 
         public IEnumerable<ImportHistoryRecord> RecentImportHistory => ImportHistoryRecords.Take(7);
 
         // --- Sidebar and import progress fields ---
         private bool _isUpdatingSelectAll = false;
+        private bool _isBulkUpdatingGroupExpansion = false;
         private bool _selectAll = true;
         private long _processedBytesForImport = 0;
         private DateTime _importStartedAtUtc = DateTime.MinValue;
         private readonly Queue<QueuedImportJob> _importQueue = new();
         private readonly object _importQueueLock = new();
+        private readonly HashSet<string> _selectedDriveDeviceIds = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, List<string>> _skippedFoldersBySource = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _driveDeviceIdByPath = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _drivePathByDeviceId = new(StringComparer.OrdinalIgnoreCase);
         // Sidebar sections for expandable menu
         public ObservableCollection<SidebarSection> SidebarSections { get; } = new();
 
@@ -267,21 +324,39 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private string scanPath = string.Empty;
         [ObservableProperty] private bool scanIncludeSubfolders = true;
         [ObservableProperty] private bool isImporting = false;
-        [ObservableProperty] private bool showSuccessNotification = false;
         [ObservableProperty] private int queuedImportCount = 0;
         [ObservableProperty] private int timeBetweenShootsHours = 4;
         [ObservableProperty] private bool expandPreviewStacks = false;
+        [ObservableProperty] private bool groupRawAndRenderedPairs = false;
+        [ObservableProperty] private string uiLanguage = string.Empty;
+        [ObservableProperty] private bool embedKeywordsOnImport = false;
+        [ObservableProperty] private bool confirmBeforeImport = false;
+        [ObservableProperty] private bool settingsAdvancedExpanded = false;
+        [ObservableProperty] private string importReadinessSummary = string.Empty;
+        [ObservableProperty] private string lastImportSummary = string.Empty;
+        [ObservableProperty] private string previewHealthSummary = string.Empty;
+        [ObservableProperty] private string ftpThumbnailPhaseDetail = string.Empty;
+        [ObservableProperty] private bool allGroupsExpanded = false;
+        [ObservableProperty] private string selectedFilesStatusLine = string.Empty;
+        [ObservableProperty] private string destinationStatusLine = string.Empty;
+        [ObservableProperty] private string deleteAfterImportStatusLine = string.Empty;
+        [ObservableProperty] private string keywordsStatusLine = string.Empty;
         [ObservableProperty] private string duplicatePolicy = "Suffix";
         [ObservableProperty] private string verificationMode = "Fast";
         [ObservableProperty] private bool isBrowsingFtpFolders = false;
         [ObservableProperty] private string selectedFtpPresetFolder = "/DCIM";
         [ObservableProperty] private FtpFolderOption? selectedBrowsedFtpFolder;
-        [ObservableProperty] private string ftpDialogStatusMessage = "Enter your phone FTP details, then test or browse folders.";
+        [ObservableProperty] private string ftpDialogStatusMessage = "";
         [ObservableProperty] private bool limitFtpThumbnailLoad = false;
         [ObservableProperty] private int ftpInitialThumbnailCount = 0;
         [ObservableProperty] private bool showSkippedFoldersDialog = false;
         [ObservableProperty] private string skippedFoldersReportTitle = "FTP Scan: Skipped Folders";
         [ObservableProperty] private string skippedFoldersReportText = string.Empty;
+        /// <summary>When true, do not open the skipped-folder summary dialog when the only skips are paths excluded by user rules (FTP listing errors still show).</summary>
+        [ObservableProperty] private bool suppressExcludedFolderScanReminders;
+        /// <summary>When true, the skipped-folder dialog shows an option to stop reminding when skips are only from Scan exclusions.</summary>
+        [ObservableProperty] private bool showSkippedFoldersSuppressReminderOption;
+        [ObservableProperty] private bool showDriveSelectionDialog = false;
         [ObservableProperty] private bool isDarkTheme = true;
 
         // Observable properties (must be at class scope, after constructor)
@@ -295,6 +370,12 @@ namespace QuickMediaIngest.ViewModels
 
             // Load configuration and import history (sync, but could be made async if needed)
             LoadConfig();
+            RebuildSkippedFolderRuleEntries();
+            if (string.IsNullOrWhiteSpace(FtpDialogStatusMessage))
+            {
+                FtpDialogStatusMessage = AppLocalizer.Get("Vm_Ftp_DefaultDialogStatus");
+            }
+            RepopulateLanguageOptions();
             SyncNamingOptionsFromTemplate();
             RefreshNamingPreviewExamples();
             LoadImportHistory();
@@ -302,7 +383,7 @@ namespace QuickMediaIngest.ViewModels
             // Initial population of sidebar sources (drives + saved FTP)
             try
             {
-                ScanDrives();
+                await ScanDrivesAsync();
                 // Start watching for device connect/disconnect events
                 try
                 {
@@ -310,7 +391,24 @@ namespace QuickMediaIngest.ViewModels
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (!Sources.Contains(drive)) Sources.Add(drive);
+                            try
+                            {
+                                var info = new DriveInfo(drive);
+                                if (!info.IsReady) return;
+                                string deviceId = GetOrCreateDeviceIdForDrive(info);
+                                _driveDeviceIdByPath[info.Name] = deviceId;
+                                _drivePathByDeviceId[deviceId] = info.Name;
+
+                                bool includeByDefault = _selectedDriveDeviceIds.Count == 0 && info.DriveType == DriveType.Removable;
+                                if ((includeByDefault || _selectedDriveDeviceIds.Contains(deviceId)) && !Sources.Contains(info.Name))
+                                {
+                                    Sources.Add(info.Name);
+                                }
+                            }
+                            catch
+                            {
+                                // Ignore transient drive-event failures.
+                            }
                         });
                     };
                     _deviceWatcher.DeviceDisconnected += (drive) =>
@@ -335,7 +433,10 @@ namespace QuickMediaIngest.ViewModels
             }
             catch { }
 
-            _ = TryReconnectLastFtpAsync();
+            // Defer FTP reconnect so startup (splash → main window shown) does not contend with network I/O.
+            _ = Application.Current.Dispatcher.BeginInvoke(
+                new Action(() => _ = TryReconnectLastFtpAsync()),
+                System.Windows.Threading.DispatcherPriority.Background);
 
             _startupInitialized = true;
 
@@ -389,9 +490,16 @@ namespace QuickMediaIngest.ViewModels
         private double? _savedWindowTop;
         private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
         private readonly UnifiedSourceItem _unifiedSource = new();
         private bool _updatingNamingFromUi = false;
+        private bool _suppressStatusFeedFromStatusMessage;
+
+        public ObservableCollection<FilterChipViewModel> ActiveFilterChips { get; } = new();
+        public ObservableCollection<NotificationFeedLine> NotificationFeed { get; } = new();
+
+        /// <summary>Entries for the Preferences display language combo (bound with SelectedValuePath/Code).</summary>
+        public ObservableCollection<LanguageOption> UiLanguageOptions { get; } = new();
 
         // Remove only these truly unused fields:
         // private bool _isUpdatingSelectAll = false;
@@ -427,8 +535,17 @@ namespace QuickMediaIngest.ViewModels
                     }
                 }
 
-        partial void OnDestinationRootChanged(string value) => SaveConfig();
-        partial void OnDeleteAfterImportChanged(bool value) => SaveConfig();
+        partial void OnDestinationRootChanged(string value)
+        {
+            SaveConfig();
+            RefreshImportReadinessSummary();
+        }
+        partial void OnDeleteAfterImportChanged(bool value)
+        {
+            SaveConfig();
+            RefreshImportReadinessSummary();
+            OnPropertyChanged(nameof(IsDeleteAfterImportEnabled));
+        }
         partial void OnDeleteAfterImportPromptDismissedChanged(bool value) => SaveConfig();
 
         public bool IsFtpBusy => IsTestingFtp || IsBrowsingFtpFolders;
@@ -535,8 +652,77 @@ namespace QuickMediaIngest.ViewModels
             RebuildGroupsFromCurrentItems();
             SaveConfig();
         }
-        partial void OnDuplicatePolicyChanged(string value) => SaveConfig();
-        partial void OnVerificationModeChanged(string value) => SaveConfig();
+        partial void OnGroupRawAndRenderedPairsChanged(bool value)
+        {
+            RebuildGroupsFromCurrentItems();
+            OnPropertyChanged(nameof(RawGroupingStatusText));
+            OnPropertyChanged(nameof(IsRawJpegGroupingEnabled));
+            SaveConfig();
+        }
+        partial void OnDuplicatePolicyChanged(string value)
+        {
+            SaveConfig();
+            RefreshImportReadinessSummary();
+        }
+        partial void OnVerificationModeChanged(string value)
+        {
+            SaveConfig();
+            RefreshImportReadinessSummary();
+        }
+        partial void OnUiLanguageChanged(string value) => SaveConfig();
+        partial void OnShowSettingsDialogChanged(bool value)
+        {
+            if (value)
+            {
+                // Device-id I/O must not run on the UI thread (preferences used to freeze here).
+                _ = RefreshExclusionManagementListsAsync();
+            }
+        }
+
+        partial void OnShowScanExclusionsPanelChanged(bool value)
+        {
+            if (value)
+            {
+                _ = RefreshExclusionManagementListsAsync();
+            }
+        }
+        partial void OnEmbedKeywordsOnImportChanged(bool value)
+        {
+            SaveConfig();
+            RefreshImportReadinessSummary();
+            OnPropertyChanged(nameof(IsKeywordEmbeddingEnabled));
+        }
+        partial void OnAllGroupsExpandedChanged(bool value)
+        {
+            if (_isBulkUpdatingGroupExpansion)
+            {
+                return;
+            }
+
+            _isBulkUpdatingGroupExpansion = true;
+            try
+            {
+                foreach (var group in Groups)
+                {
+                    group.IsExpanded = value;
+                }
+            }
+            finally
+            {
+                _isBulkUpdatingGroupExpansion = false;
+            }
+        }
+        partial void OnStatusMessageChanged(string value)
+        {
+            if (!_suppressStatusFeedFromStatusMessage)
+            {
+                AddNotificationFeedEntry(value);
+            }
+        }
+        partial void OnScanProgressMessageChanged(string value) => AddNotificationFeedEntry(value);
+        partial void OnConfirmBeforeImportChanged(bool value) => SaveConfig();
+        partial void OnSuppressExcludedFolderScanRemindersChanged(bool value) => SaveConfig();
+        partial void OnSettingsAdvancedExpandedChanged(bool value) => SaveConfig();
         partial void OnScanPathChanged(string value)
         {
             if (SelectedSource is FtpSourceItem ftp)
@@ -554,6 +740,10 @@ namespace QuickMediaIngest.ViewModels
         public bool IsLocalSourceSelected => SelectedSource is string;
         public bool IsFtpSourceSelected => SelectedSource is FtpSourceItem;
         public bool IsUnifiedSourceSelected => SelectedSource is UnifiedSourceItem;
+        public string RawGroupingStatusText => GroupRawAndRenderedPairs ? "RAW/JPEG grouping: On" : "RAW/JPEG grouping: Off";
+        public bool IsRawJpegGroupingEnabled => GroupRawAndRenderedPairs;
+        public bool IsDeleteAfterImportEnabled => DeleteAfterImport;
+        public bool IsKeywordEmbeddingEnabled => EmbedKeywordsOnImport;
 
         public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
         public string BuildDate
@@ -568,12 +758,7 @@ namespace QuickMediaIngest.ViewModels
                         return File.GetLastWriteTime(processPath).ToString("yyyy-MM-dd HH:mm");
                     }
 
-                    string assemblyPath = typeof(MainViewModel).Assembly.Location;
-                    if (!string.IsNullOrWhiteSpace(assemblyPath) && File.Exists(assemblyPath))
-                    {
-                        return File.GetLastWriteTime(assemblyPath).ToString("yyyy-MM-dd HH:mm");
-                    }
-
+                    // Avoid Assembly.Location: empty for single-file publishes (IL3000).
                     string baseDir = AppContext.BaseDirectory;
                     if (!string.IsNullOrWhiteSpace(baseDir) && Directory.Exists(baseDir))
                     {
@@ -603,6 +788,9 @@ namespace QuickMediaIngest.ViewModels
         }
 
         public ObservableCollection<object> Sources { get; } = new ObservableCollection<object>();
+        public ObservableCollection<DriveSelectionOption> DriveSelectionItems { get; } = new ObservableCollection<DriveSelectionOption>();
+        public ObservableCollection<ExcludedDriveEntry> ExcludedDriveEntries { get; } = new ObservableCollection<ExcludedDriveEntry>();
+        public ObservableCollection<SkippedFolderRuleEntry> SkippedFolderRuleEntries { get; } = new ObservableCollection<SkippedFolderRuleEntry>();
         public ObservableCollection<ItemGroup> Groups { get; set; } = new ObservableCollection<ItemGroup>();
         public ObservableCollection<ImportHistoryRecord> ImportHistoryRecords { get; } = new ObservableCollection<ImportHistoryRecord>();
         public ObservableCollection<FailedImportRecord> FailedImportRecords { get; } = new ObservableCollection<FailedImportRecord>();
@@ -955,7 +1143,7 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand]
         private async Task RefreshAllSources()
         {
-            ScanDrives();
+            await ScanDrivesAsync();
             _sourceItemsCache.Clear();
             _thumbnailByItemKey.Clear();
             ClearThumbnailDiskCache();
@@ -973,17 +1161,31 @@ namespace QuickMediaIngest.ViewModels
             LoadSourceItems(SelectedSource, forceRefresh: true);
         }
         // BrowseDestination command removed; UI entry deleted.
-        [RelayCommand] private void Rescan() => ScanDrives();
+        [RelayCommand] private void Rescan() => OpenDriveSelectionDialog();
         [RelayCommand] private void BrowseScanPath() => ExecuteBrowseScanPath();
         [RelayCommand] private void BuildSelectedPreviews() => ExecuteBuildSelectedPreviews();
         [RelayCommand] private void SelectAllShoots() => SetAllShootsSelected(true);
         [RelayCommand] private void DeselectAllShoots() => SetAllShootsSelected(false);
+        [RelayCommand]
+        private async Task ConfirmDriveSelection() => await ExecuteConfirmDriveSelectionAsync();
+        [RelayCommand] private void CancelDriveSelection() => ShowDriveSelectionDialog = false;
+        [RelayCommand] private void SkipFolder(string? folderPath) => ExecuteSkipFolder(folderPath);
+
+        [RelayCommand]
+        private void ExitApplication()
+        {
+            SaveConfig();
+            Application.Current.Shutdown(0);
+        }
+        [RelayCommand]
+        private async Task RemoveDriveExclusion(string? deviceId) => await ExecuteRemoveDriveExclusionAsync(deviceId);
+        [RelayCommand] private void RemoveSkippedFolderRule(SkippedFolderRuleEntry? entry) => ExecuteRemoveSkippedFolderRule(entry);
         public void SelectAllVisible() => SetAllShootsSelected(true);
         public void DeselectAllVisible() => SetAllShootsSelected(false);
 
         // Keyboard accelerator commands for UI
         public ICommand SelectAllCommand => new RelayCommand(SelectAllShoots);
-        public ICommand CancelCommand => new RelayCommand(CloseSkippedFoldersReport);
+        public ICommand CancelCommand => new RelayCommand(DismissTopOverlay);
 
         partial void OnSelectedFtpPresetFolderChanged(string value)
         {
@@ -1278,14 +1480,14 @@ del /Q ""%~f0"" >nul 2>nul
 
             if (string.IsNullOrWhiteSpace(FtpHost))
             {
-                StatusMessage = "Enter an FTP host before testing.";
+                StatusMessage = AppLocalizer.Get("Vm_Ftp_EnterHostBeforeTest");
                 FtpDialogStatusMessage = StatusMessage;
                 return;
             }
 
             if (FtpPort <= 0 || FtpPort > 65535)
             {
-                StatusMessage = "FTP port must be between 1 and 65535.";
+                StatusMessage = AppLocalizer.Get("Vm_Ftp_PortRange");
                 FtpDialogStatusMessage = StatusMessage;
                 return;
             }
@@ -1335,14 +1537,14 @@ del /Q ""%~f0"" >nul 2>nul
 
             if (string.IsNullOrWhiteSpace(FtpHost))
             {
-                StatusMessage = "Enter an FTP host before browsing folders.";
+                StatusMessage = AppLocalizer.Get("Vm_Ftp_EnterHostBeforeBrowse");
                 FtpDialogStatusMessage = StatusMessage;
                 return;
             }
 
             if (FtpPort <= 0 || FtpPort > 65535)
             {
-                StatusMessage = "FTP port must be between 1 and 65535.";
+                StatusMessage = AppLocalizer.Get("Vm_Ftp_PortRange");
                 FtpDialogStatusMessage = StatusMessage;
                 return;
             }
@@ -1411,7 +1613,7 @@ del /Q ""%~f0"" >nul 2>nul
         {
             if (SelectedBrowsedFtpFolder == null)
             {
-                StatusMessage = "Choose a browsed FTP folder first.";
+                StatusMessage = AppLocalizer.Get("Vm_Ftp_ChooseBrowsedFolder");
                 return;
             }
 
@@ -1484,7 +1686,8 @@ del /Q ""%~f0"" >nul 2>nul
             EnsureFilteredItemsViewSource();
 
             string sourceLabel = source.ToString() ?? "source";
-            var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ftpListingFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var userExcludedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             string sourceKey = string.Empty;
             try 
             {
@@ -1560,7 +1763,7 @@ del /Q ""%~f0"" >nul 2>nul
 
                                 if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    skippedFolderDetails.Add($"{progress.CurrentFolder} - {progress.Note}");
+                                    ftpListingFailures.Add($"{progress.CurrentFolder} - {progress.Note}");
                                 }
                             });
                         });
@@ -1609,6 +1812,7 @@ del /Q ""%~f0"" >nul 2>nul
 
 BuildGroups:
                 StampItems(items, sourceKey, source is FtpSourceItem);
+                ApplySkippedFolderFilters(items, userExcludedFolders);
                 _sourceItemsCache[sourceKey] = CloneItems(items);
 
                 _currentSourceItems = items;
@@ -1624,10 +1828,7 @@ BuildGroups:
                     StatusMessage = $"Found 0 group(s) from {sourceLabel}.";
                 }
 
-                if (source is FtpSourceItem && skippedFolderDetails.Count > 0)
-                {
-                    ShowSkippedFoldersReport(sourceLabel, skippedFolderDetails);
-                }
+                MaybeShowSkippedFoldersScanReport(sourceLabel, ftpListingFailures, userExcludedFolders);
             }
             catch (OperationCanceledException)
             {
@@ -1671,6 +1872,25 @@ BuildGroups:
                 if (_isUpdatingSelectAll) return;
                 UpdateSelectAllFromGroups();
             }
+
+            if (e.PropertyName == nameof(ItemGroup.KeywordsText))
+            {
+                RefreshImportReadinessSummary();
+            }
+
+            if (e.PropertyName == nameof(ItemGroup.IsExpanded))
+            {
+                if (_isBulkUpdatingGroupExpansion)
+                {
+                    return;
+                }
+
+                bool allExpanded = Groups.Count > 0 && Groups.All(g => g.IsExpanded);
+                if (AllGroupsExpanded != allExpanded)
+                {
+                    AllGroupsExpanded = allExpanded;
+                }
+            }
         }
 
         private void UpdateSelectAllFromGroups()
@@ -1705,6 +1925,7 @@ BuildGroups:
                 existing.PropertyChanged -= Group_PropertyChanged;
             }
 
+            DetachImportItemSelectionHandlers();
 
             Groups.Clear();
             EnsureFilteredItemsViewSource();
@@ -1727,24 +1948,32 @@ BuildGroups:
                 }
 
                 group.AlbumName = AlbumName;
-                group.FolderPath = Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty;
+                group.FolderPath = group.Items[0].IsFtpSource
+                    ? ExtractFtpFolderPath(group.Items[0].SourcePath)
+                    : (Path.GetDirectoryName(group.Items[0].SourcePath) ?? string.Empty);
                 group.SyncSelectionFromItems();
-                ApplyPreviewStacks(group.Items, ExpandPreviewStacks);
+                ApplyPreviewStacks(group.Items, ExpandPreviewStacks || group.ExpandStackedPairsInShoot, GroupRawAndRenderedPairs);
                 foreach (var item in group.Items)
                 {
                     string key = BuildItemKey(item);
                     if (item.Thumbnail == null && _thumbnailByItemKey.TryGetValue(key, out var cachedThumb))
                     {
                         item.Thumbnail = cachedThumb;
+                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                     }
                 }
+                AttachImportItemSelectionHandlers(group);
                 group.PropertyChanged += Group_PropertyChanged;
                 Groups.Add(group);
             }
 
 
             UpdateSelectAllFromGroups();
+            AllGroupsExpanded = Groups.Count > 0 && Groups.All(g => g.IsExpanded);
             ApplyFiltersToCurrentGroups();
+            RefreshImportReadinessSummary();
+            SyncActiveFilterChips();
+            RefreshPreviewHealthSummary();
             StatusMessage = $"Updated folder separation to {TimeBetweenShootsHours} hour{(TimeBetweenShootsHours == 1 ? string.Empty : "s")}.";
         }
 
@@ -1758,7 +1987,7 @@ BuildGroups:
             ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
         };
 
-        private static void ApplyPreviewStacks(List<ImportItem> items, bool expandPreviewStacks)
+        private static void ApplyPreviewStacks(List<ImportItem> items, bool expandPreviewStacks, bool groupRawAndRenderedPairs)
         {
             foreach (var item in items)
             {
@@ -1766,6 +1995,11 @@ BuildGroups:
                 item.IsStackRepresentative = true;
                 item.StackKey = item.SourcePath;
                 item.PreviewLabel = item.FileName;
+            }
+
+            if (!groupRawAndRenderedPairs)
+            {
+                return;
             }
 
             var imageItems = items.Where(i => !i.IsVideo).ToList();
@@ -1841,23 +2075,67 @@ BuildGroups:
             }
         }
 
-        private void ShowSkippedFoldersReport(string sourceLabel, HashSet<string> skippedFolderDetails)
+        private void MaybeShowSkippedFoldersScanReport(string sourceLabel, HashSet<string> ftpListingFailures, HashSet<string> userExcludedFolders)
         {
-            var details = skippedFolderDetails.OrderBy(s => s).ToList();
-            int maxToShow = 15;
-            var lines = details.Take(maxToShow).ToList();
-            string remainingText = details.Count > maxToShow
-                ? $"\n...and {details.Count - maxToShow} more."
-                : string.Empty;
+            int ftpCount = ftpListingFailures.Count;
+            int excludedCount = userExcludedFolders.Count;
+            if (ftpCount == 0 && excludedCount == 0)
+            {
+                return;
+            }
 
-            string message =
-                $"FTP scan completed for {sourceLabel}, but some folders were skipped due to listing errors.\n\n" +
-                string.Join("\n", lines) +
-                remainingText +
-                "\n\nTip: Retry the scan. If the same folder keeps failing, scan that folder directly to verify server behavior.";
+            if (ftpCount == 0 && excludedCount > 0 && SuppressExcludedFolderScanReminders)
+            {
+                StatusMessage = AppLocalizer.Format("Vm_Status_ScanExcludedFoldersOnlySummary", excludedCount);
+                return;
+            }
 
-            StatusMessage = $"FTP scan completed with {details.Count} skipped folder(s).";
-            SkippedFoldersReportTitle = $"FTP Scan: Skipped Folders ({details.Count})";
+            var ftpOrdered = ftpListingFailures.OrderBy(s => s).ToList();
+            var excludedOrdered = userExcludedFolders.OrderBy(s => s).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            ShowSkippedFoldersSuppressReminderOption = ftpCount == 0 && excludedCount > 0;
+
+            const int maxToShow = 15;
+            static string FormatList(IReadOnlyList<string> lines, int max)
+            {
+                var shown = lines.Take(max).ToList();
+                string tail = lines.Count > max ? $"\n...and {lines.Count - max} more." : string.Empty;
+                return string.Join("\n", shown) + tail;
+            }
+
+            var sections = new List<string>();
+            if (excludedOrdered.Count > 0)
+            {
+                sections.Add(AppLocalizer.Format("Vm_SkippedScan_SectionExcluded", FormatList(excludedOrdered, maxToShow)));
+            }
+
+            if (ftpOrdered.Count > 0)
+            {
+                sections.Add(AppLocalizer.Format("Vm_SkippedScan_SectionFtp", FormatList(ftpOrdered, maxToShow)));
+                sections.Add(AppLocalizer.Get("Vm_SkippedScan_FtpTip"));
+            }
+
+            string message = string.Join("\n\n", sections.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            string title;
+            if (ftpOrdered.Count > 0 && excludedOrdered.Count > 0)
+            {
+                title = AppLocalizer.Format("Vm_SkippedScan_TitleCombined", sourceLabel);
+            }
+            else if (ftpOrdered.Count > 0)
+            {
+                title = AppLocalizer.Format("Vm_SkippedScan_TitleFtpOnly", ftpOrdered.Count);
+            }
+            else
+            {
+                title = AppLocalizer.Format("Vm_SkippedScan_TitleExcludedOnly", excludedOrdered.Count);
+            }
+
+            StatusMessage = ftpOrdered.Count > 0
+                ? AppLocalizer.Format("Vm_Status_ScanSummaryWithFtpIssues", excludedOrdered.Count, ftpOrdered.Count)
+                : AppLocalizer.Format("Vm_Status_ScanSummaryExcludedOnly", excludedOrdered.Count);
+
+            SkippedFoldersReportTitle = title;
             SkippedFoldersReportText = message;
             ShowSkippedFoldersDialog = true;
         }
@@ -1871,7 +2149,12 @@ BuildGroups:
             // Update AvailableFileTypes
             var fileTypes = allItems.Select(i => i.FileType).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
             AvailableFileTypes.Clear();
-            AvailableFileTypes.Add(""); // (All)
+            AvailableFileTypes.Add(string.Empty); // (All)
+            AvailableFileTypes.Add(FilterTypeAllMedia);
+            AvailableFileTypes.Add(FilterTypeImages);
+            AvailableFileTypes.Add(FilterTypeVideos);
+            AvailableFileTypes.Add(FilterTypeRaw);
+            AvailableFileTypes.Add(FilterTypeJpeg);
             foreach (var t in fileTypes)
                 AvailableFileTypes.Add(t);
 
@@ -1886,7 +2169,7 @@ BuildGroups:
                 if (FilterEndDate.HasValue && item.DateTaken > FilterEndDate.Value.Date.AddDays(1).AddTicks(-1))
                     return false;
                 // File type filter
-                if (!string.IsNullOrWhiteSpace(FilterFileType) && !string.Equals(item.FileType, FilterFileType, StringComparison.OrdinalIgnoreCase))
+                if (!MatchesFileTypeFilter(item, FilterFileType))
                     return false;
                 // Keyword filter (filename)
                 if (!string.IsNullOrWhiteSpace(FilterKeyword) && !item.FileName.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))
@@ -1900,28 +2183,32 @@ BuildGroups:
         {
             EnsureFilteredItemsViewSource();
             ApplyFiltersToCurrentGroups();
+            SyncActiveFilterChips();
         }
         partial void OnFilterEndDateChanged(DateTime? value)
         {
             EnsureFilteredItemsViewSource();
             ApplyFiltersToCurrentGroups();
+            SyncActiveFilterChips();
         }
         partial void OnFilterFileTypeChanged(string value)
         {
             EnsureFilteredItemsViewSource();
             ApplyFiltersToCurrentGroups();
+            SyncActiveFilterChips();
         }
         partial void OnFilterKeywordChanged(string value)
         {
             EnsureFilteredItemsViewSource();
             ApplyFiltersToCurrentGroups();
+            SyncActiveFilterChips();
         }
 
         private void ApplyFiltersToCurrentGroups()
         {
             foreach (var group in Groups)
             {
-                ApplyPreviewStacks(group.Items, ExpandPreviewStacks);
+                ApplyPreviewStacks(group.Items, ExpandPreviewStacks || group.ExpandStackedPairsInShoot, GroupRawAndRenderedPairs);
                 foreach (var item in group.Items)
                 {
                     bool visible = true;
@@ -1933,7 +2220,7 @@ BuildGroups:
                     {
                         visible = false;
                     }
-                    if (visible && !string.IsNullOrWhiteSpace(FilterFileType) && !string.Equals(item.FileType, FilterFileType, StringComparison.OrdinalIgnoreCase))
+                    if (visible && !MatchesFileTypeFilter(item, FilterFileType))
                     {
                         visible = false;
                     }
@@ -1944,6 +2231,77 @@ BuildGroups:
 
                     item.IsPreviewVisible = item.IsPreviewVisible && visible;
                 }
+            }
+
+            RefreshPreviewHealthSummary();
+        }
+
+        private static bool MatchesFileTypeFilter(ImportItem item, string selectedFilter)
+        {
+            if (string.IsNullOrWhiteSpace(selectedFilter))
+            {
+                return true;
+            }
+
+            string extension = item.FileType?.TrimStart('.').ToUpperInvariant() ?? string.Empty;
+            switch (selectedFilter)
+            {
+                case FilterTypeAllMedia:
+                    return true;
+                case FilterTypeImages:
+                    return !item.IsVideo;
+                case FilterTypeVideos:
+                    return item.IsVideo;
+                case FilterTypeRaw:
+                    return RawPreviewExtensions.Contains($".{extension.ToLowerInvariant()}");
+                case FilterTypeJpeg:
+                    return extension is "JPG" or "JPEG";
+                default:
+                    return string.Equals(item.FileType, selectedFilter, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private void AddNotificationFeedEntry(string? message, bool useSuccessAccent = false)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            void InsertEntry()
+            {
+                string line = $"{DateTime.Now:HH:mm:ss} - {message.Trim()}";
+                if (NotificationFeed.Count > 0 &&
+                    string.Equals(NotificationFeed[0].DisplayText, line, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                NotificationFeed.Insert(0, new NotificationFeedLine
+                {
+                    DisplayText = line,
+                    UseSuccessAccent = useSuccessAccent
+                });
+                const int maxFeedEntries = 200;
+                while (NotificationFeed.Count > maxFeedEntries)
+                {
+                    NotificationFeed.RemoveAt(NotificationFeed.Count - 1);
+                }
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                return;
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                InsertEntry();
+            }
+            else
+            {
+                dispatcher.Invoke(InsertEntry);
             }
         }
 
@@ -1957,7 +2315,7 @@ BuildGroups:
             try
             {
                 Clipboard.SetText(SkippedFoldersReportText);
-                StatusMessage = "Skipped-folder report copied to clipboard.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_SkippedFolderCopied");
             }
             catch (Exception ex)
             {
@@ -1968,6 +2326,398 @@ BuildGroups:
         private void ExecuteCloseSkippedFoldersReport()
         {
             ShowSkippedFoldersDialog = false;
+        }
+
+        /// <summary>Escape / Cancel: closes the topmost in-app overlay. Does not cancel an in-progress import (only its dialog is tied to import completion).</summary>
+        private void DismissTopOverlay()
+        {
+            if (ShowScanExclusionsPanel)
+            {
+                ShowScanExclusionsPanel = false;
+                return;
+            }
+
+            if (ShowSettingsDialog)
+            {
+                ShowSettingsDialog = false;
+                return;
+            }
+
+            if (ShowScanProgressDialog)
+            {
+                ShowScanProgressDialog = false;
+                return;
+            }
+
+            if (ShowDriveSelectionDialog)
+            {
+                ShowDriveSelectionDialog = false;
+                return;
+            }
+
+            if (ShowAddFtpDialog)
+            {
+                ShowAddFtpDialog = false;
+                return;
+            }
+
+            if (ShowAboutDialog)
+            {
+                ShowAboutDialog = false;
+                return;
+            }
+
+            if (ShowSkippedFoldersDialog)
+            {
+                ExecuteCloseSkippedFoldersReport();
+            }
+        }
+
+        private void SyncActiveFilterChips()
+        {
+            ActiveFilterChips.Clear();
+            if (!string.IsNullOrWhiteSpace(FilterKeyword))
+            {
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "keyword", Label = $"Keyword: {FilterKeyword}" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(FilterFileType))
+            {
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "type", Label = $"Type: {FilterFileType}" });
+            }
+
+            if (FilterStartDate.HasValue)
+            {
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "start", Label = $"From: {FilterStartDate.Value:yyyy-MM-dd}" });
+            }
+
+            if (FilterEndDate.HasValue)
+            {
+                ActiveFilterChips.Add(new FilterChipViewModel { Id = "end", Label = $"To: {FilterEndDate.Value:yyyy-MM-dd}" });
+            }
+        }
+
+        [RelayCommand]
+        private void RemoveFilterChip(string? chipId)
+        {
+            switch (chipId)
+            {
+                case "keyword":
+                    FilterKeyword = string.Empty;
+                    break;
+                case "type":
+                    FilterFileType = string.Empty;
+                    break;
+                case "start":
+                    FilterStartDate = null;
+                    break;
+                case "end":
+                    FilterEndDate = null;
+                    break;
+                default:
+                    return;
+            }
+        }
+
+        private void RefreshPreviewHealthSummary()
+        {
+            try
+            {
+                int loaded = 0;
+                int failed = 0;
+                int missing = 0;
+
+                foreach (var group in Groups)
+                {
+                    foreach (var item in group.Items.Where(i => i.IsPreviewVisible))
+                    {
+                        switch (item.ThumbnailPreviewStatus)
+                        {
+                            case ThumbnailPreviewStatus.Loaded:
+                                loaded++;
+                                break;
+                            case ThumbnailPreviewStatus.Failed:
+                                failed++;
+                                break;
+                            default:
+                                missing++;
+                                break;
+                        }
+                    }
+                }
+
+                PreviewHealthSummary = AppLocalizer.Format("Vm_PreviewHealth", loaded, failed, missing);
+            }
+            catch
+            {
+                PreviewHealthSummary = string.Empty;
+            }
+        }
+
+        private void RefreshImportReadinessSummary()
+        {
+            try
+            {
+                int selected = Groups.Sum(g => g.Items.Count(i => i.IsSelected));
+                string dest = string.IsNullOrWhiteSpace(DestinationRoot) ? "(not set)" : DestinationRoot;
+                int shootsWithKeywords = 0;
+                foreach (var g in Groups)
+                {
+                    if (!g.Items.Any(i => i.IsSelected))
+                    {
+                        continue;
+                    }
+
+                    if (KeywordInputParser.Parse(g.KeywordsText).Count > 0)
+                    {
+                        shootsWithKeywords++;
+                    }
+                }
+
+                string kw = !EmbedKeywordsOnImport
+                    ? AppLocalizer.Get("Vm_Readiness_KwOff")
+                    : AppLocalizer.Format("Vm_Readiness_KwOn", shootsWithKeywords);
+
+                ImportReadinessSummary = AppLocalizer.Format(
+                    "Vm_Readiness_Line",
+                    selected,
+                    dest,
+                    DuplicatePolicy,
+                    VerificationMode,
+                    DeleteAfterImport ? AppLocalizer.Get("Vm_Yes") : AppLocalizer.Get("Vm_No"),
+                    kw);
+
+                SelectedFilesStatusLine = $"Files selected: {selected}";
+                DestinationStatusLine = $"Save destination: {dest}";
+                DeleteAfterImportStatusLine = $"Delete after import: {(DeleteAfterImport ? "On" : "Off")}";
+                KeywordsStatusLine = $"Keywords: {kw}";
+            }
+            catch
+            {
+                ImportReadinessSummary = string.Empty;
+                SelectedFilesStatusLine = string.Empty;
+                DestinationStatusLine = string.Empty;
+                DeleteAfterImportStatusLine = string.Empty;
+                KeywordsStatusLine = string.Empty;
+            }
+        }
+
+        private void ImportItem_SelectionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ImportItem.IsSelected))
+            {
+                RefreshImportReadinessSummary();
+            }
+        }
+
+        private void DetachImportItemSelectionHandlers()
+        {
+            foreach (var group in Groups)
+            {
+                foreach (var item in group.Items)
+                {
+                    item.PropertyChanged -= ImportItem_SelectionChanged;
+                }
+            }
+        }
+
+        private void AttachImportItemSelectionHandlers(ItemGroup group)
+        {
+            foreach (var item in group.Items)
+            {
+                item.PropertyChanged -= ImportItem_SelectionChanged;
+                item.PropertyChanged += ImportItem_SelectionChanged;
+            }
+        }
+
+        private string BuildImportConfirmationMessage(List<ItemGroup> selectedGroups, int totalFiles)
+        {
+            long bytes = selectedGroups.SelectMany(g => g.Items).Where(i => i.IsSelected).Sum(i => Math.Max(0, i.FileSize));
+            string mb = (bytes / (1024d * 1024d)).ToString("0.00", CultureInfo.CurrentCulture);
+
+            var sb = new StringBuilder();
+            sb.AppendLine(AppLocalizer.Format("Vm_ConfirmImport_Line1", totalFiles, mb));
+            sb.AppendLine();
+            sb.AppendLine(AppLocalizer.Get("Vm_ConfirmImport_Destination"));
+            sb.AppendLine(DestinationRoot);
+            sb.AppendLine();
+            sb.Append(AppLocalizer.Get("Vm_ConfirmImport_DupPolicy")).Append(' ').AppendLine(DuplicatePolicy);
+            sb.Append(AppLocalizer.Get("Vm_ConfirmImport_Verify")).Append(' ').AppendLine(VerificationMode);
+            sb.Append(AppLocalizer.Get("Vm_ConfirmImport_DeleteAfter")).Append(' ')
+                .AppendLine(DeleteAfterImport ? AppLocalizer.Get("Vm_Yes") : AppLocalizer.Get("Vm_No"));
+            sb.AppendLine();
+            sb.AppendLine(AppLocalizer.Get("Vm_ConfirmImport_KeywordsHeader"));
+            if (!EmbedKeywordsOnImport)
+            {
+                sb.AppendLine(AppLocalizer.Get("Vm_Readiness_KwOff"));
+            }
+            else
+            {
+                bool any = false;
+                foreach (ItemGroup g in selectedGroups.OrderBy(x => x.Title))
+                {
+                    List<string> list = KeywordInputParser.Parse(g.KeywordsText);
+                    if (list.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    any = true;
+                    sb.AppendLine(AppLocalizer.Format("Vm_Confirm_ShootKeywords", g.Title, string.Join(", ", list)));
+                }
+
+                if (!any)
+                {
+                    sb.AppendLine(AppLocalizer.Get("Vm_ConfirmImport_NoKeywords"));
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        private void RepopulateLanguageOptions()
+        {
+            UiLanguageOptions.Clear();
+            UiLanguageOptions.Add(new LanguageOption("", AppLocalizer.Get("Lang_UseSystem")));
+            UiLanguageOptions.Add(new LanguageOption("en", AppLocalizer.Get("Lang_English")));
+            UiLanguageOptions.Add(new LanguageOption("fr", AppLocalizer.Get("Lang_French")));
+            UiLanguageOptions.Add(new LanguageOption("es", AppLocalizer.Get("Lang_Spanish")));
+        }
+
+        [RelayCommand]
+        private async Task RetryFailedPreviewLoadsAsync()
+        {
+            if (Groups.Count == 0 || SelectedSource == null)
+            {
+                StatusMessage = AppLocalizer.Get("Vm_Status_NothingToRetry");
+                return;
+            }
+
+            var failedItems = Groups.SelectMany(g => g.Items).Where(i => i.ThumbnailPreviewStatus == ThumbnailPreviewStatus.Failed).ToList();
+            if (failedItems.Count == 0)
+            {
+                StatusMessage = AppLocalizer.Get("Vm_Status_NoFailedPreviews");
+                return;
+            }
+
+            StatusMessage = $"Retrying {failedItems.Count} preview(s)...";
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(failedItems, new ParallelOptions { MaxDegreeOfParallelism = GetThumbnailWorkerCount() }, item =>
+                {
+                    string key = BuildItemKey(item);
+                    object? thumb = null;
+                    try
+                    {
+                        thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Retry thumbnail failed for {Path}.", item.SourcePath);
+                    }
+
+                    Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        if (thumb != null)
+                        {
+                            item.Thumbnail = thumb;
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                            _thumbnailByItemKey[key] = thumb;
+                        }
+                        else
+                        {
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                        }
+                    });
+                });
+            });
+
+            await Application.Current.Dispatcher.InvokeAsync(RefreshPreviewHealthSummary);
+            StatusMessage = AppLocalizer.Get("Vm_Status_PreviewRetryFinished");
+        }
+
+        [RelayCommand]
+        private async Task ClearThumbnailCacheAndReloadPreviewsAsync()
+        {
+            if (SelectedSource == null || Groups.Count == 0)
+            {
+                StatusMessage = AppLocalizer.Get("Vm_Status_LoadSourceBeforeClearPreviewCache");
+                return;
+            }
+
+            try
+            {
+                _thumbnailByItemKey.Clear();
+                ClearThumbnailDiskCache();
+                foreach (var group in Groups)
+                {
+                    foreach (var item in group.Items)
+                    {
+                        item.Thumbnail = null;
+                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Unknown;
+                    }
+                }
+
+                string label = GetThumbnailSourceLabel();
+                StatusMessage = AppLocalizer.Get("Vm_Status_ThumbnailCacheClearedReloading");
+                await LoadThumbnailsAsync(Groups.ToList(), SelectedSource, label);
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Unable to reload previews: {ex.Message}";
+            }
+        }
+
+        private string GetThumbnailSourceLabel()
+        {
+            return SelectedSource switch
+            {
+                FtpSourceItem ftp => $"{ftp.Host}{NormalizeFtpPath(ftp.RemoteFolder)}",
+                UnifiedSourceItem => "Unified",
+                _ => SelectedSource?.ToString() ?? "source"
+            };
+        }
+
+        [RelayCommand]
+        private void ToggleShootStackExpand(ItemGroup? group)
+        {
+            if (group == null || !GroupRawAndRenderedPairs)
+            {
+                return;
+            }
+
+            group.ExpandStackedPairsInShoot = !group.ExpandStackedPairsInShoot;
+            ApplyPreviewStacks(group.Items, ExpandPreviewStacks || group.ExpandStackedPairsInShoot, GroupRawAndRenderedPairs);
+            ApplyFiltersToCurrentGroups();
+        }
+
+        [RelayCommand]
+        private void ToggleGroupExpanded(ItemGroup? group)
+        {
+            if (group == null)
+            {
+                return;
+            }
+
+            group.IsExpanded = !group.IsExpanded;
+        }
+
+        [RelayCommand]
+        private void ExpandAllGroups()
+        {
+            foreach (var group in Groups)
+            {
+                group.IsExpanded = true;
+            }
+        }
+
+        [RelayCommand]
+        private void CollapseAllGroups()
+        {
+            foreach (var group in Groups)
+            {
+                group.IsExpanded = false;
+            }
         }
 
         private async Task LoadThumbnailsAsync(List<ItemGroup> groups, object source, string sourceLabel)
@@ -2014,6 +2764,7 @@ BuildGroups:
                         Application.Current.Dispatcher.InvokeAsync(() =>
                         {
                             item.Thumbnail = cachedThumb;
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                             ScannedFiles = cCached;
                             ScanProgressPercent = total > 0 ? (cCached * 100) / total : 0;
                             ScanProgressMessage = $"Loading previews: {cCached}/{total}";
@@ -2021,7 +2772,15 @@ BuildGroups:
                         return;
                     }
 
-                    var thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                    object? thumb = null;
+                    try
+                    {
+                        thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Thumbnail generation failed for local item {SourcePath}.", item.SourcePath);
+                    }
                     int c = Interlocked.Increment(ref current);
 
                     Application.Current.Dispatcher.InvokeAsync(() =>
@@ -2029,16 +2788,24 @@ BuildGroups:
                         if (thumb != null)
                         {
                             item.Thumbnail = thumb;
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                             _thumbnailByItemKey[itemKey] = thumb;
+                        }
+                        else
+                        {
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
                         }
                         ScannedFiles = c;
                         ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
                         ScanProgressMessage = $"Loading previews: {c}/{total}";
                     });
                 });
+
+                Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
             });
 
             StatusMessage = $"Scanning {sourceLabel} complete. Loaded previews automatically.";
+            FtpThumbnailPhaseDetail = string.Empty;
         }
 
         private async Task LoadFtpThumbnailsAsync(List<ItemGroup> groups, FtpSourceItem ftp, string sourceLabel, bool preferBackgroundBatch = true)
@@ -2129,7 +2896,11 @@ BuildGroups:
                         if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
                         {
                             Interlocked.Increment(ref loadedCount);
-                            await Application.Current.Dispatcher.InvokeAsync(() => item.Thumbnail = cachedThumb);
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                item.Thumbnail = cachedThumb;
+                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                            });
                         }
                         else
                         {
@@ -2138,6 +2909,10 @@ BuildGroups:
                             if (!downloaded)
                             {
                                 Interlocked.Increment(ref skippedCount);
+                                await Application.Current.Dispatcher.InvokeAsync(() =>
+                                {
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                                });
                             }
                             else
                             {
@@ -2148,7 +2923,15 @@ BuildGroups:
                                     await Application.Current.Dispatcher.InvokeAsync(() =>
                                     {
                                         item.Thumbnail = thumb;
+                                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                                         _thumbnailByItemKey[itemKey] = thumb;
+                                    });
+                                }
+                                else
+                                {
+                                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                                    {
+                                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
                                     });
                                 }
                             }
@@ -2157,6 +2940,10 @@ BuildGroups:
                     catch
                     {
                         Interlocked.Increment(ref skippedCount);
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                        });
                     }
                     finally
                     {
@@ -2198,6 +2985,9 @@ BuildGroups:
                 {
                     ScanProgressMessage = $"Loading FTP previews: {Math.Min(totalItemCount, startIndex + items.Count)}/{totalItemCount} (skipped {skippedCount} stalled/invalid file(s))";
                 }
+
+                FtpThumbnailPhaseDetail = $"FTP previews: loaded {loadedCount}/{items.Count} in batch · skipped {skippedCount}";
+                RefreshPreviewHealthSummary();
             });
 
             return loadedCount;
@@ -2290,17 +3080,24 @@ BuildGroups:
 
         private async Task LoadUnifiedSourceItemsAsync(bool forceRefresh = false)
         {
-            var skippedFolderDetails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ftpListingFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var userExcludedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var concreteSources = Sources
                 .Where(s => s is string || s is FtpSourceItem)
                 .ToList();
 
             if (concreteSources.Count == 0)
             {
+                _logger.LogInformation("Unified load skipped: no drive or FTP sources in the sidebar. Add sources or enable fixed drives in drive selection.");
                 _currentSourceItems = new List<ImportItem>();
-                StatusMessage = "No SD card or FTP sources available for Unified view.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_NoSourcesForUnified");
                 return;
             }
+
+            _logger.LogInformation(
+                "Unified load starting: {SourceCount} sources: {SourceSummary}. Sidebar uses removable drives by default; enable fixed drives in drive selection to merge them here.",
+                concreteSources.Count,
+                string.Join(", ", concreteSources.Select(s => s.ToString() ?? "")));
 
             try
             {
@@ -2316,14 +3113,12 @@ BuildGroups:
                 CurrentScanFolderProcessedFiles = 0;
                 CurrentScanFolderTotalFiles = 0;
 
-                var results = new List<List<ImportItem>>();
+                int sourcesDone = 0;
+                int totalSources = concreteSources.Count;
 
-                foreach (var src in concreteSources)
+                async Task<List<ImportItem>> ScanOneUnifiedSourceAsync(object src)
                 {
                     List<ImportItem> sourceItems;
-                    CurrentScanFolder = src is FtpSourceItem ftpSrc
-                        ? $"{ftpSrc.Host}:{ftpSrc.Port}{NormalizeFtpPath(ftpSrc.RemoteFolder)}"
-                        : src.ToString() ?? "source";
 
                     if (src is string drive)
                     {
@@ -2342,7 +3137,7 @@ BuildGroups:
                             }
                             else
                             {
-                                sourceItems = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders));
+                                sourceItems = await Task.Run(() => _scanner.Scan(localPath, ScanIncludeSubfolders)).ConfigureAwait(false);
                             }
 
                             StampItems(sourceItems, localKey, false);
@@ -2372,12 +3167,12 @@ BuildGroups:
                                 {
                                     if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        lock (skippedFolderDetails)
+                                        lock (ftpListingFailures)
                                         {
-                                            skippedFolderDetails.Add($"{progress.CurrentFolder} - {progress.Note}");
+                                            ftpListingFailures.Add($"{progress.CurrentFolder} - {progress.Note}");
                                         }
                                     }
-                                });
+                                }).ConfigureAwait(false);
 
                             StampItems(sourceItems, ftpKey, true);
                             _sourceItemsCache[ftpKey] = CloneItems(sourceItems);
@@ -2388,37 +3183,64 @@ BuildGroups:
                         sourceItems = new List<ImportItem>();
                     }
 
-                    results.Add(sourceItems);
-                    ScannedFolders++;
-                    ScannedFiles = results.Sum(r => r.Count);
-                    TotalFilesToScan = ScannedFiles;
-                    CurrentScanFolderProcessedFiles = sourceItems.Count;
-                    CurrentScanFolderTotalFiles = sourceItems.Count;
-                    ScanProgressPercent = TotalFoldersToScan > 0 ? (ScannedFolders * 100) / TotalFoldersToScan : 0;
-                    ScanProgressMessage = $"Merged {ScannedFolders}/{TotalFoldersToScan} sources...";
+                    int done = Interlocked.Increment(ref sourcesDone);
+                    await Application.Current.Dispatcher
+                        .InvokeAsync(() =>
+                        {
+                            ScannedFolders = Math.Max(ScannedFolders, done);
+                            int sh = ScannedFolders;
+                            ScanProgressPercent = totalSources > 0 ? (sh * 100) / totalSources : 0;
+                            ScanProgressMessage = $"Merged {sh}/{totalSources} sources...";
+                        })
+                        .Task
+                        .ConfigureAwait(false);
+
+                    return sourceItems;
                 }
 
-                var unifiedItems = results.SelectMany(r => r).ToList();
+                List<ImportItem>[] parallelResults = await Task.WhenAll(concreteSources.Select(src => ScanOneUnifiedSourceAsync(src))).ConfigureAwait(false);
+
+                var unifiedItems = parallelResults.SelectMany(r => r).ToList();
+
+                ApplySkippedFolderFilters(unifiedItems, userExcludedFolders);
 
                 _currentSourceItems = unifiedItems;
-                RebuildGroupsFromCurrentItems();
 
-                if (Groups.Count > 0)
+                // Parallel scans finish on thread pool; Groups / ObservableCollections must update on UI thread only.
+                List<ItemGroup> groupsForThumbnails = await Application.Current.Dispatcher
+                    .InvokeAsync(() =>
+                    {
+                        ScannedFiles = unifiedItems.Count;
+                        TotalFilesToScan = unifiedItems.Count;
+                        CurrentScanFolderProcessedFiles = unifiedItems.Count;
+                        CurrentScanFolderTotalFiles = unifiedItems.Count;
+                        RebuildGroupsFromCurrentItems();
+                        ShowScanProgressDialog = false;
+                        return Groups.ToList();
+                    })
+                    .Task
+                    .ConfigureAwait(false);
+
+                if (groupsForThumbnails.Count > 0)
                 {
-                    await LoadThumbnailsAsync(Groups.ToList(), _unifiedSource, "Unified");
+                    await LoadThumbnailsAsync(groupsForThumbnails, _unifiedSource, "Unified");
                 }
                 else
                 {
-                    StatusMessage = "Unified view contains no media files.";
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        StatusMessage = AppLocalizer.Get("Vm_Status_UnifiedNoMedia");
+                    });
                 }
 
-                if (skippedFolderDetails.Count > 0)
+                if (ftpListingFailures.Count > 0 || userExcludedFolders.Count > 0)
                 {
-                    ShowSkippedFoldersReport("Unified", skippedFolderDetails);
+                    Application.Current.Dispatcher.Invoke(() => MaybeShowSkippedFoldersScanReport("Unified", ftpListingFailures, userExcludedFolders));
                 }
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Unified source load failed.");
                 StatusMessage = $"Error loading Unified sources: {ex.Message}";
             }
             finally
@@ -2440,7 +3262,18 @@ BuildGroups:
             }
 
             int total = allItems.Count;
-            int processed = 0;
+            int processedAtomic = 0;
+
+            await Application.Current.Dispatcher
+                .InvokeAsync(() =>
+                {
+                    ScannedFiles = 0;
+                    TotalFilesToScan = total;
+                    ScanProgressPercent = 0;
+                    ScanProgressMessage = $"Loading Unified previews: 0/{total}";
+                })
+                .Task
+                .ConfigureAwait(false);
 
             var ftpSourcesByKey = Sources
                 .OfType<FtpSourceItem>()
@@ -2449,83 +3282,154 @@ BuildGroups:
             string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
             Directory.CreateDirectory(tempDir);
 
+            void BumpProgress()
+            {
+                int c = Interlocked.Increment(ref processedAtomic);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ScannedFiles = Math.Max(ScannedFiles, c);
+                    int shown = ScannedFiles;
+                    TotalFilesToScan = total;
+                    ScanProgressPercent = total > 0 ? (shown * 100) / total : 0;
+                    ScanProgressMessage = $"Loading Unified previews: {shown}/{total}";
+                });
+            }
+
+            var needLocal = new List<ImportItem>();
+            var needFtp = new List<ImportItem>();
+
             foreach (var item in allItems)
             {
                 string itemKey = BuildItemKey(item);
                 if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
                 {
-                    item.Thumbnail = cachedThumb;
-                    processed++;
-                    ScannedFiles = processed;
-                    TotalFilesToScan = total;
-                    ScanProgressPercent = total > 0 ? (processed * 100) / total : 0;
-                    ScanProgressMessage = $"Loading Unified previews: {processed}/{total}";
-                    continue;
-                }
-
-                if (item.IsFtpSource)
-                {
-                    if (ftpSourcesByKey.TryGetValue(item.SourceId, out var ftp))
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        string ext = Path.GetExtension(item.FileName);
-                        if (string.IsNullOrWhiteSpace(ext))
-                        {
-                            ext = ".jpg";
-                        }
+                        item.Thumbnail = cachedThumb;
+                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                    });
+                    BumpProgress();
+                }
+                else if (item.IsFtpSource)
+                {
+                    needFtp.Add(item);
+                }
+                else
+                {
+                    needLocal.Add(item);
+                }
+            }
 
-                        string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
+            int localWorkers = GetThumbnailWorkerCount();
+            int ftpWorkers = GetFtpThumbnailWorkerCount();
 
+            Task localTask = Task.Run(() =>
+            {
+                Parallel.ForEach(
+                    needLocal,
+                    new ParallelOptions { MaxDegreeOfParallelism = localWorkers },
+                    item =>
+                    {
+                        string itemKey = BuildItemKey(item);
+                        object? thumb = null;
                         try
                         {
-                            int timeoutSeconds = IsLikelyVideoPath(item.FileName) ? 120 : 30;
-                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds);
-                            if (downloaded)
+                            thumb = _thumbnailService.GetThumbnail(item.SourcePath);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "Unified thumbnail failed for local {Path}.", item.SourcePath);
+                        }
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (thumb != null)
                             {
-                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath));
+                                item.Thumbnail = thumb;
+                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                                _thumbnailByItemKey[itemKey] = thumb;
+                            }
+                            else
+                            {
+                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                            }
+                        });
+                        BumpProgress();
+                    });
+            });
+
+            Task ftpTask = Parallel.ForEachAsync(
+                needFtp,
+                new ParallelOptions { MaxDegreeOfParallelism = ftpWorkers },
+                async (item, ct) =>
+                {
+                    string itemKey = BuildItemKey(item);
+                    if (!ftpSourcesByKey.TryGetValue(item.SourceId, out var ftp))
+                    {
+                        await Application.Current.Dispatcher.InvokeAsync(() => item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
+                        BumpProgress();
+                        return;
+                    }
+
+                    string ext = Path.GetExtension(item.FileName);
+                    if (string.IsNullOrWhiteSpace(ext))
+                    {
+                        ext = ".jpg";
+                    }
+
+                    string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
+
+                    try
+                    {
+                        int timeoutSeconds = IsLikelyVideoPath(item.FileName) ? 120 : 30;
+                        bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds).ConfigureAwait(false);
+                        if (downloaded)
+                        {
+                            object? thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath), ct).ConfigureAwait(false);
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
                                 if (thumb != null)
                                 {
                                     item.Thumbnail = thumb;
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
                                     _thumbnailByItemKey[itemKey] = thumb;
                                 }
+                                else
+                                {
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                                }
+                            });
+                        }
+                        else
+                        {
+                            await Application.Current.Dispatcher.InvokeAsync(() => item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
+                        }
+                    }
+                    catch
+                    {
+                        await Application.Current.Dispatcher.InvokeAsync(() => item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (File.Exists(tempPath))
+                            {
+                                File.Delete(tempPath);
                             }
                         }
                         catch
                         {
-                            // Ignore thumbnail failures in unified mode.
-                        }
-                        finally
-                        {
-                            try
-                            {
-                                if (File.Exists(tempPath))
-                                {
-                                    File.Delete(tempPath);
-                                }
-                            }
-                            catch
-                            {
-                                // Ignore temp cleanup failures.
-                            }
+                            // Ignore temp cleanup failures.
                         }
                     }
-                }
-                else
-                {
-                    var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(item.SourcePath));
-                    if (thumb != null)
-                    {
-                        item.Thumbnail = thumb;
-                        _thumbnailByItemKey[itemKey] = thumb;
-                    }
-                }
 
-                processed++;
-                ScannedFiles = processed;
-                TotalFilesToScan = total;
-                ScanProgressPercent = total > 0 ? (processed * 100) / total : 0;
-                ScanProgressMessage = $"Loading Unified previews: {processed}/{total}";
-            }
+                    BumpProgress();
+                });
 
+            await Task.WhenAll(localTask, ftpTask).ConfigureAwait(false);
+
+            Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
             StatusMessage = $"Scanning {sourceLabel} complete. Loaded unified previews automatically.";
         }
 
@@ -2555,7 +3459,8 @@ BuildGroups:
                 IsPreviewVisible = i.IsPreviewVisible,
                 PreviewLabel = i.PreviewLabel,
                 StackKey = i.StackKey,
-                IsStackRepresentative = i.IsStackRepresentative
+                IsStackRepresentative = i.IsStackRepresentative,
+                ThumbnailPreviewStatus = i.ThumbnailPreviewStatus
             }).ToList();
         }
 
@@ -2602,14 +3507,14 @@ BuildGroups:
         {
             if (SelectedSource == null || Groups.Count == 0)
             {
-                StatusMessage = "Scan a source first, then build previews.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_ScanSourceFirst");
                 return;
             }
 
             var selectedGroups = Groups.Where(g => g.IsSelected).ToList();
             if (selectedGroups.Count == 0)
             {
-                StatusMessage = "Select at least one folder group first.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_SelectAtLeastOneGroup");
                 return;
             }
 
@@ -2623,7 +3528,7 @@ BuildGroups:
                 ScannedFiles = 0;
                 TotalFilesToScan = selectedGroups.SelectMany(g => g.Items).Count();
                 ScanProgressMessage = $"Building previews for {selectedGroups.Count} selected folder(s)...";
-                StatusMessage = "Building previews for selected folders...";
+                StatusMessage = AppLocalizer.Get("Vm_Status_BuildingPreviews");
 
                 string sourceLabel = SelectedSource is FtpSourceItem ftpSource
                     ? $"{ftpSource.Host}{NormalizeFtpPath(ftpSource.RemoteFolder)}"
@@ -2646,7 +3551,7 @@ BuildGroups:
         {
             if (Groups.Count == 0)
             {
-                StatusMessage = "Nothing to import.";
+                StatusMessage = AppLocalizer.Get("Vm_StatusNothingToImport");
                 return;
             }
 
@@ -2655,8 +3560,24 @@ BuildGroups:
             int totalFiles = selectedGroups.Sum(g => g.Items.Count(i => i.IsSelected));
             if (totalFiles == 0)
             {
-                StatusMessage = "No files selected to import.";
+                StatusMessage = AppLocalizer.Get("Vm_StatusNoFilesSelected");
                 return;
+            }
+
+            if (ConfirmBeforeImport)
+            {
+                string confirmBody = BuildImportConfirmationMessage(selectedGroups, totalFiles);
+                MessageBoxResult confirmResult = MessageBox.Show(
+                    confirmBody,
+                    AppLocalizer.Get("Vm_ConfirmImportTitle"),
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question);
+
+                if (confirmResult != MessageBoxResult.OK)
+                {
+                    StatusMessage = AppLocalizer.Get("Vm_StatusImportCanceled");
+                    return;
+                }
             }
 
             IsImporting = true;
@@ -2675,7 +3596,7 @@ BuildGroups:
             ImportEtaText = "--:--:--";
             ImportDataRateText = "-- MB/s";
             ShowImportProgressDialog = true;
-            StatusMessage = "Starting Import...";
+            StatusMessage = AppLocalizer.Get("Vm_Status_StartingImport");
             ProgressPercent = 0;
             _processedBytesForImport = 0;
 
@@ -2786,7 +3707,7 @@ BuildGroups:
                         {
                             foreach (var group in selectedGroups)
                             {
-                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token, CreateIngestOptions());
+                                await engine.IngestGroupAsync(group, DestinationRoot, NamingTemplate, importCts.Token, CreateIngestOptions(group));
 
                                 if (DeleteAfterImport)
                                 {
@@ -2814,10 +3735,13 @@ BuildGroups:
                     }
                 }
 
-                // Show success notification
-                StatusMessage = FailedFilesForImport > 0
+                string completionMsg = FailedFilesForImport > 0
                     ? $"✓ Import completed with warnings. Imported {CurrentFileBeingImported}/{TotalFilesForImport}, failed {FailedFilesForImport}."
                     : $"✓ Import completed successfully! Imported {CurrentFileBeingImported}/{TotalFilesForImport}.";
+                LastImportSummary =
+                    $"Last import — succeeded {CurrentFileBeingImported}/{TotalFilesForImport}, failed {FailedFilesForImport}. " +
+                    $"Destination: {DestinationRoot}. " +
+                    $"Reports folder: \"_ImportReports\" under your destination.";
                 ProgressPercent = 100;
                 CurrentGroupProgressPercent = 100;
                 ImportEtaText = "00:00:00";
@@ -2826,35 +3750,48 @@ BuildGroups:
                     double bytesPerSecond = _processedBytesForImport / stopwatch.Elapsed.TotalSeconds;
                     ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
                 }
-                ShowSuccessNotification = true;
+
+                _suppressStatusFeedFromStatusMessage = true;
+                try
+                {
+                    StatusMessage = completionMsg;
+                    AddNotificationFeedEntry(completionMsg, useSuccessAccent: true);
+                }
+                finally
+                {
+                    _suppressStatusFeedFromStatusMessage = false;
+                }
+
                 ShowWindowsImportCompletionNotification(CurrentFileBeingImported, TotalFilesForImport, FailedFilesForImport);
 
                 SaveImportHistoryRecord(stopwatch.Elapsed);
                 ExportImportReportArtifact(stopwatch.Elapsed, selectedGroups);
-                
-                // Hide progress dialog after a brief moment to show completion
-                await System.Threading.Tasks.Task.Delay(1000);
-                ShowImportProgressDialog = false;
 
-                // Auto-hide success notification after 3 seconds
-                _ = System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ShowSuccessNotification = false;
-                    });
-                });
+                // Brief beat so the completion state is visible (avoids ~1s dead air from the old 1000ms delay).
+                await System.Threading.Tasks.Task.Delay(400);
+                ShowImportProgressDialog = false;
 
                 // --- Milestone 5: Post-import actions ---
                 try
                 {
-                    // 1. Auto-open destination folder
-                    if (!string.IsNullOrWhiteSpace(DestinationRoot) && Directory.Exists(DestinationRoot))
+                    // 1. Auto-open destination folder (non-blocking — Explorer startup does not extend import completion).
+                    string destRoot = DestinationRoot;
+                    if (!string.IsNullOrWhiteSpace(destRoot) && Directory.Exists(destRoot))
                     {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        _ = Task.Run(() =>
                         {
-                            FileName = DestinationRoot,
-                            UseShellExecute = true
+                            try
+                            {
+                                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = destRoot,
+                                    UseShellExecute = true
+                                });
+                            }
+                            catch
+                            {
+                                /* ignore open errors */
+                            }
                         });
                     }
                 }
@@ -2901,9 +3838,11 @@ BuildGroups:
                         string json = System.Text.Json.JsonSerializer.Serialize(album, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                         File.WriteAllText(Path.Combine(targetDir, "album.json"), json);
 
-                        // Export a simple .xmp sidecar for each item
-                        foreach (var item in selectedItems)
+                        // Legacy Lightroom sidecar metadata (skipped when keyword embedding is enabled — keywords are written during copy).
+                        if (!EmbedKeywordsOnImport)
                         {
+                            foreach (var item in selectedItems)
+                            {
                             string xmpPath = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(item.FileName) + ".xmp");
                             string xmp = $@"<?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?>
 <x:xmpmeta xmlns:x='adobe:ns:meta/'>
@@ -2922,6 +3861,7 @@ BuildGroups:
 </x:xmpmeta>
 <?xpacket end='w'?>";
                             File.WriteAllText(xmpPath, xmp);
+                            }
                         }
                     }
                 }
@@ -2999,7 +3939,7 @@ BuildGroups:
         {
             if (FailedImportRecords.Count == 0)
             {
-                StatusMessage = "No failed files to retry.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_NoFailedFilesToRetry");
                 return;
             }
 
@@ -3024,14 +3964,14 @@ BuildGroups:
                 string path = GetPendingImportPlanPath();
                 if (!File.Exists(path))
                 {
-                    StatusMessage = "No pending import plan found.";
+                    StatusMessage = AppLocalizer.Get("Vm_Status_NoPendingPlan");
                     return;
                 }
 
                 var plan = System.Text.Json.JsonSerializer.Deserialize<PendingImportPlan>(File.ReadAllText(path));
                 if (plan == null || plan.SelectedSourcePaths.Count == 0)
                 {
-                    StatusMessage = "Pending import plan is empty.";
+                    StatusMessage = AppLocalizer.Get("Vm_Status_EmptyPendingPlan");
                     return;
                 }
 
@@ -3071,7 +4011,7 @@ BuildGroups:
                 .ToList();
             if (selectedPaths.Count == 0)
             {
-                StatusMessage = "Select files before queueing an import.";
+                StatusMessage = AppLocalizer.Get("Vm_Status_SelectFilesBeforeQueue");
                 return;
             }
 
@@ -3148,7 +4088,11 @@ BuildGroups:
                     NamingTemplate = NamingTemplate,
                     VerificationMode = VerificationMode,
                     DuplicatePolicy = DuplicatePolicy,
-                    ThumbnailPerformanceMode = ThumbnailPerformanceMode
+                    ThumbnailPerformanceMode = ThumbnailPerformanceMode,
+                    GroupRawAndRenderedPairs = GroupRawAndRenderedPairs,
+                    ExpandPreviewStacks = ExpandPreviewStacks,
+                    EmbedKeywordsOnImport = EmbedKeywordsOnImport,
+                    ConfirmBeforeImport = ConfirmBeforeImport
                 };
                 string path = Path.Combine(dir, preset.Name + ".json");
                 File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(preset, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
@@ -3167,7 +4111,7 @@ BuildGroups:
                 string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "presets");
                 if (!Directory.Exists(dir))
                 {
-                    StatusMessage = "No presets available.";
+                    StatusMessage = AppLocalizer.Get("Vm_Status_NoPresets");
                     return;
                 }
 
@@ -3176,14 +4120,14 @@ BuildGroups:
                     .FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(latest))
                 {
-                    StatusMessage = "No presets available.";
+                    StatusMessage = AppLocalizer.Get("Vm_Status_NoPresets");
                     return;
                 }
 
                 var preset = System.Text.Json.JsonSerializer.Deserialize<UserPreset>(File.ReadAllText(latest));
                 if (preset == null)
                 {
-                    StatusMessage = "Preset could not be loaded.";
+                    StatusMessage = AppLocalizer.Get("Vm_Status_PresetCouldNotLoad");
                     return;
                 }
 
@@ -3192,6 +4136,10 @@ BuildGroups:
                 if (!string.IsNullOrWhiteSpace(preset.VerificationMode)) VerificationMode = preset.VerificationMode;
                 if (!string.IsNullOrWhiteSpace(preset.DuplicatePolicy)) DuplicatePolicy = preset.DuplicatePolicy;
                 if (!string.IsNullOrWhiteSpace(preset.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = preset.ThumbnailPerformanceMode;
+                GroupRawAndRenderedPairs = preset.GroupRawAndRenderedPairs;
+                ExpandPreviewStacks = preset.ExpandPreviewStacks;
+                EmbedKeywordsOnImport = preset.EmbedKeywordsOnImport;
+                ConfirmBeforeImport = preset.ConfirmBeforeImport;
                 SaveConfig();
                 StatusMessage = $"Loaded preset: {preset.Name}";
             }
@@ -3234,7 +4182,7 @@ BuildGroups:
             }
         }
 
-        private IngestOptions CreateIngestOptions()
+        private IngestOptions CreateIngestOptions(ItemGroup group)
         {
             DuplicateHandlingMode duplicateMode = DuplicatePolicy switch
             {
@@ -3247,10 +4195,15 @@ BuildGroups:
                 ? ImportVerificationMode.Strict
                 : ImportVerificationMode.Fast;
 
+            List<string> keywords = KeywordInputParser.Parse(group.KeywordsText);
+            bool applyKeywords = EmbedKeywordsOnImport && keywords.Count > 0;
+
             return new IngestOptions
             {
                 DuplicateHandling = duplicateMode,
-                VerificationMode = verification
+                VerificationMode = verification,
+                ApplyImportKeywords = applyKeywords,
+                ImportKeywords = applyKeywords ? keywords : null
             };
         }
 
@@ -3329,6 +4282,7 @@ BuildGroups:
                 EndDate = group.EndDate,
                 AlbumName = group.AlbumName,
                 FolderPath = group.FolderPath,
+                KeywordsText = group.KeywordsText,
                 Items = items
             };
 
@@ -3373,7 +4327,7 @@ BuildGroups:
                 });
             };
 
-            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken, CreateIngestOptions());
+            await engine.IngestGroupAsync(subsetGroup, DestinationRoot, NamingTemplate, cancellationToken, CreateIngestOptions(group));
 
             if (!DeleteAfterImport)
             {
@@ -3399,7 +4353,7 @@ BuildGroups:
         {
             if (SelectedSource is not string localRoot)
             {
-                StatusMessage = "Browse is available for local sources. For FTP, type a remote path (for example: /DCIM/Camera).";
+                StatusMessage = AppLocalizer.Get("Vm_Status_BrowseOnlyLocal");
                 return;
             }
 
@@ -3419,6 +4373,456 @@ BuildGroups:
             {
                 ScanPath = dialog.FolderName;
             }
+        }
+
+        private void OpenDriveSelectionDialog()
+        {
+            DriveSelectionItems.Clear();
+            var drives = DriveInfo.GetDrives()
+                .Where(d => d.IsReady && (d.DriveType == DriveType.Removable || d.DriveType == DriveType.Fixed))
+                .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var drive in drives)
+            {
+                string deviceId = GetOrCreateDeviceIdForDrive(drive);
+                _driveDeviceIdByPath[drive.Name] = deviceId;
+                _drivePathByDeviceId[deviceId] = drive.Name;
+                bool selected = _selectedDriveDeviceIds.Count == 0
+                    ? drive.DriveType == DriveType.Removable
+                    : _selectedDriveDeviceIds.Contains(deviceId);
+                DriveSelectionItems.Add(new DriveSelectionOption
+                {
+                    Name = drive.Name,
+                    Label = $"{drive.Name} ({drive.DriveType})",
+                    DriveType = drive.DriveType.ToString(),
+                    DeviceId = deviceId,
+                    IsSelected = selected
+                });
+            }
+
+            ShowDriveSelectionDialog = true;
+        }
+
+        private async Task ExecuteConfirmDriveSelectionAsync()
+        {
+            _selectedDriveDeviceIds.Clear();
+            foreach (var item in DriveSelectionItems.Where(i => i.IsSelected))
+            {
+                if (!string.IsNullOrWhiteSpace(item.DeviceId))
+                {
+                    _selectedDriveDeviceIds.Add(item.DeviceId);
+                }
+            }
+
+            ShowDriveSelectionDialog = false;
+            await ScanDrivesAsync();
+            await RefreshExclusionManagementListsAsync().ConfigureAwait(true);
+            SaveConfig();
+        }
+
+        /// <summary>
+        /// Skipped-folder rules use the same keys as <see cref="ApplySkippedFolderFilters"/> (not the literal Unified sentinel).
+        /// </summary>
+        private string ResolveSkipRuleSourceId(string folderPath)
+        {
+            if (SelectedSource is not UnifiedSourceItem)
+            {
+                return BuildSelectedSourceId();
+            }
+
+            ItemGroup? group = Groups.FirstOrDefault(g =>
+                string.Equals(g.FolderPath, folderPath, StringComparison.OrdinalIgnoreCase));
+            ImportItem? item = group?.Items.FirstOrDefault();
+            if (item == null)
+            {
+                _logger.LogWarning("Skip folder: no group matching path {Path}.", folderPath);
+                return string.Empty;
+            }
+
+            if (item.IsFtpSource)
+            {
+                return item.SourceId;
+            }
+
+            string root = Path.GetPathRoot(item.SourcePath) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                return string.Empty;
+            }
+
+            return BuildLocalSourceRuleKey(root);
+        }
+
+        private void ExecuteSkipFolder(string? folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+            {
+                _logger.LogWarning("Skip folder invoked with empty path (UI binding may be broken).");
+                return;
+            }
+
+            ItemGroup? matchGroup = Groups.FirstOrDefault(g =>
+                string.Equals(g.FolderPath, folderPath, StringComparison.OrdinalIgnoreCase));
+            bool isFtpFolder = matchGroup?.Items.FirstOrDefault()?.IsFtpSource == true;
+            string normalizedFolder = isFtpFolder ? NormalizeFtpPath(folderPath) : folderPath.TrimEnd('\\', '/');
+
+            string sourceId = ResolveSkipRuleSourceId(folderPath);
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                StatusMessage = "Could not attach skip rule to a source. Try again after the list finishes loading.";
+                return;
+            }
+            if (!_skippedFoldersBySource.TryGetValue(sourceId, out var entries))
+            {
+                entries = new List<string>();
+                _skippedFoldersBySource[sourceId] = entries;
+            }
+
+            if (!entries.Any(p => FolderPathsMatchForSkipRule(p, normalizedFolder, isFtpFolder)))
+            {
+                entries.Add(normalizedFolder);
+            }
+
+            InvalidateSourceItemsCache(sourceId);
+
+            SaveConfig();
+
+            var toRemove = Groups.Where(g => FolderPathsMatchForSkipRule(g.FolderPath, normalizedFolder, isFtpFolder)).ToList();
+            foreach (var group in toRemove)
+            {
+                Groups.Remove(group);
+            }
+
+            _logger.LogInformation("Skip folder rule stored for source key {SourceId}: {FolderPath}", sourceId, normalizedFolder);
+
+            StatusMessage = $"Skipping folder in future scans: {normalizedFolder}";
+            _ = RefreshExclusionManagementListsAsync();
+        }
+
+        private async Task ExecuteRemoveDriveExclusionAsync(string? deviceId)
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+            {
+                return;
+            }
+
+            if (_selectedDriveDeviceIds.Count == 0)
+            {
+                // Seed explicit selections from implicit defaults so removing a fixed-drive
+                // exclusion does not accidentally exclude all removable drives.
+                var removableDrives = DriveInfo.GetDrives()
+                    .Where(d => d.IsReady && d.DriveType == DriveType.Removable)
+                    .ToList();
+                foreach (var d in removableDrives)
+                {
+                    string id = await ResolveDeviceIdWithTimeoutAsync(d).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(id))
+                    {
+                        _selectedDriveDeviceIds.Add(id);
+                    }
+                }
+            }
+
+            _selectedDriveDeviceIds.Add(deviceId);
+            await ScanDrivesAsync();
+            await RefreshExclusionManagementListsAsync().ConfigureAwait(true);
+            SaveConfig();
+        }
+
+        private void ExecuteRemoveSkippedFolderRule(SkippedFolderRuleEntry? entry)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.SourceId) || string.IsNullOrWhiteSpace(entry.FolderPath))
+            {
+                return;
+            }
+
+            if (_skippedFoldersBySource.TryGetValue(entry.SourceId, out var list))
+            {
+                bool ftpRule = entry.SourceId.StartsWith("ftp|", StringComparison.OrdinalIgnoreCase);
+                list.RemoveAll(p => FolderPathsMatchForSkipRule(p, entry.FolderPath, ftpRule));
+                if (list.Count == 0)
+                {
+                    _skippedFoldersBySource.Remove(entry.SourceId);
+                }
+
+                _ = RefreshExclusionManagementListsAsync();
+                SaveConfig();
+                InvalidateSourceItemsCache(entry.SourceId);
+            }
+        }
+
+        private static bool FolderPathsMatchForSkipRule(string a, string b, bool isFtp)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            {
+                return false;
+            }
+
+            if (isFtp)
+            {
+                return string.Equals(NormalizeFtpPath(a), NormalizeFtpPath(b), StringComparison.OrdinalIgnoreCase);
+            }
+
+            return string.Equals(a.TrimEnd('\\', '/'), b.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void InvalidateSourceItemsCache(string sourceId)
+        {
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                return;
+            }
+
+            _sourceItemsCache.Remove(sourceId);
+        }
+
+        /// <summary>
+        /// Must run after <see cref="StampItems"/> so FTP items carry the same source key as skip rules.
+        /// Local rules use local-device|… keys (see <see cref="BuildLocalSourceRuleKey"/>), not raw stamped keys.
+        /// </summary>
+        private void ApplySkippedFolderFilters(List<ImportItem> items, HashSet<string> userExcludedFolders)
+        {
+            int before = items.Count;
+            items.RemoveAll(item =>
+            {
+                string ruleLookupKey = GetSkipRuleLookupKey(item);
+                if (string.IsNullOrWhiteSpace(ruleLookupKey) ||
+                    !_skippedFoldersBySource.TryGetValue(ruleLookupKey, out var skippedPrefixes) ||
+                    skippedPrefixes.Count == 0)
+                {
+                    return false;
+                }
+
+                string folder = item.IsFtpSource
+                    ? ExtractFtpFolderPath(item.SourcePath)
+                    : (Path.GetDirectoryName(item.SourcePath) ?? string.Empty);
+
+                bool shouldSkip = skippedPrefixes.Any(prefix =>
+                {
+                    if (string.IsNullOrWhiteSpace(prefix))
+                    {
+                        return false;
+                    }
+
+                    string normalizedPrefix = item.IsFtpSource ? NormalizeFtpPath(prefix) : prefix.TrimEnd('\\', '/');
+                    string normalizedFolder = item.IsFtpSource ? NormalizeFtpPath(folder) : folder.TrimEnd('\\', '/');
+
+                    return normalizedFolder.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase);
+                });
+
+                if (shouldSkip)
+                {
+                    userExcludedFolders.Add(folder);
+                }
+
+                return shouldSkip;
+            });
+
+            int removed = before - items.Count;
+            if (removed > 0)
+            {
+                _logger.LogInformation(
+                    "Skipped-folder blacklist removed {Removed} import item(s) from {Before} scanned (active rule sources: {RuleCount}).",
+                    removed,
+                    before,
+                    _skippedFoldersBySource.Count);
+            }
+        }
+
+        private string GetSkipRuleLookupKey(ImportItem item)
+        {
+            if (item.IsFtpSource)
+            {
+                return item.SourceId ?? string.Empty;
+            }
+
+            string root = Path.GetPathRoot(item.SourcePath) ?? string.Empty;
+            return string.IsNullOrWhiteSpace(root) ? string.Empty : BuildLocalSourceRuleKey(root);
+        }
+
+        /// <summary>
+        /// Rebuilds the skipped-folder blacklist UI from in-memory rules (same keys as ingest filtering).
+        /// Kept separate from drive enumeration so the list stays accurate even when drive I/O fails.
+        /// </summary>
+        private void RebuildSkippedFolderRuleEntries()
+        {
+            SkippedFolderRuleEntries.Clear();
+            foreach (var kvp in _skippedFoldersBySource.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (var folder in kvp.Value.OrderBy(v => v, StringComparer.OrdinalIgnoreCase))
+                {
+                    SkippedFolderRuleEntries.Add(new SkippedFolderRuleEntry
+                    {
+                        SourceId = kvp.Key,
+                        FolderPath = folder
+                    });
+                }
+            }
+        }
+
+        private async Task RefreshExclusionManagementListsAsync()
+        {
+            await Application.Current.Dispatcher.InvokeAsync(RebuildSkippedFolderRuleEntries).Task.ConfigureAwait(true);
+
+            List<DriveInfo> drives;
+            try
+            {
+                drives = await Task.Run(() =>
+                    DriveInfo.GetDrives()
+                        .Where(d => d.IsReady && (d.DriveType == DriveType.Removable || d.DriveType == DriveType.Fixed))
+                        .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                        .ToList()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Drive enumeration failed for exclusion UI; skipped-folder blacklist was still refreshed.");
+                await Application.Current.Dispatcher.InvokeAsync(() => ExcludedDriveEntries.Clear()).Task.ConfigureAwait(true);
+                return;
+            }
+
+            (DriveInfo drive, string deviceId)[] resolved = await Task.WhenAll(
+                drives.Select(async d =>
+                {
+                    string id = await ResolveDeviceIdWithTimeoutAsync(d).ConfigureAwait(false);
+                    return (drive: d, deviceId: id);
+                })).ConfigureAwait(false);
+
+            HashSet<string> selectedSnapshot = await Application.Current.Dispatcher
+                .InvokeAsync(() => new HashSet<string>(_selectedDriveDeviceIds, StringComparer.OrdinalIgnoreCase))
+                .Task
+                .ConfigureAwait(false);
+
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                foreach (var pair in resolved)
+                {
+                    _driveDeviceIdByPath[pair.drive.Name] = pair.deviceId;
+                    _drivePathByDeviceId[pair.deviceId] = pair.drive.Name;
+                }
+
+                ExcludedDriveEntries.Clear();
+                foreach (var pair in resolved)
+                {
+                    bool isExcluded = selectedSnapshot.Count == 0
+                        ? pair.drive.DriveType == DriveType.Fixed
+                        : !selectedSnapshot.Contains(pair.deviceId);
+                    if (isExcluded)
+                    {
+                        ExcludedDriveEntries.Add(new ExcludedDriveEntry
+                        {
+                            DeviceId = pair.deviceId,
+                            DriveName = pair.drive.Name,
+                            DriveType = pair.drive.DriveType.ToString()
+                        });
+                    }
+                }
+            }).Task.ConfigureAwait(true);
+        }
+
+        private const int DeviceIdIoTimeoutMs = 2500;
+
+        private static string GetDeviceIdMarkerPath(DriveInfo drive) => Path.Combine(drive.RootDirectory.FullName, ".quickmediaingest-device.id");
+
+        private static string PathFallbackDeviceId(DriveInfo drive) => $"path:{drive.Name.ToUpperInvariant()}";
+
+        /// <summary>
+        /// Synchronous per-drive root I/O. Can block indefinitely on a bad volume; use only from
+        /// <see cref="GetOrCreateDeviceIdForDrive"/> or <see cref="ResolveDeviceIdWithTimeoutAsync"/> runners.
+        /// </summary>
+        private static string TryReadOrWriteDeviceMarker(DriveInfo drive)
+        {
+            string markerPath = GetDeviceIdMarkerPath(drive);
+            try
+            {
+                if (File.Exists(markerPath))
+                {
+                    string existing = File.ReadAllText(markerPath).Trim();
+                    if (!string.IsNullOrWhiteSpace(existing))
+                    {
+                        return existing;
+                    }
+                }
+
+                string deviceId = Guid.NewGuid().ToString("N");
+                File.WriteAllText(markerPath, deviceId);
+                return deviceId;
+            }
+            catch
+            {
+                return PathFallbackDeviceId(drive);
+            }
+        }
+
+        private async Task<string> ResolveDeviceIdWithTimeoutAsync(DriveInfo drive)
+        {
+            try
+            {
+                var task = Task.Run(() => TryReadOrWriteDeviceMarker(drive));
+                return await task.WaitAsync(TimeSpan.FromMilliseconds(DeviceIdIoTimeoutMs)).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                _logger.LogWarning("Device id I/O timed out for {Drive} after {TimeoutMs} ms; using path fallback.", drive.Name, DeviceIdIoTimeoutMs);
+                return PathFallbackDeviceId(drive);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Device id I/O failed for {Drive}; using path fallback.", drive.Name);
+                return PathFallbackDeviceId(drive);
+            }
+        }
+
+        private string GetOrCreateDeviceIdForDrive(DriveInfo drive)
+        {
+            try
+            {
+                var task = Task.Run(() => TryReadOrWriteDeviceMarker(drive));
+                if (task.Wait(TimeSpan.FromMilliseconds(DeviceIdIoTimeoutMs)))
+                {
+                    return task.Result;
+                }
+
+                _logger.LogWarning("Device id I/O timed out for {Drive} after {TimeoutMs} ms; using path fallback.", drive.Name, DeviceIdIoTimeoutMs);
+                return PathFallbackDeviceId(drive);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Device id I/O failed for {Drive}; using path fallback.", drive.Name);
+                return PathFallbackDeviceId(drive);
+            }
+        }
+
+        private string ResolveDeviceIdFromLocalPath(string localPath)
+        {
+            string root = Path.GetPathRoot(localPath) ?? localPath;
+            if (_driveDeviceIdByPath.TryGetValue(root, out var known))
+            {
+                return known;
+            }
+
+            try
+            {
+                var info = new DriveInfo(root);
+                if (info.IsReady)
+                {
+                    string id = GetOrCreateDeviceIdForDrive(info);
+                    _driveDeviceIdByPath[info.Name] = id;
+                    _drivePathByDeviceId[id] = info.Name;
+                    return id;
+                }
+            }
+            catch
+            {
+                // Fallback below.
+            }
+
+            return $"path:{root.ToUpperInvariant()}";
+        }
+
+        private string BuildLocalSourceRuleKey(string localPath)
+        {
+            return $"local-device|{ResolveDeviceIdFromLocalPath(localPath)}";
         }
 
         private void SaveImportHistoryRecord(TimeSpan duration)
@@ -3461,7 +4865,7 @@ BuildGroups:
             return SelectedSource switch
             {
                 FtpSourceItem ftp => BuildSourceKey(ftp),
-                string local => BuildSourceKey(local),
+                string local => BuildLocalSourceRuleKey(local),
                 UnifiedSourceItem => "unified",
                 _ => "unknown"
             };
@@ -3622,6 +5026,7 @@ BuildGroups:
                     NamingShootNameSample = NamingShootNameSample,
                     NamingLowercase = NamingLowercase,
                     ThumbnailPerformanceMode = ThumbnailPerformanceMode,
+                    GroupRawAndRenderedPairs = GroupRawAndRenderedPairs,
                     FtpHost = FtpHost,
                     FtpPort = FtpPort,
                     FtpUser = FtpUser,
@@ -3640,6 +5045,11 @@ BuildGroups:
                     ExpandPreviewStacks = ExpandPreviewStacks,
                     DuplicatePolicy = DuplicatePolicy,
                     VerificationMode = VerificationMode,
+                    UiLanguage = UiLanguage,
+                    EmbedKeywordsOnImport = EmbedKeywordsOnImport,
+                    ConfirmBeforeImport = ConfirmBeforeImport,
+                    SuppressExcludedFolderScanReminders = SuppressExcludedFolderScanReminders,
+                    SettingsAdvancedExpanded = SettingsAdvancedExpanded,
                     RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
                     UpdatePackageType = UpdatePackageType,
                     WindowWidth = _savedWindowWidth,
@@ -3647,7 +5057,9 @@ BuildGroups:
                     WindowMaximized = _savedWindowMaximized,
                     WindowLeft = _savedWindowLeft,
                     WindowTop = _savedWindowTop,
-                    IsFirstRun = this.IsFirstRun
+                    IsFirstRun = this.IsFirstRun,
+                    SelectedDriveDeviceIds = _selectedDriveDeviceIds.ToList(),
+                    SkippedFoldersBySource = _skippedFoldersBySource.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList(), StringComparer.OrdinalIgnoreCase)
                 };
                 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
@@ -3679,6 +5091,7 @@ BuildGroups:
                         if (!string.IsNullOrWhiteSpace(config.NamingShootNameSample)) NamingShootNameSample = config.NamingShootNameSample;
                         NamingLowercase = config.NamingLowercase;
                         if (!string.IsNullOrWhiteSpace(config.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = config.ThumbnailPerformanceMode;
+                        GroupRawAndRenderedPairs = config.GroupRawAndRenderedPairs;
                         if (!string.IsNullOrWhiteSpace(config.FtpHost)) FtpHost = config.FtpHost;
                         FtpPort = config.FtpPort > 0 ? config.FtpPort : 21;
                         if (!string.IsNullOrWhiteSpace(config.FtpUser)) FtpUser = config.FtpUser;
@@ -3701,6 +5114,11 @@ BuildGroups:
                         ExpandPreviewStacks = config.ExpandPreviewStacks;
                         if (!string.IsNullOrWhiteSpace(config.DuplicatePolicy)) DuplicatePolicy = config.DuplicatePolicy;
                         if (!string.IsNullOrWhiteSpace(config.VerificationMode)) VerificationMode = config.VerificationMode;
+                        UiLanguage = config.UiLanguage ?? string.Empty;
+                        EmbedKeywordsOnImport = config.EmbedKeywordsOnImport;
+                        ConfirmBeforeImport = config.ConfirmBeforeImport;
+                        SuppressExcludedFolderScanReminders = config.SuppressExcludedFolderScanReminders;
+                        SettingsAdvancedExpanded = config.SettingsAdvancedExpanded;
                         if (config.RibbonTileOrder is { Count: > 0 })
                             _ribbonTileOrder = config.RibbonTileOrder;
                         if (!string.IsNullOrEmpty(config.UpdatePackageType)) UpdatePackageType = config.UpdatePackageType;
@@ -3720,6 +5138,11 @@ BuildGroups:
                         OnPropertyChanged("DestinationRoot");
                         OnPropertyChanged("DeleteAfterImport");
                         OnPropertyChanged(nameof(DeleteAfterImportPromptDismissed));
+                        OnPropertyChanged(nameof(UiLanguage));
+                        OnPropertyChanged(nameof(EmbedKeywordsOnImport));
+                        OnPropertyChanged(nameof(ConfirmBeforeImport));
+                        OnPropertyChanged(nameof(SuppressExcludedFolderScanReminders));
+                        OnPropertyChanged(nameof(SettingsAdvancedExpanded));
                         OnPropertyChanged("NamingTemplate");
                         OnPropertyChanged("ScanPath");
                         OnPropertyChanged("SelectAll");
@@ -3730,6 +5153,35 @@ BuildGroups:
                         OnPropertyChanged("LimitFtpThumbnailLoad");
                         OnPropertyChanged("FtpInitialThumbnailCount");
                         this.IsFirstRun = config.IsFirstRun;
+                        _selectedDriveDeviceIds.Clear();
+                        foreach (var id in config.SelectedDriveDeviceIds ?? Enumerable.Empty<string>())
+                        {
+                            if (!string.IsNullOrWhiteSpace(id))
+                            {
+                                _selectedDriveDeviceIds.Add(id);
+                            }
+                        }
+                        if (_selectedDriveDeviceIds.Count == 0)
+                        {
+                            foreach (var oldPath in config.SelectedDrivePaths ?? Enumerable.Empty<string>())
+                            {
+                                if (!string.IsNullOrWhiteSpace(oldPath))
+                                {
+                                    _selectedDriveDeviceIds.Add($"path:{oldPath.ToUpperInvariant()}");
+                                }
+                            }
+                        }
+
+                        _skippedFoldersBySource.Clear();
+                        foreach (var kvp in config.SkippedFoldersBySource ?? new Dictionary<string, List<string>>())
+                        {
+                            if (string.IsNullOrWhiteSpace(kvp.Key))
+                            {
+                                continue;
+                            }
+
+                            _skippedFoldersBySource[kvp.Key] = kvp.Value?.Where(v => !string.IsNullOrWhiteSpace(v)).ToList() ?? new List<string>();
+                        }
 
                         // Parse NamingTemplate to SelectedTokens
                         Application.Current.Dispatcher.Invoke(() => {
@@ -3755,42 +5207,130 @@ BuildGroups:
             } catch { }
         }
 
-                private void ScanDrives()
+        /// <summary>
+        /// <see cref="DriveInfo.IsReady"/> can block on unreachable volumes; never call it synchronously on the UI thread.
+        /// </summary>
+        private async Task<bool> IsDriveReadyWithTimeoutAsync(DriveInfo drive, int timeoutMs = 1500)
         {
             try
             {
-                        _sourceItemsCache.Clear();
-
-                var activeDrives = System.IO.DriveInfo.GetDrives()
-                    .Where(d => d.DriveType == System.IO.DriveType.Removable && d.IsReady)
-                    .Select(d => d.Name)
-                    .ToList();
-
-                                for (int i = Sources.Count - 1; i >= 0; i--)
+                Task<bool> task = Task.Run(() =>
                 {
-                    if (Sources[i] is string s)
+                    try
                     {
-                        if (s.Contains(":") && !activeDrives.Contains(s))
+                        return drive.IsReady;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                });
+                return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                _logger.LogWarning(
+                    "Drive IsReady check timed out for {DriveName} ({DriveType}) after {TimeoutMs} ms; treating as not ready.",
+                    drive.Name,
+                    drive.DriveType,
+                    timeoutMs);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Lists fixed/removable drives off the UI thread, with a bounded wait per volume for IsReady.
+        /// </summary>
+        private async Task<List<DriveInfo>> EnumerateCandidateDrivesAsync()
+        {
+            DriveInfo[] all;
+            try
+            {
+                all = DriveInfo.GetDrives();
+            }
+            catch
+            {
+                return new List<DriveInfo>();
+            }
+
+            var typed = all
+                .Where(d => d.DriveType == DriveType.Removable || d.DriveType == DriveType.Fixed)
+                .ToList();
+
+            var checks = await Task.WhenAll(
+                typed.Select(async d =>
+                {
+                    bool ok = await IsDriveReadyWithTimeoutAsync(d).ConfigureAwait(false);
+                    return (drive: d, ok);
+                })).ConfigureAwait(false);
+
+            return checks.Where(x => x.ok).Select(x => x.drive).ToList();
+        }
+
+        private async Task ScanDrivesAsync()
+        {
+            try
+            {
+                _sourceItemsCache.Clear();
+
+                List<DriveInfo> candidateDrives = await EnumerateCandidateDrivesAsync().ConfigureAwait(false);
+
+                (DriveInfo drive, string deviceId)[] resolved = await Task.WhenAll(
+                    candidateDrives.Select(async d =>
+                    {
+                        string id = await ResolveDeviceIdWithTimeoutAsync(d).ConfigureAwait(false);
+                        return (drive: d, deviceId: id);
+                    })).ConfigureAwait(false);
+
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    foreach (var pair in resolved)
+                    {
+                        _driveDeviceIdByPath[pair.drive.Name] = pair.deviceId;
+                        _drivePathByDeviceId[pair.deviceId] = pair.drive.Name;
+                    }
+
+                    var activeDrives = resolved
+                        .Where(pair =>
                         {
-                            Sources.RemoveAt(i);
-                            if (SelectedSource as string == s) SelectedSource = null;
+                            bool includeByDefault = _selectedDriveDeviceIds.Count == 0 && pair.drive.DriveType == DriveType.Removable;
+                            return includeByDefault ||
+                                   _selectedDriveDeviceIds.Contains(pair.deviceId) ||
+                                   _selectedDriveDeviceIds.Contains($"path:{pair.drive.Name.ToUpperInvariant()}");
+                        })
+                        .Select(pair => pair.drive.Name)
+                        .ToList();
+
+                    for (int i = Sources.Count - 1; i >= 0; i--)
+                    {
+                        if (Sources[i] is string s)
+                        {
+                            if (s.Contains(':') && !activeDrives.Contains(s))
+                            {
+                                Sources.RemoveAt(i);
+                                if (SelectedSource as string == s) SelectedSource = null;
+                            }
                         }
                     }
-                }
 
-                foreach (var drive in activeDrives)
-                {
-                    if (!Sources.Contains(drive))
+                    foreach (string drive in activeDrives)
                     {
-                        Sources.Add(drive);
+                        if (!Sources.Contains(drive))
+                        {
+                            Sources.Add(drive);
+                        }
                     }
-                }
 
-                if (!Sources.Contains(_unifiedSource))
-                {
-                    Sources.Insert(0, _unifiedSource);
-                }
-            } catch { }
+                    if (!Sources.Contains(_unifiedSource))
+                    {
+                        Sources.Insert(0, _unifiedSource);
+                    }
+                });
+            }
+            catch
+            {
+                // Keep UI/config load stable on drive enumeration errors.
+            }
         }
 
         private static string NormalizeFtpPath(string? path)
@@ -3804,6 +5344,18 @@ BuildGroups:
             }
 
             return normalized;
+        }
+
+        private static string ExtractFtpFolderPath(string sourcePath)
+        {
+            string normalized = NormalizeFtpPath(sourcePath);
+            int lastSlash = normalized.LastIndexOf('/');
+            if (lastSlash <= 0)
+            {
+                return "/";
+            }
+
+            return normalized.Substring(0, lastSlash);
         }
 
         private static string? GetParentFtpPath(string path)
@@ -4007,6 +5559,10 @@ BuildGroups:
         public string VerificationMode { get; set; } = "Fast";
         public string DuplicatePolicy { get; set; } = "Suffix";
         public string ThumbnailPerformanceMode { get; set; } = "Balanced";
+        public bool GroupRawAndRenderedPairs { get; set; } = false;
+        public bool ExpandPreviewStacks { get; set; } = false;
+        public bool EmbedKeywordsOnImport { get; set; }
+        public bool ConfirmBeforeImport { get; set; }
     }
 
     public class RelayCommand : ICommand
@@ -4028,6 +5584,30 @@ BuildGroups:
         public int Hours { get; set; }
     }
 
+    public class DriveSelectionOption
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string DriveType { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public bool IsSelected { get; set; } = true;
+    }
+
+    public class ExcludedDriveEntry
+    {
+        public string DeviceId { get; set; } = string.Empty;
+        public string DriveName { get; set; } = string.Empty;
+        public string DriveType { get; set; } = string.Empty;
+        public string Display => $"{DriveName} ({DriveType})";
+    }
+
+    public class SkippedFolderRuleEntry
+    {
+        public string SourceId { get; set; } = string.Empty;
+        public string FolderPath { get; set; } = string.Empty;
+        public string Display => $"{SourceId} :: {FolderPath}";
+    }
+
     public class AppConfig
     {
         public int UpdateIntervalHours { get; set; } = 24;
@@ -4044,6 +5624,7 @@ BuildGroups:
         public string NamingShootNameSample { get; set; } = "my-shoot";
         public bool NamingLowercase { get; set; } = true;
         public string ThumbnailPerformanceMode { get; set; } = "Balanced";
+        public bool GroupRawAndRenderedPairs { get; set; } = false;
         public string FtpHost { get; set; } = string.Empty;
         public int FtpPort { get; set; } = 21;
         public string FtpUser { get; set; } = string.Empty;
@@ -4062,6 +5643,11 @@ BuildGroups:
         public bool ExpandPreviewStacks { get; set; } = false;
         public string DuplicatePolicy { get; set; } = "Suffix";
         public string VerificationMode { get; set; } = "Fast";
+        public string UiLanguage { get; set; } = string.Empty;
+        public bool EmbedKeywordsOnImport { get; set; }
+        public bool ConfirmBeforeImport { get; set; }
+        public bool SuppressExcludedFolderScanReminders { get; set; }
+        public bool SettingsAdvancedExpanded { get; set; }
         public List<string>? RibbonTileOrder { get; set; }
             public double WindowWidth { get; set; } = 960;
             public double WindowHeight { get; set; } = 620;
@@ -4069,5 +5655,8 @@ BuildGroups:
             public double? WindowLeft { get; set; }
             public double? WindowTop { get; set; }
             public bool IsFirstRun { get; set; } = true;
+        public List<string> SelectedDriveDeviceIds { get; set; } = new();
+        public List<string> SelectedDrivePaths { get; set; } = new();
+        public Dictionary<string, List<string>> SkippedFoldersBySource { get; set; } = new();
     }
 }

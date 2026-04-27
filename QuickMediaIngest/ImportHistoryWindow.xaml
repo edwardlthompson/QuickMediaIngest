@@ -12,7 +12,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Import History" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Text="Import History" Style="{StaticResource AppHeadingTextStyle}" FontSize="18"/>
 
         <ListView Grid.Row="1" ItemsSource="{Binding ImportHistoryRecords}" Margin="0,8,0,8"
                   Background="{DynamicResource MaterialDesignPaper}"

@@ -6,6 +6,16 @@ using System.Runtime.CompilerServices;
 namespace QuickMediaIngest.Core.Models
 {
     /// <summary>
+    /// Tracks whether a preview thumbnail loaded for UI feedback.
+    /// </summary>
+    public enum ThumbnailPreviewStatus
+    {
+        Unknown = 0,
+        Loaded = 1,
+        Failed = 2
+    }
+
+    /// <summary>
     /// Represents a single importable media item (file) with metadata and selection state.
     /// </summary>
     public class ImportItem : INotifyPropertyChanged
@@ -85,6 +95,16 @@ namespace QuickMediaIngest.Core.Models
         { 
             get => _thumbnail; 
             set { _thumbnail = value; OnPropertyChanged(); } 
+        }
+
+        private ThumbnailPreviewStatus _thumbnailPreviewStatus = ThumbnailPreviewStatus.Unknown;
+        /// <summary>
+        /// Whether thumbnail generation succeeded for this item.
+        /// </summary>
+        public ThumbnailPreviewStatus ThumbnailPreviewStatus
+        {
+            get => _thumbnailPreviewStatus;
+            set { _thumbnailPreviewStatus = value; OnPropertyChanged(); }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -15,14 +15,14 @@
                        HorizontalAlignment="Center"
                        RenderOptions.BitmapScalingMode="HighQuality"
                        SnapsToDevicePixels="True"/>
-                <TextBlock Text="Welcome to Quick Media Ingest!" FontSize="22" FontWeight="Bold" Margin="0,0,0,16" TextAlignment="Center"/>
+                <TextBlock Text="Welcome to Quick Media Ingest!" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,16" TextAlignment="Center"/>
                 <TextBlock Text="• Use the sidebar to add SD cards or FTP sources.
 • Use the Import button to start ingesting.
-• Try the dark/light toggle in the top bar.
+• Choose your preferred theme in Settings.
 • Tooltips and keyboard shortcuts are available throughout the app.
 
 You can revisit this tour from Settings > About."
-                           FontSize="15" TextWrapping="Wrap" Margin="0,0,0,24" TextAlignment="Left"/>
+                           Style="{StaticResource AppBodyTextStyle}" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,24" TextAlignment="Left"/>
                 <Button Content="Got it!" Width="120" Height="38" FontWeight="SemiBold" Style="{StaticResource MaterialDesignRaisedButton}"
                         Click="GotIt_Click" HorizontalAlignment="Center"/>
             </StackPanel>

@@ -30,11 +30,13 @@ namespace QuickMediaIngest.Core
         /// <param name="token">Cancellation token.</param>
         public async Task CopyAsync(string srcPath, string destPath, CancellationToken token)
         {
-            _logger.LogInformation("Copying local file from {SourcePath} to {DestinationPath}.", srcPath, destPath);
-            using (var sourceStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
-            using (var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true))
+            _logger.LogDebug("Copying local file from {SourcePath} to {DestinationPath}.", srcPath, destPath);
+            const int bufferSize = 1024 * 1024;
+            var options = FileOptions.Asynchronous | FileOptions.SequentialScan;
+            await using (var sourceStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, options))
+            await using (var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, options))
             {
-                await sourceStream.CopyToAsync(destStream, 81920, token); 
+                await sourceStream.CopyToAsync(destStream, bufferSize, token);
             }
         }
 

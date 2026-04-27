@@ -107,7 +107,7 @@ namespace QuickMediaIngest.Core
                     _logger.LogInformation("Connected FTP file provider to {Host}:{Port}.", _host, _port);
                 }
 
-                _logger.LogInformation("Downloading FTP file {SourcePath} to {DestinationPath}.", srcPath, destPath);
+                _logger.LogDebug("Downloading FTP file {SourcePath} to {DestinationPath}.", srcPath, destPath);
                 await _client.DownloadFile(destPath, srcPath, FtpLocalExists.Overwrite, FtpVerify.None, null, token);
             }
             finally
