@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1] — 2026-05-01
+
+### Changed
+
+- **Preferences**: **Language** is now only display language and restart hint. All import-related options (keywords, confirmations, import behavior, thumbnails/preview performance, RAW stacking, duplicate and verification modes, presets) sit under one **Import Settings** expander. Collapsed/expanded state is stored as **`SettingsPrefsImportSettingsExpanded`** in **`config.json`**, with migration from the former **Import behavior** and **Advanced** expander flags.
+
+---
+
 ## [1.3.0] — 2026-04-30
 
 ### Fixed

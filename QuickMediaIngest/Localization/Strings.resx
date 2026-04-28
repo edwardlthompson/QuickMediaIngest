@@ -78,6 +78,9 @@
   <data name="Settings_EmbedKeywords" xml:space="preserve"><value>Write keywords into file metadata on import</value></data>
   <data name="Settings_ConfirmImport" xml:space="preserve"><value>Confirm before starting import</value></data>
   <data name="Settings_Section_LanguagePrompts" xml:space="preserve"><value>Language &amp; import prompts</value></data>
+  <data name="Settings_Section_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_Section_ImportSettings" xml:space="preserve"><value>Import Settings</value></data>
+  <data name="Settings_ImportSubsection_Previews" xml:space="preserve"><value>Thumbnails &amp; preview</value></data>
   <data name="Settings_AdvancedHeader" xml:space="preserve"><value>Advanced import &amp; previews</value></data>
   <data name="Settings_SaveClose" xml:space="preserve"><value>Save &amp; Close</value></data>
 

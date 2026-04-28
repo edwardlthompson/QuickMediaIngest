@@ -53,6 +53,7 @@ namespace QuickMediaIngest
         public bool EmbedKeywordsOnImport { get; set; }
         public bool ConfirmBeforeImport { get; set; }
         public bool SuppressExcludedFolderScanReminders { get; set; }
+        /// <summary>Legacy; merged into <see cref="SettingsPrefsImportSettingsExpanded"/>. Still read from disk for migration.</summary>
         public bool SettingsAdvancedExpanded { get; set; }
         /// <summary>When true, main sidebar uses the narrow icon rail.</summary>
         public bool SidebarCollapsed { get; set; }
@@ -64,8 +65,10 @@ namespace QuickMediaIngest
         public bool? SettingsPrefsNamingExpanded { get; set; }
         /// <summary>Preferences: Language &amp; prompts; null if unset (treated as expanded).</summary>
         public bool? SettingsPrefsLanguageExpanded { get; set; }
-        /// <summary>Preferences: Import behavior; null if unset (treated as expanded).</summary>
+        /// <summary>Legacy; merged into <see cref="SettingsPrefsImportSettingsExpanded"/>. Still read from disk for migration.</summary>
         public bool? SettingsPrefsImportBehaviorExpanded { get; set; }
+        /// <summary>Preferences: unified Import Settings section expander.</summary>
+        public bool? SettingsPrefsImportSettingsExpanded { get; set; }
         public List<string>? RibbonTileOrder { get; set; }
         public double WindowWidth { get; set; } = 960;
         public double WindowHeight { get; set; } = 620;

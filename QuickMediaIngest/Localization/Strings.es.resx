@@ -78,6 +78,9 @@
   <data name="Settings_EmbedKeywords" xml:space="preserve"><value>Escribir palabras clave en los metadatos al importar</value></data>
   <data name="Settings_ConfirmImport" xml:space="preserve"><value>Confirmar antes de iniciar la importación</value></data>
   <data name="Settings_Section_LanguagePrompts" xml:space="preserve"><value>Idioma y confirmaciones de importación</value></data>
+  <data name="Settings_Section_Language" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_Section_ImportSettings" xml:space="preserve"><value>Configuración de importación</value></data>
+  <data name="Settings_ImportSubsection_Previews" xml:space="preserve"><value>Miniaturas y vista previa</value></data>
   <data name="Settings_AdvancedHeader" xml:space="preserve"><value>Importación y vistas previas avanzadas</value></data>
   <data name="Settings_SaveClose" xml:space="preserve"><value>Guardar y cerrar</value></data>
 

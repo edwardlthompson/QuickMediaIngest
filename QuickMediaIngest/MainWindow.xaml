@@ -1274,7 +1274,7 @@
 
                             <Expander IsExpanded="{Binding SettingsPrefsLanguageExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
-                                    <TextBlock Text="{loc:Loc Settings_Section_LanguagePrompts}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Loc Settings_Section_Language}" FontWeight="SemiBold"/>
                                 </Expander.Header>
                                 <StackPanel Margin="0,8,0,0">
                                     <TextBlock Text="{loc:Loc Settings_DisplayLanguage}" FontWeight="SemiBold" Margin="0,0,0,6"/>
@@ -1283,17 +1283,19 @@
                                               SelectedValuePath="Code"
                                               DisplayMemberPath="Label"
                                               Margin="0,0,0,8"/>
-                                    <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82" Margin="0,0,0,12"/>
-                                    <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
-                                    <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}"/>
+                                    <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82"/>
                                 </StackPanel>
                             </Expander>
 
-                            <Expander IsExpanded="{Binding SettingsPrefsImportBehaviorExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander IsExpanded="{Binding SettingsPrefsImportSettingsExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
-                                    <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Loc Settings_Section_ImportSettings}" FontWeight="SemiBold"/>
                                 </Expander.Header>
                                 <StackPanel Margin="0,8,0,0">
+                                    <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                    <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}" Margin="0,0,0,14"/>
+
+                                    <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                                     <CheckBox Content="{loc:Loc Settings_OpenDestinationWhenDone}" IsChecked="{Binding OpenDestinationFolderWhenImportCompletes, Mode=TwoWay}" Margin="0,0,0,6"/>
                                     <CheckBox Content="{loc:Loc Settings_ShowDiskSpaceSummary}" IsChecked="{Binding ShowCompactImportSummaryModal, Mode=TwoWay}" Margin="0,0,0,6"/>
                                     <CheckBox Content="{loc:Loc Settings_ConfirmCancelImport}" IsChecked="{Binding ConfirmCancelImportRequest, Mode=TwoWay}" Margin="0,0,0,6"/>
@@ -1305,16 +1307,11 @@
                                     </DockPanel>
                                     <Button Content="{loc:Loc Settings_OpenImportReportsFolder}" HorizontalAlignment="Left"
                                             Command="{Binding OpenImportReportsFolderCommand}"
-                                            Style="{StaticResource DialogOutlinedButtonStyle}"/>
-                                </StackPanel>
-                            </Expander>
+                                            Style="{StaticResource DialogOutlinedButtonStyle}"
+                                            Margin="0,0,0,16"/>
 
-                            <Expander IsExpanded="{Binding SettingsAdvancedExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}">
-                                <Expander.Header>
-                                    <TextBlock Text="{loc:Loc Settings_AdvancedHeader}" FontWeight="SemiBold"/>
-                                </Expander.Header>
-                                <StackPanel Margin="0,8,0,0">
-                                    <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{loc:Loc Settings_ImportSubsection_Previews}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,4,0,4"/>
                                     <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
                                     <CheckBox Content="{loc:Loc Settings_GroupRawRendered}"
                                               IsChecked="{Binding GroupRawAndRenderedPairs, Mode=TwoWay}"
@@ -1322,7 +1319,7 @@
                                     <CheckBox Content="{loc:Loc Settings_ExpandStacked}"
                                               IsChecked="{Binding ExpandPreviewStacks, Mode=TwoWay}"
                                               IsEnabled="{Binding GroupRawAndRenderedPairs}"
-                                              Margin="0,0,0,10"/>
+                                              Margin="0,0,0,14"/>
 
                                     <TextBlock Text="{loc:Loc Settings_DuplicateHandling}" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                     <ComboBox ItemsSource="{Binding DuplicatePolicyOptions}" SelectedItem="{Binding DuplicatePolicy, Mode=TwoWay}" Margin="0,0,0,10"/>
