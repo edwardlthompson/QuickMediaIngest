@@ -54,6 +54,18 @@ namespace QuickMediaIngest
         public bool ConfirmBeforeImport { get; set; }
         public bool SuppressExcludedFolderScanReminders { get; set; }
         public bool SettingsAdvancedExpanded { get; set; }
+        /// <summary>When true, main sidebar uses the narrow icon rail.</summary>
+        public bool SidebarCollapsed { get; set; }
+        /// <summary>Notifications expander in sidebar; null if unset (treated as expanded).</summary>
+        public bool? SidebarNotificationsExpanded { get; set; }
+        /// <summary>Preferences: Save destination section; null if unset (treated as expanded).</summary>
+        public bool? SettingsPrefsDestinationExpanded { get; set; }
+        /// <summary>Preferences: File naming; null if unset (treated as expanded).</summary>
+        public bool? SettingsPrefsNamingExpanded { get; set; }
+        /// <summary>Preferences: Language &amp; prompts; null if unset (treated as expanded).</summary>
+        public bool? SettingsPrefsLanguageExpanded { get; set; }
+        /// <summary>Preferences: Import behavior; null if unset (treated as expanded).</summary>
+        public bool? SettingsPrefsImportBehaviorExpanded { get; set; }
         public List<string>? RibbonTileOrder { get; set; }
         public double WindowWidth { get; set; } = 960;
         public double WindowHeight { get; set; } = 620;

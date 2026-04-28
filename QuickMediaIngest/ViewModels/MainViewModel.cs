@@ -417,6 +417,14 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool embedKeywordsOnImport = false;
         [ObservableProperty] private bool confirmBeforeImport = false;
         [ObservableProperty] private bool settingsAdvancedExpanded = false;
+        /// <summary>When true, sidebar shows the narrow icon rail (persisted).</summary>
+        [ObservableProperty] private bool sidebarCollapsed = false;
+        /// <summary>Sidebar notifications expander (persisted).</summary>
+        [ObservableProperty] private bool sidebarNotificationsExpanded = true;
+        [ObservableProperty] private bool settingsPrefsDestinationExpanded = true;
+        [ObservableProperty] private bool settingsPrefsNamingExpanded = true;
+        [ObservableProperty] private bool settingsPrefsLanguageExpanded = true;
+        [ObservableProperty] private bool settingsPrefsImportBehaviorExpanded = true;
         [ObservableProperty] private string importReadinessSummary = string.Empty;
         [ObservableProperty] private string lastImportSummary = string.Empty;
         [ObservableProperty] private string previewHealthSummary = string.Empty;
@@ -972,6 +980,12 @@ namespace QuickMediaIngest.ViewModels
         partial void OnConfirmBeforeImportChanged(bool value) => SaveConfig();
         partial void OnSuppressExcludedFolderScanRemindersChanged(bool value) => SaveConfig();
         partial void OnSettingsAdvancedExpandedChanged(bool value) => SaveConfig();
+        partial void OnSidebarCollapsedChanged(bool value) => SaveConfig();
+        partial void OnSidebarNotificationsExpandedChanged(bool value) => SaveConfig();
+        partial void OnSettingsPrefsDestinationExpandedChanged(bool value) => SaveConfig();
+        partial void OnSettingsPrefsNamingExpandedChanged(bool value) => SaveConfig();
+        partial void OnSettingsPrefsLanguageExpandedChanged(bool value) => SaveConfig();
+        partial void OnSettingsPrefsImportBehaviorExpandedChanged(bool value) => SaveConfig();
         partial void OnScanPathChanged(string value)
         {
             if (SelectedSource is FtpSourceItem ftp)

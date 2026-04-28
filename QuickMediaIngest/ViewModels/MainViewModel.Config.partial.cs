@@ -75,6 +75,12 @@ namespace QuickMediaIngest.ViewModels
                     ConfirmBeforeImport = ConfirmBeforeImport,
                     SuppressExcludedFolderScanReminders = SuppressExcludedFolderScanReminders,
                     SettingsAdvancedExpanded = SettingsAdvancedExpanded,
+                    SidebarCollapsed = SidebarCollapsed,
+                    SidebarNotificationsExpanded = SidebarNotificationsExpanded,
+                    SettingsPrefsDestinationExpanded = SettingsPrefsDestinationExpanded,
+                    SettingsPrefsNamingExpanded = SettingsPrefsNamingExpanded,
+                    SettingsPrefsLanguageExpanded = SettingsPrefsLanguageExpanded,
+                    SettingsPrefsImportBehaviorExpanded = SettingsPrefsImportBehaviorExpanded,
                     RibbonTileOrder = _ribbonTileOrder.Count > 0 ? _ribbonTileOrder : null,
                     UpdatePackageType = UpdatePackageType,
                     WindowWidth = _savedWindowWidth,
@@ -188,6 +194,12 @@ namespace QuickMediaIngest.ViewModels
                             if (!string.IsNullOrWhiteSpace(config.LastSessionDestinationRoot)) LastSessionDestinationRoot = config.LastSessionDestinationRoot;
                             SuppressExcludedFolderScanReminders = config.SuppressExcludedFolderScanReminders;
                             SettingsAdvancedExpanded = config.SettingsAdvancedExpanded;
+                            SidebarCollapsed = config.SidebarCollapsed;
+                            SidebarNotificationsExpanded = config.SidebarNotificationsExpanded ?? true;
+                            SettingsPrefsDestinationExpanded = config.SettingsPrefsDestinationExpanded ?? true;
+                            SettingsPrefsNamingExpanded = config.SettingsPrefsNamingExpanded ?? true;
+                            SettingsPrefsLanguageExpanded = config.SettingsPrefsLanguageExpanded ?? true;
+                            SettingsPrefsImportBehaviorExpanded = config.SettingsPrefsImportBehaviorExpanded ?? true;
                             if (config.RibbonTileOrder is { Count: > 0 })
                                 _ribbonTileOrder = config.RibbonTileOrder;
                             if (!string.IsNullOrEmpty(config.UpdatePackageType)) UpdatePackageType = config.UpdatePackageType;
@@ -212,6 +224,12 @@ namespace QuickMediaIngest.ViewModels
                             OnPropertyChanged(nameof(ConfirmBeforeImport));
                             OnPropertyChanged(nameof(SuppressExcludedFolderScanReminders));
                             OnPropertyChanged(nameof(SettingsAdvancedExpanded));
+                            OnPropertyChanged(nameof(SidebarCollapsed));
+                            OnPropertyChanged(nameof(SidebarNotificationsExpanded));
+                            OnPropertyChanged(nameof(SettingsPrefsDestinationExpanded));
+                            OnPropertyChanged(nameof(SettingsPrefsNamingExpanded));
+                            OnPropertyChanged(nameof(SettingsPrefsLanguageExpanded));
+                            OnPropertyChanged(nameof(SettingsPrefsImportBehaviorExpanded));
                             OnPropertyChanged("NamingTemplate");
                             OnPropertyChanged("ScanPath");
                             OnPropertyChanged("SelectAll");

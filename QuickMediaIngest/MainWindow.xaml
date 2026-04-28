@@ -504,6 +504,7 @@
                                               HorizontalAlignment="Stretch"
                                               HorizontalContentAlignment="Left"
                                               Style="{StaticResource SidebarRowToggleStyle}"
+                                              IsChecked="{Binding SidebarCollapsed, Mode=TwoWay}"
                                               Checked="SidebarCollapseToggle_Toggled"
                                               Unchecked="SidebarCollapseToggle_Toggled"
                                               ToolTip="{loc:Loc Sidebar_CollapseTooltip}">
@@ -554,7 +555,7 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </StackPanel>
-                        <Expander Grid.Row="1" Margin="12,0,12,8" IsExpanded="True">
+                        <Expander Grid.Row="1" Margin="12,0,12,8" IsExpanded="{Binding SidebarNotificationsExpanded, Mode=TwoWay}">
                             <Expander.Header>
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
@@ -1182,7 +1183,7 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   Padding="0,0,4,0">
                         <StackPanel>
-                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander IsExpanded="{Binding SettingsPrefsDestinationExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
                                     <TextBlock Text="{loc:Loc Settings_SaveDestination}" FontWeight="SemiBold"/>
                                 </Expander.Header>
@@ -1203,7 +1204,7 @@
                                 </StackPanel>
                             </Expander>
 
-                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander IsExpanded="{Binding SettingsPrefsNamingExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
                                     <TextBlock Text="{loc:Loc Settings_FileNamingScheme}" FontWeight="SemiBold"/>
                                 </Expander.Header>
@@ -1271,7 +1272,7 @@
                                 </StackPanel>
                             </Expander>
 
-                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander IsExpanded="{Binding SettingsPrefsLanguageExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
                                     <TextBlock Text="{loc:Loc Settings_Section_LanguagePrompts}" FontWeight="SemiBold"/>
                                 </Expander.Header>
@@ -1288,7 +1289,7 @@
                                 </StackPanel>
                             </Expander>
 
-                            <Expander IsExpanded="True" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander IsExpanded="{Binding SettingsPrefsImportBehaviorExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
                                 <Expander.Header>
                                     <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold"/>
                                 </Expander.Header>
