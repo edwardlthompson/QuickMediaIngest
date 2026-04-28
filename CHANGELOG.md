@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.2] — 2026-04-29
+
+### Fixed
+
+- **Single-file publish**: Set **IncludeAllContentForSelfExtract** so bundled assemblies extract at startup and **System.Data.SQLite** can resolve native interop paths (fixes **`ArgumentNullException`** in **`SQLiteConnection`** during startup—the splash hang / error dialog some users saw with portable **`QuickMediaIngest.exe`**).
+
+### Changed
+
+- **Preferences**: Expanded/collapsed state for each modal section (**Save destination**, **File naming**, **Language & prompts**, **Import behavior**, **Advanced**) is saved to **`config.json`** and restored on launch.
+- **Sidebar**: **Collapse toggle** state and **Notifications** expander state are persisted and restored (**`SidebarCollapsed`**, **`SidebarNotificationsExpanded`** in **`config.json`**).
+
+---
+
 ## [1.2.1] — 2026-04-28
 
 ### Added
@@ -65,5 +78,5 @@ See git history and tags prior to `v1.2.0` for incremental changes. The pre-1.2.
 
 ## Unreleased
 
-_(Nothing staged yet.)_
+_(Nothing staged.)_
 
