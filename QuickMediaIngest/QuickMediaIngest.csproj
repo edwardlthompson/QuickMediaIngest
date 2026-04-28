@@ -6,7 +6,7 @@
       <ImplicitUsings>enable</ImplicitUsings>
       <UseWPF>true</UseWPF>
       <ApplicationIcon>QuickMediaIngest.ico</ApplicationIcon>
-      <Version>1.2.2</Version>
+      <Version>1.3.0</Version>
       <NeutralLanguage>en</NeutralLanguage>
       <SatelliteResourceLanguages>fr;es</SatelliteResourceLanguages>
       <!-- System.Data.SQLite resolves native interop using Assembly.Location; default single-file keeps managed DLLs in-memory so Location is empty and SQLiteConnection throws ArgumentNullException in Path.Combine. Extract all bundled content on startup (see docs: single-file overview, IncludeAllContentForSelfExtract). -->

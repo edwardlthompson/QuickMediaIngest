@@ -166,19 +166,17 @@ namespace QuickMediaIngest.Core
                     {
                         try
                         {
-                            var srcInfo = new FileInfo(item.SourcePath);
-                            var destInfo = new FileInfo(destPath);
-                            bool verified = options.VerificationMode == ImportVerificationMode.Strict
-                                ? srcInfo.Length == destInfo.Length && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath)
-                                : srcInfo.Length == destInfo.Length;
-                            if (verified)
+                            if (IsPostImportVerifiedForDelete(item, destPath, options, out string? verifyNote))
                             {
                                 await _provider.DeleteAsync(item.SourcePath, ct);
                                 _logger.LogInformation("Deleted source file {SourcePath} after successful import and verification.", item.SourcePath);
                             }
                             else
                             {
-                                _logger.LogWarning("Source and destination file mismatch (hash or size) for {FileName}. Skipping delete.", item.FileName);
+                                _logger.LogWarning(
+                                    "Source and destination did not pass post-import verification for {FileName}. {Details} Skipping delete.",
+                                    item.FileName,
+                                    verifyNote ?? string.Empty);
                             }
                         }
                         catch (Exception ex)
@@ -249,6 +247,79 @@ namespace QuickMediaIngest.Core
                 group.Title,
                 wall.Elapsed.TotalMilliseconds,
                 parallelImports);
+        }
+
+        /// <summary>
+        /// Decide whether it is safe to delete the source after copy. FTP and other non-local paths are not readable
+        /// via <see cref="FileInfo"/> / <see cref="File.OpenRead"/> on Windows; use listing size vs destination size instead.
+        /// </summary>
+        private bool IsPostImportVerifiedForDelete(
+            ImportItem item,
+            string destPath,
+            IngestOptions options,
+            out string? verifyNote)
+        {
+            verifyNote = null;
+            if (!File.Exists(destPath))
+            {
+                verifyNote = "Destination missing.";
+                return false;
+            }
+
+            var destInfo = new FileInfo(destPath);
+
+            // Remote listing path (FTP): never treat SourcePath as a local disk path.
+            if (item.IsFtpSource)
+            {
+                if (item.FileSize != destInfo.Length)
+                {
+                    verifyNote = $"FTP listing size {item.FileSize} bytes vs destination {destInfo.Length} bytes.";
+                    return false;
+                }
+
+                if (options.VerificationMode == ImportVerificationMode.Strict)
+                {
+                    // Cannot hash server bytes via System.IO; size agreement with the downloaded file is the practical gate.
+                    _logger.LogDebug("Strict verification for FTP source uses size match only for {FileName}.", item.FileName);
+                }
+
+                return true;
+            }
+
+            // Local file that exists on disk: full Fast / Strict checks.
+            if (File.Exists(item.SourcePath))
+            {
+                var srcInfo = new FileInfo(item.SourcePath);
+                if (options.VerificationMode == ImportVerificationMode.Strict)
+                {
+                    bool ok = srcInfo.Length == destInfo.Length
+                        && ComputeSHA256(item.SourcePath) == ComputeSHA256(destPath);
+                    if (!ok)
+                    {
+                        verifyNote = "Strict local verify failed (size or SHA-256 mismatch).";
+                    }
+
+                    return ok;
+                }
+
+                if (srcInfo.Length != destInfo.Length)
+                {
+                    verifyNote = $"Local source size {srcInfo.Length} vs destination {destInfo.Length}.";
+                    return false;
+                }
+
+                return true;
+            }
+
+            // Non-FTP path that does not resolve locally (edge cases): fall back to declared size vs destination.
+            if (item.FileSize != destInfo.Length)
+            {
+                verifyNote = $"Declared source size {item.FileSize} vs destination {destInfo.Length}.";
+                return false;
+            }
+
+            verifyNote = null;
+            return true;
         }
 
         // Computes SHA256 hash of a file
@@ -345,12 +416,24 @@ namespace QuickMediaIngest.Core
                     case DuplicateHandlingMode.OverwriteIfNewer:
                         try
                         {
-                            var srcInfo = new FileInfo(item.SourcePath);
                             var dstInfo = new FileInfo(fullPath);
-                            if (srcInfo.LastWriteTimeUtc <= dstInfo.LastWriteTimeUtc)
+                            if (item.IsFtpSource)
                             {
-                                skippedAsDuplicate = true;
-                                return string.Empty;
+                                // FTP path is not a local file; use scan metadata for "source" time.
+                                if (item.DateTaken.ToUniversalTime() <= dstInfo.LastWriteTimeUtc)
+                                {
+                                    skippedAsDuplicate = true;
+                                    return string.Empty;
+                                }
+                            }
+                            else
+                            {
+                                var srcInfo = new FileInfo(item.SourcePath);
+                                if (srcInfo.LastWriteTimeUtc <= dstInfo.LastWriteTimeUtc)
+                                {
+                                    skippedAsDuplicate = true;
+                                    return string.Empty;
+                                }
                             }
                         }
                         catch
