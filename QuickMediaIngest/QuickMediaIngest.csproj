@@ -9,6 +9,8 @@
       <Version>1.2.1</Version>
       <NeutralLanguage>en</NeutralLanguage>
       <SatelliteResourceLanguages>fr;es</SatelliteResourceLanguages>
+      <!-- System.Data.SQLite resolves native interop using Assembly.Location; default single-file keeps managed DLLs in-memory so Location is empty and SQLiteConnection throws ArgumentNullException in Path.Combine. Extract all bundled content on startup (see docs: single-file overview, IncludeAllContentForSelfExtract). -->
+      <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     </PropertyGroup>
 
   <ItemGroup>
