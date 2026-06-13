@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -28,7 +28,7 @@ jobs:
         echo "VERSION=$version" >> $env:GITHUB_ENV
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '8.0.422'
         global-json-file: global.json
@@ -87,7 +87,7 @@ jobs:
         git push origin ${{ env.RELEASE_TAG }}
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: QuickMediaIngest-Build-${{ env.VERSION }}
         path: |
