@@ -31,23 +31,11 @@
         <KeyBinding Key="F1" Command="{Binding ShowShortcutsHelpCommand}" />
     </Window.InputBindings>
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:FilterFileTypeToDisplayConverter x:Key="FilterFileTypeToDisplayConverter" />
 
-        <!-- Inverted Boolean to Boolean Converter for disabling during import -->
-        <converters:InvertBoolConverter x:Key="BoolToInvertedBoolConverter" />
-        
         <!-- Text Converter for Import Button -->
         <converters:BoolToImportingTextConverter x:Key="ImportingTextConverter" />
         <converters:SourceToIconKindConverter x:Key="SourceToIconKindConverter" />
-
-        <Style x:Key="FtpInputTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
-            <Setter Property="Margin" Value="0,2,0,8"/>
-            <Setter Property="SelectionBrush" Value="#FFE600"/>
-            <Setter Property="SelectionOpacity" Value="0.95"/>
-            <EventSetter Event="GotKeyboardFocus" Handler="TextBox_SelectAll"/>
-            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TextBox_PreviewMouseLeftButtonDown"/>
-        </Style>
 
     </Window.Resources>
 

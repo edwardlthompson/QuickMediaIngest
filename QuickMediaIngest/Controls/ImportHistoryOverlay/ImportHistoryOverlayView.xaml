@@ -19,7 +19,7 @@
             <Grid>
                 <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
                     <Rectangle.Fill>
-                        <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                        <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
                     </Rectangle.Fill>
                     <Rectangle.Effect>
                         <BlurEffect Radius="14" RenderingBias="Performance"/>

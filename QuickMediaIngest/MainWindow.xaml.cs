@@ -40,6 +40,8 @@ namespace QuickMediaIngest
         private int _activeRibbonPreviewIndex = -1;
         private double _savedShootGroupsScrollOffset;
 
+        public Visual BlurBackdropSource => MainChromeRoot;
+
         public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger)
         {
             InitializeComponent();

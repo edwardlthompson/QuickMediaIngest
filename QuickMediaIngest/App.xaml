@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
              >
     <Application.Resources>
         <ResourceDictionary>
@@ -11,6 +12,13 @@
                 <!-- App Theme.* colors + brushes (updated at runtime when switching light/dark) -->
                 <ResourceDictionary Source="/Themes/Brushes.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:InvertBoolConverter x:Key="BoolToInvertedBoolConverter" />
+            <Style x:Key="FtpInputTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                <Setter Property="Margin" Value="0,2,0,8"/>
+                <Setter Property="SelectionBrush" Value="#FFE600"/>
+                <Setter Property="SelectionOpacity" Value="0.95"/>
+            </Style>
             <!-- Accent and sidebar colors for dark/light -->
             <SolidColorBrush x:Key="AppAccentBrush" Color="#FFEB3B" /> <!-- Yellow for dark -->
             <SolidColorBrush x:Key="SidebarBackground" Color="#232323" />

@@ -12,7 +12,7 @@
 | `ADB` | Human (Android) | Android SDK, emulator/device testing (ADB provider testing) |
 | `AUTO` | CI/scripts/bots | GitHub Actions, Dependabot, pre-commit, update checker |
 
-**Current release:** [v1.3.3](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.3) (2026-06-13)
+**Current release:** [v1.3.4](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.4) (2026-06-13)
 
 **All agent/automatable sprints complete** — see [`COMPLETED_TASKS.md`](COMPLETED_TASKS.md).
 

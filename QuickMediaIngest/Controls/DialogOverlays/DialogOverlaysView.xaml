@@ -12,7 +12,7 @@
     <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>
@@ -61,7 +61,7 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowDriveSelectionDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="910">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>
@@ -101,7 +101,7 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowScanProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>
@@ -154,7 +154,7 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>
@@ -262,7 +262,7 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowSkippedFoldersDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>
@@ -292,7 +292,7 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAboutDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="950">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
-                <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
                 <BlurEffect Radius="14" RenderingBias="Performance"/>

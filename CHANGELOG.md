@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.4] — 2026-06-13
+
+### Fixed
+
+- **Startup crash**: Overlay blur bindings no longer combine `ElementName` and `RelativeSource` (invalid in WPF); backdrop uses `MainWindow.BlurBackdropSource` instead.
+- **Missing overlay resources**: `BooleanToVisibilityConverter`, `BoolToInvertedBoolConverter`, and `FtpInputTextBoxStyle` moved to application resources so extracted overlay UserControls resolve them at load time.
+- **Release workflow**: Tag creation is idempotent when re-running Build and Release for an existing version.
+
+---
+
 ## [1.3.3] — 2026-06-13
 
 ### Fixed
