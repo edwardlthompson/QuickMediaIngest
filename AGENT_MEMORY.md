@@ -1,0 +1,64 @@
+# Agent Memory
+
+> Centralized index of tech stack, threat models, persistent context, and retrospectives.
+> Update only at session startups, milestone boundaries, or major architectural pivots.
+
+## Tech Stack
+
+| Layer | Technology | Version | Notes |
+|-------|-----------|---------|-------|
+| Runtime | .NET | 8.0 | `net8.0-windows` |
+| UI | WPF + MaterialDesignThemes | 4.9.0 | Dark/light theme |
+| MVVM | CommunityToolkit.Mvvm | 8.4.2 | Partial ViewModels |
+| DI | Microsoft.Extensions.DependencyInjection | 8.0.1 | Registered in `App.xaml.cs` |
+| FTP | FluentFTP | 50.0.1 | Thread-safe connections |
+| Images | Magick.NET-Q16-AnyCPU | 14.13.0 | Thumbnails, RAW sidecars |
+| Metadata | MetadataExtractor | 2.8.1 | EXIF read/write |
+| Storage | System.Data.SQLite.Core | 1.0.118 | Config/history; single-file extract required |
+| Testing | xUnit + Moq | 2.5.0 / 4.20.70 | `QuickMediaIngest.Tests/` |
+| Installer | WiX Toolset | 4.0.4 | MSI via GitHub Actions |
+| License | MIT | — | Pure FOSS |
+| Distribution | GitHub Releases | — | Portable EXE + MSI |
+
+## Active Modules
+
+- [x] .NET / WPF (`modules/dotnet-wpf/MODULE.md`)
+- [ ] Android / F-Droid — not applicable
+- [ ] Web / PWA — not applicable
+- [ ] Python — not applicable
+- [ ] Lightroom Classic — not applicable
+
+## Threat Model Checklist
+
+- [x] `docs/THREAT_MODEL.md` drafted (STRIDE, trust boundaries, abuse cases)
+- [x] No proprietary closed-source SDKs in production path
+- [x] Opt-in only telemetry (none shipped); see `docs/PRIVACY.md`
+- [x] Secrets excluded from VCS (Gitleaks pre-commit)
+- [x] Dependency vulnerability scanning enabled (CodeQL + Trivy + Dependabot)
+- [x] Input validation at FTP and file path boundaries
+- [x] `SECURITY.md` and private vulnerability reporting enabled (human setup)
+
+## Persistent Context
+
+### Project Purpose
+
+Quick Media Ingest imports photos and videos from SD cards, local drives, and FTP (including phone/camera Wi-Fi shares) into dated, shoot-based destination folders with configurable naming, metadata options, and safety checks.
+
+### Key Constraints
+
+- WPF adapted file limits: `.xaml` 800, ViewModels/`*.xaml.cs` 400, `Core/` 200 lines
+- Trunk-based development with Conventional Commits
+- Nullable reference types enabled project-wide
+- SQLite requires `IncludeAllContentForSelfExtract` for single-file publish (see csproj comment)
+
+## Session Retrospectives
+
+| Date | Milestone | What worked | What to improve |
+|------|-----------|-------------|-----------------|
+| 2026-06-13 | Bootstrap parity | Template adoption in Reference mode | Split MainWindow/MainViewModel (Sprint 1) |
+
+## Template Provenance
+
+- **Source template:** `edwardlthompson/agent-project-bootstrap`
+- **Template version:** `0.2.0` (see `.template-version`)
+- **Last update check:** See `.template-update.json`

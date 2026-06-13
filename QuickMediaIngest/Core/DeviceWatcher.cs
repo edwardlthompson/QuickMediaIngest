@@ -11,8 +11,8 @@ namespace QuickMediaIngest.Core
     /// </summary>
     public class DeviceWatcher : IDeviceWatcher, IDisposable
     {
-    private ManagementEventWatcher? _watcher;
-    private ManagementEventWatcher? _watcherDelete;
+        private ManagementEventWatcher? _watcher;
+        private ManagementEventWatcher? _watcherDelete;
         private readonly ILogger<DeviceWatcher> _logger;
 
         /// <summary>

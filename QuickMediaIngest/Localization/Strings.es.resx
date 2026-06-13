@@ -351,7 +351,7 @@ Puede volver a ver esta visita en Configuración &gt; Acerca de.</value></data>
 
   <data name="A11y_SidebarCollapse" xml:space="preserve"><value>Expand or collapse sidebar</value></data>
   <data name="A11y_ThemeToggle" xml:space="preserve"><value>Toggle light or dark theme</value></data>
-  <data name="A11y_NotificationsIcon" xml:space="preserve"><value>Notifications area</value></data>
+  <data name="A11y_NotificationsIcon" xml:space="preserve"><value>Área de notificaciones</value></data>
   <data name="A11y_StatusAnnouncements" xml:space="preserve"><value>Import status announcements</value></data>
 
   <data name="Settings_DestinationPreset" xml:space="preserve"><value>Quick destination</value></data>

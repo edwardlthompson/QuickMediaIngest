@@ -34,7 +34,7 @@ namespace QuickMediaIngest.Tests
                     "/remote",
                     30,
                     CancellationToken.None)
-                .ConfigureAwait(false);
+;
 
             Assert.True(result.Success);
             Assert.Equal("Connected.", result.Message);

@@ -17,14 +17,8 @@ namespace QuickMediaIngest.Core
         /// </summary>
         /// <param name="group">The item group.</param>
         /// <returns>A folder name string.</returns>
-        public string GetTargetFolderName(Models.ItemGroup group)
-        {
-            // Use group title and start date for uniqueness
-            string datePart = group.StartDate.ToString("yyyyMMdd_HHmmss");
-            string safeTitle = string.Join("_", group.Title.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim();
-            if (string.IsNullOrWhiteSpace(safeTitle)) safeTitle = "Group";
-            return $"{datePart}_{safeTitle}";
-        }
+        public string GetTargetFolderName(Models.ItemGroup group) =>
+            GroupFolderNaming.GetTargetFolderName(group);
 
         /// <summary>
         /// Groups items by sorting by date and breaking into new groups when a time gap exceeds the specified threshold.
@@ -39,7 +33,7 @@ namespace QuickMediaIngest.Core
 
             // Sort by DateTaken to find chronological order
             var sortedItems = items.OrderBy(i => i.DateTaken).ToList();
-            
+
             ItemGroup currentGroup = new ItemGroup
             {
                 Title = "Shoot 1",

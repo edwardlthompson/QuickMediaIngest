@@ -1,0 +1,31 @@
+---
+description: WPF MVVM and Material Design conventions for QuickMediaIngest
+globs: QuickMediaIngest/**/*
+alwaysApply: false
+---
+
+# WPF / MVVM Rules
+
+## Architecture
+
+- Core logic in `QuickMediaIngest/Core/` — no WPF `using` statements
+- ViewModels use CommunityToolkit.Mvvm: `[ObservableProperty]`, `[RelayCommand]`
+- Split large ViewModels into partial files (`MainViewModel.*.partial.cs`) by concern
+- Prefer UserControls over growing `MainWindow.xaml` monolith
+
+## XAML / UI
+
+- MaterialDesignThemes for controls and theme resources (`Themes/Colors.xaml`, `Brushes.xaml`, `Typography.xaml`)
+- Localized strings via `.resx` — never hardcode user-visible text
+- Modal overlays share blurred dimmed backdrop; Escape closes topmost overlay in fixed order
+- Run `docs/THEME_QA_CHECKLIST.md` before large UI changes
+
+## Code-Behind
+
+- Keep code-behind thin; logic belongs in ViewModels or Core services
+- `*.xaml.cs` limit: 400 lines (grandfathered files listed in Sprint 1 until split)
+
+## Testing
+
+- Unit test Core and services with xUnit + Moq
+- Do not unit test XAML directly; test ViewModel commands and Core logic

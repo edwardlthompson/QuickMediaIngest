@@ -1,0 +1,311 @@
+{
+  "template_version": "0.2.0",
+  "entry_points": {
+    "bootstrap": "docs/START_HERE.md",
+    "reference": "docs/FOR_AGENTS.md",
+    "initialization_prompt": "docs/INITIALIZATION_PROMPT.md"
+  },
+  "files": [
+    {
+      "path": "docs/START_HERE.md",
+      "purpose": "Single entry point; bootstrap vs reference decision tree",
+      "read_when": "session_start",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/INITIALIZATION_PROMPT.md",
+      "purpose": "Verbatim project initialization prompt for Cursor agents",
+      "read_when": "bootstrap_session_start",
+      "update_when": "project_customization",
+      "owner": "human+agent"
+    },
+    {
+      "path": "docs/FOR_AGENTS.md",
+      "purpose": "Agent read-order, token budget, parallel guardrails",
+      "read_when": "reference_session_start",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Living architecture rules and agent router",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "AGENT_MEMORY.md",
+      "purpose": "Tech stack, threat model, retrospectives index",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "BUILD_PLAN.md",
+      "purpose": "Sprint task board with AGENT/HUMAN/ADB/AUTO labels",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "COMPLETED_TASKS.md",
+      "purpose": "Archive of finished BUILD_PLAN items",
+      "read_when": "session_start",
+      "update_when": "task_completion",
+      "owner": "agent"
+    },
+    {
+      "path": "DECISION_LOG.md",
+      "purpose": "Append-only decision register",
+      "read_when": "architectural_decision",
+      "update_when": "architectural_decision",
+      "owner": "agent+human"
+    },
+    {
+      "path": "KNOWLEDGE_BASE.md",
+      "purpose": "Stack-specific edge cases and resolved bugs",
+      "read_when": "debugging",
+      "update_when": "bug_resolved",
+      "owner": "agent"
+    },
+    {
+      "path": "PROMPT_LIBRARY.md",
+      "purpose": "Effective prompt strategies for this repo",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "README.md",
+      "purpose": "Project overview, quick start, BUILD_PLAN labels, update checker, security",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/SECURITY_TRIAGE.md",
+      "purpose": "Dependabot alerts setup, weekly CVE triage, release security gate",
+      "read_when": "security_triage",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "SECURITY.md",
+      "purpose": "Vulnerability reporting policy and supported versions",
+      "read_when": "security_report",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "purpose": "Community standards (Contributor Covenant)",
+      "read_when": "contributing",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "THIRD_PARTY_LICENSES.md",
+      "purpose": "Dependency license attribution and audit reference",
+      "read_when": "release",
+      "update_when": "release",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/THREAT_MODEL.md",
+      "purpose": "STRIDE threat model, trust boundaries, abuse cases",
+      "read_when": "architectural_decision",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/PRIVACY.md",
+      "purpose": "Privacy policy draft, data minimization",
+      "read_when": "privacy_review",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/RUNBOOK.md",
+      "purpose": "Deploy, rollback, common failures, escalation",
+      "read_when": "operations",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/UPGRADING_FROM_TEMPLATE.md",
+      "purpose": "Guide for cherry-picking upstream template updates",
+      "read_when": "template_upgrade",
+      "update_when": "template_upgrade",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/GITHUB_ABOUT.md",
+      "purpose": "Draft GitHub repo About description and topics",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "human"
+    },
+    {
+      "path": "docs/adr/0001-core-architecture.md",
+      "purpose": "MVVM + provider architecture ADR",
+      "read_when": "architectural_decision",
+      "update_when": "architectural_decision",
+      "owner": "agent+human"
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "purpose": "Critical path ownership for PR review routing",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "human"
+    },
+    {
+      "path": ".template-version",
+      "purpose": "Semver of template version baked into clone",
+      "read_when": "update_check",
+      "update_when": "template_upgrade",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".template-update.json",
+      "purpose": "Update checker interval and last-checked timestamp",
+      "read_when": "update_check",
+      "update_when": "user_preference",
+      "owner": "human"
+    },
+    {
+      "path": ".env.example",
+      "purpose": "Documented environment variable stub",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "scripts/validate-bootstrap.sh",
+      "purpose": "Sprint 0 artifact verification",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-license-compliance.sh",
+      "purpose": "License file presence check for dotnet stack",
+      "read_when": "release",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-file-encoding.sh",
+      "purpose": "Reject UTF-16 corruption in tracked text files",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-file-limits.sh",
+      "purpose": "WPF-adapted file line budget enforcement",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/validate-template-index.sh",
+      "purpose": "Validate TEMPLATE_INDEX.json paths exist",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-template-updates.sh",
+      "purpose": "Check upstream template releases",
+      "read_when": "update_check",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-template-updates.ps1",
+      "purpose": "Check upstream template releases (PowerShell)",
+      "read_when": "update_check",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "purpose": "PR/push quality gates: encoding, limits, bootstrap, dotnet test",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "purpose": "CodeQL static analysis for C#",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/workflows/security.yml",
+      "purpose": "Trivy filesystem scan",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/workflows/dependency-review.yml",
+      "purpose": "PR dependency review — fail on new High/Critical vulnerabilities",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/workflows/build.yml",
+      "purpose": "Windows release build: portable EXE + MSI + GitHub Release",
+      "read_when": "release",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "purpose": "Weekly grouped NuGet and GitHub Actions updates",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/core-directives.mdc",
+      "purpose": "Core agent directives",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/destructive-ops.mdc",
+      "purpose": "Human-in-the-loop gates for destructive agent operations",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/wpf-mvvm.mdc",
+      "purpose": "WPF MVVM and Material Design conventions",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "modules/dotnet-wpf/MODULE.md",
+      "purpose": "Stack-specific agent rules for .NET WPF",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    }
+  ],
+  "modules": {
+    "dotnet-wpf": {
+      "guide": "modules/dotnet-wpf/MODULE.md",
+      "example": null,
+      "activate_when": "stack includes .NET WPF desktop application"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  encoding-check:
+    name: File Encoding (UTF-8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check text files are UTF-8
+        run: bash scripts/check-file-encoding.sh
+
+  file-limits:
+    name: File Size Budgets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check WPF file line limits
+        run: bash scripts/check-file-limits.sh
+
+  validate-index:
+    name: Validate Template Index
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate TEMPLATE_INDEX.json paths
+        run: bash scripts/validate-template-index.sh
+
+  validate-bootstrap:
+    name: Validate Bootstrap Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Sprint 0 artifacts exist
+        run: bash scripts/validate-bootstrap.sh
+
+  dotnet:
+    name: .NET — Build & Test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore
+        run: dotnet restore QuickMediaIngest-1.sln
+      - name: Build
+        run: dotnet build QuickMediaIngest-1.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test QuickMediaIngest-1.sln -c Release --no-build --verbosity normal
+      - name: Vulnerable packages
+        run: dotnet list QuickMediaIngest-1.sln package --vulnerable --include-transitive
+      - name: License compliance
+        run: bash scripts/check-license-compliance.sh
+      - name: Format check
+        run: dotnet format QuickMediaIngest-1.sln --verify-no-changes
+
+  template-update-check:
+    name: Template Update Check
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for upstream template updates
+        run: bash scripts/check-template-updates.sh --verbose

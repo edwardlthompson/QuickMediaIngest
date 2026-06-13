@@ -1,0 +1,212 @@
+<UserControl x:Class="QuickMediaIngest.Controls.PreferencesOverlayView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:QuickMediaIngest"
+    xmlns:models="clr-namespace:QuickMediaIngest.Core.Models"
+    xmlns:loc="clr-namespace:QuickMediaIngest.Localization"
+    xmlns:vm="clr-namespace:QuickMediaIngest.ViewModels"
+    xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <Grid>
+    <Grid x:Name="SettingsOverlay"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
+          Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1100">
+        <Border Background="Transparent" MouseDown="CloseSettings_Click">
+            <Grid>
+                <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                    </Rectangle.Fill>
+                    <Rectangle.Effect>
+                        <BlurEffect Radius="14" RenderingBias="Performance"/>
+                    </Rectangle.Effect>
+                </Rectangle>
+                <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+            </Grid>
+        </Border>
+        
+        <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                Background="{DynamicResource MenuBackgroundBrush}"
+                CornerRadius="15" Padding="25" Width="580"
+                Margin="16"
+                MaxHeight="{Binding ElementName=SettingsOverlay, Path=ActualHeight}"
+                BorderBrush="{DynamicResource MenuForegroundBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*" MinHeight="120"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{loc:Loc Settings_MainTitle}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,16"
+                           Foreground="{DynamicResource MenuForegroundBrush}"/>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,4,0">
+                    <StackPanel>
+                        <Expander IsExpanded="{Binding SettingsPrefsDestinationExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander.Header>
+                                <TextBlock Text="{loc:Loc Settings_SaveDestination}" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{loc:Loc Settings_DestinationPreset}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding DestinationPresetOptions}"
+                                          SelectedValue="{Binding DestinationPreset}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Label"
+                                          Margin="0,0,0,12"/>
+                                <DockPanel Margin="0,0,0,4">
+                                    <Button x:Name="SettingsBrowseBtn" Content="{loc:Loc Settings_Browse}" DockPanel.Dock="Right"
+                                            Padding="10,5" Click="Browse_Click"
+                                            Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                                    <TextBox x:Name="DestPathDisplay" IsReadOnly="True" Margin="0,0,10,0"
+                                             Text="{Binding DestinationRoot, Mode=TwoWay}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander IsExpanded="{Binding SettingsPrefsNamingExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander.Header>
+                                <TextBlock Text="{loc:Loc Settings_FileNamingScheme}" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{loc:Loc Settings_Preset}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding NamingPresetOptions}" SelectedItem="{Binding NamingPreset, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                <WrapPanel Margin="0,0,0,6">
+                                    <CheckBox Content="{loc:Loc Settings_Date}" IsChecked="{Binding NamingIncludeDate, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{loc:Loc Settings_Time}" IsChecked="{Binding NamingIncludeTime, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{loc:Loc Settings_Sequence}" IsChecked="{Binding NamingIncludeSequence, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{loc:Loc Settings_ShootName}" IsChecked="{Binding NamingIncludeShootName, Mode=TwoWay}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{loc:Loc Settings_OriginalName}" IsChecked="{Binding NamingIncludeOriginalName, Mode=TwoWay}"/>
+                                </WrapPanel>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="8" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Grid.Column="0" Grid.Row="0">
+                                        <TextBlock Text="{loc:Loc Settings_DateFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <ComboBox ItemsSource="{Binding NamingDateFormatOptions}" SelectedItem="{Binding NamingDateFormat, Mode=TwoWay}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Grid.Row="0">
+                                        <TextBlock Text="{loc:Loc Settings_TimeFormat}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <ComboBox ItemsSource="{Binding NamingTimeFormatOptions}" SelectedItem="{Binding NamingTimeFormat, Mode=TwoWay}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="0" Grid.Row="2">
+                                        <TextBlock Text="{loc:Loc Settings_Separator}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                        <ComboBox ItemsSource="{Binding NamingSeparatorOptions}" SelectedItem="{Binding NamingSeparator, Mode=TwoWay}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="{loc:Loc Settings_ShootNameSample}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding NamingShootNameSample, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_ForceLowercase}" IsChecked="{Binding NamingLowercase, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                <Border Background="{DynamicResource MenuBackgroundBrush}"
+                                        BorderBrush="{DynamicResource MenuForegroundBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="5" Padding="10" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Loc Settings_PreviewExamples}" FontWeight="SemiBold" Margin="0,0,0,6"
+                                                   Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                        <ItemsControl ItemsSource="{Binding NamingPreviewExamples}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" FontWeight="Light"
+                                                               Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander IsExpanded="{Binding SettingsPrefsLanguageExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander.Header>
+                                <TextBlock Text="{loc:Loc Settings_Section_Language}" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{loc:Loc Settings_DisplayLanguage}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <ComboBox ItemsSource="{Binding UiLanguageOptions}"
+                                          SelectedValue="{Binding UiLanguage, Mode=TwoWay}"
+                                          SelectedValuePath="Code"
+                                          DisplayMemberPath="Label"
+                                          Margin="0,0,0,8"/>
+                                <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander IsExpanded="{Binding SettingsPrefsImportSettingsExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}">
+                            <Expander.Header>
+                                <TextBlock Text="{loc:Loc Settings_Section_ImportSettings}" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,8,0,0">
+                                <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}" Margin="0,0,0,14"/>
+
+                                <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_OpenDestinationWhenDone}" IsChecked="{Binding OpenDestinationFolderWhenImportCompletes, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_ShowDiskSpaceSummary}" IsChecked="{Binding ShowCompactImportSummaryModal, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_ConfirmCancelImport}" IsChecked="{Binding ConfirmCancelImportRequest, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                <CheckBox Content="{loc:Loc Settings_SingleThreadImport}" IsChecked="{Binding ImportSingleThreaded, Mode=TwoWay}" Margin="0,0,0,8"/>
+                                <DockPanel Margin="0,0,0,12">
+                                    <TextBlock DockPanel.Dock="Left" Width="260" TextWrapping="Wrap" VerticalAlignment="Center"
+                                               Text="{loc:Loc Settings_FileCooldownMs}" Margin="0,0,12,0"/>
+                                    <TextBox Text="{Binding ImportCooldownBetweenFilesMs, UpdateSourceTrigger=PropertyChanged}" Width="120"/>
+                                </DockPanel>
+                                <Button Content="{loc:Loc Settings_OpenImportReportsFolder}" HorizontalAlignment="Left"
+                                        Command="{Binding OpenImportReportsFolderCommand}"
+                                        Style="{StaticResource DialogOutlinedButtonStyle}"
+                                        Margin="0,0,0,16"/>
+
+                                <TextBlock Text="{loc:Loc Settings_ImportSubsection_Previews}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,4,0,4"/>
+                                <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+                                <CheckBox Content="{loc:Loc Settings_GroupRawRendered}"
+                                          IsChecked="{Binding GroupRawAndRenderedPairs, Mode=TwoWay}"
+                                          Margin="0,0,0,8"/>
+                                <CheckBox Content="{loc:Loc Settings_ExpandStacked}"
+                                          IsChecked="{Binding ExpandPreviewStacks, Mode=TwoWay}"
+                                          IsEnabled="{Binding GroupRawAndRenderedPairs}"
+                                          Margin="0,0,0,14"/>
+
+                                <TextBlock Text="{loc:Loc Settings_DuplicateHandling}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding DuplicatePolicyOptions}" SelectedItem="{Binding DuplicatePolicy, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                <TextBlock Text="{loc:Loc Settings_VerificationMode}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding VerificationModeOptions}" SelectedItem="{Binding VerificationMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Button Content="{loc:Loc Settings_SavePreset}" Command="{Binding SavePresetCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0"/>
+                                    <Button Content="{loc:Loc Settings_LoadLatestPreset}" Command="{Binding LoadPresetCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                    <Separator Margin="0,0,0,16"/>
+                    <Button Content="{loc:Loc Settings_SaveClose}" HorizontalAlignment="Right"
+                            Width="120" Command="{Binding SaveAndCloseSettingsCommand}" IsDefault="True"
+                            Style="{StaticResource DialogPrimaryButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+    </Grid>
+</UserControl>

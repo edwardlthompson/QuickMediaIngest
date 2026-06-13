@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.ViewModels
@@ -269,7 +270,8 @@ namespace QuickMediaIngest.ViewModels
                             }
 
                             // Parse NamingTemplate to SelectedTokens
-                            Application.Current.Dispatcher.Invoke(() => {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
                                 SelectedTokens.Clear();
                                 if (!string.IsNullOrEmpty(NamingTemplate))
                                 {
@@ -301,6 +303,13 @@ namespace QuickMediaIngest.ViewModels
             {
                 _logger.LogWarning(ex, "Loading configuration failed.");
             }
+        }
+
+        [RelayCommand]
+        private void SaveAndCloseSettings()
+        {
+            SaveConfig();
+            ShowSettingsDialog = false;
         }
     }
 }

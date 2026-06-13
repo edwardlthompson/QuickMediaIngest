@@ -59,15 +59,15 @@ namespace QuickMediaIngest.Core.Models
         /// The file type/extension (e.g., "JPG", "MP4").
         /// </summary>
         public string FileType { get; set; } = string.Empty;
-        
+
         private bool _isSelected = true;
         /// <summary>
         /// Whether the item is selected for import.
         /// </summary>
-        public bool IsSelected 
-        { 
-            get => _isSelected; 
-            set { _isSelected = value; OnPropertyChanged(); } 
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(); }
         }
 
         private bool _isPreviewVisible = true;
@@ -91,10 +91,10 @@ namespace QuickMediaIngest.Core.Models
         /// <summary>
         /// The thumbnail image for the item (UI-bound).
         /// </summary>
-        public object? Thumbnail 
-        { 
-            get => _thumbnail; 
-            set { _thumbnail = value; OnPropertyChanged(); } 
+        public object? Thumbnail
+        {
+            get => _thumbnail;
+            set { _thumbnail = value; OnPropertyChanged(); }
         }
 
         private ThumbnailPreviewStatus _thumbnailPreviewStatus = ThumbnailPreviewStatus.Unknown;

@@ -206,11 +206,6 @@ namespace QuickMediaIngest.Data
 {
     public interface IDatabaseService
     {
-        DeviceConfig? GetDeviceConfig(string id);
-        void SaveDeviceConfig(DeviceConfig config);
-        List<WhitelistRule> GetWhitelist(string deviceId);
-        void AddWhitelistRule(WhitelistRule rule);
-
         /// <summary>Runs occasional <c>VACUUM</c> to control DB file growth.</summary>
         void TryPeriodicVacuum(int minimumDaysBetweenRuns = 14);
     }

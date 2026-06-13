@@ -1,0 +1,6 @@
+{
+  "upstream": "edwardlthompson/agent-project-bootstrap",
+  "check_interval": "weekly",
+  "last_checked": "2026-06-13T04:31:44.3705373Z",
+  "notify_method": "stdout"
+}

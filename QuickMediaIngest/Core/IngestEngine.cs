@@ -97,7 +97,7 @@ namespace QuickMediaIngest.Core
             var selectedItems = group.Items.Where(i => i.IsSelected).ToList();
             if (selectedItems.Count == 0) return;
 
-            string folderName = GetTargetFolderName(group);
+            string folderName = GroupFolderNaming.GetTargetFolderName(group);
             string targetDir = Path.Combine(destinationRoot, folderName);
 
             if (!Directory.Exists(targetDir))
@@ -331,20 +331,6 @@ namespace QuickMediaIngest.Core
             return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
 
-        private string GetTargetFolderName(ItemGroup group)
-        {
-            string start = group.StartDate.ToString("yyyy-MM-dd");
-            string end = group.EndDate.ToString("yyyy-MM-dd");
-            string name = group.Title;
-
-            if (string.IsNullOrEmpty(name))
-            {
-                return start == end ? start : $"{start} to {end}";
-            }
-
-            return start == end ? $"{start}+{name}" : $"{start} to {end}+{name}";
-        }
-
         /// <summary>
         /// Resolves the output file name for an import item using the specified template and group title.
         /// </summary>
@@ -387,7 +373,7 @@ namespace QuickMediaIngest.Core
                 outputName = "[Date]_[Time]_[Original]"; // Default fallback
             }
 
-                        // Replace Tokens
+            // Replace Tokens
             outputName = outputName.Replace("[Date]", effectiveDateTaken.ToString("yyyy-MM-dd"));
             outputName = outputName.Replace("[Time]", effectiveDateTaken.ToString("HH-mm-ss"));
             outputName = outputName.Replace("[TimeMs]", effectiveDateTaken.ToString("HH-mm-ss-fff"));

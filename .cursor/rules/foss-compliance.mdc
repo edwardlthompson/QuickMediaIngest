@@ -1,0 +1,28 @@
+---
+description: FOSS compliance, privacy, and telemetry constraints
+alwaysApply: true
+---
+
+# FOSS & Privacy Compliance
+
+## License
+
+- Pure FOSS under MIT license
+- No proprietary closed-source SDKs in production path
+
+## Distribution
+
+- GitHub Releases as primary channel (portable EXE + WiX MSI)
+
+## Privacy & Telemetry
+
+- Opt-in only telemetry — never enabled by default
+- No PII in logs without explicit user consent
+- Update checks contact GitHub Releases API only when user initiates
+
+## Security
+
+- Secrets never committed (Gitleaks pre-commit enforced)
+- Dependency scanning via CodeQL and Trivy
+- FTP credentials stored in Windows Credential Manager, not plain text
+- Input validation at all file path and FTP boundaries

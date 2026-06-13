@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.3.2] — 2026-06-13
+
+### Fixed
+
+- **Preferences Save & Close**: The button now calls `SaveConfig()` before closing; settings changes persist to `config.json` instead of being discarded.
+- **Folder naming parity**: Import and post-import album/XMP export both use the shared `GroupFolderNaming` format (`yyyyMMdd_HHmmss_Title`), so destination folders match across workflows.
+- **CodeQL workflow**: Initialize CodeQL before `dotnet build` so static analysis runs correctly.
+
+### Changed
+
+- **WPF structure**: `MainViewModel` and `MainWindow` split into domain partials; overlay dialogs moved to `Controls/*` UserControls; converters extracted to `Converters/`.
+- **Persistence**: User config and history remain JSON under `%AppData%\QuickMediaIngest\`; SQLite is VACUUM-only maintenance (unused CRUD APIs removed).
+- **CI / release**: `ci.yml` adds vulnerable-package scan, license check, and `dotnet format`; `build.yml` runs tests before publish and creates GitHub Releases only via **workflow_dispatch**.
+- **Dependencies**: Magick.NET `14.14.0` (clears NU190 advisories); test packages bumped; NuGet lock files enabled.
+
+### Added
+
+- Agent/bootstrap scaffolding (`AGENTS.md`, `docs/FOR_AGENTS.md`, CI workflows, pre-commit hooks).
+- `scripts/validate-local.ps1` and `docs/DEV_SETUP_WINDOWS.md` for Windows dev validation.
+- Unit tests: folder naming parity, keyword parser, settings save-and-close (20 tests total).
+- Spanish/French translation for notifications accessibility label.
+
+### Removed
+
+- Dead DI registrations (`IMetadataReader`, `IWhitelistFilter`) and unused settings code-behind handlers.
+
+---
+
 ## [1.3.1] — 2026-05-01
 
 ### Changed

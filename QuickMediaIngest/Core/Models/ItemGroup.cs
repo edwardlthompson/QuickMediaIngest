@@ -21,10 +21,10 @@ namespace QuickMediaIngest.Core.Models
         /// <summary>
         /// The title of the group (e.g., "Shoot 1").
         /// </summary>
-        public string Title 
-        { 
-            get => _title; 
-            set { _title = value; OnPropertyChanged(); } 
+        public string Title
+        {
+            get => _title;
+            set { _title = value; OnPropertyChanged(); }
         }
 
         /// <summary>

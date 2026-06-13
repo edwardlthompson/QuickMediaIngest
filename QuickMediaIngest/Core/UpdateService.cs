@@ -39,9 +39,9 @@ namespace QuickMediaIngest.Core
                 _logger.LogInformation("Checking for updates. Force={Force}, IntervalHours={IntervalHours}, PackageType={PackageType}", force, intervalHours, packageType);
                 var response = await _httpClient.GetStringAsync($"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
                 var doc = JsonDocument.Parse(response);
-                
+
                 string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-                
+
                 // Find the preferred asset based on package type selection.
                 // Portable should prioritize the standalone .exe, Installer should use .msi.
                 string targetName = packageType == "Installer" ? "QuickMediaIngest.msi" : "QuickMediaIngest.exe";
@@ -112,7 +112,7 @@ namespace QuickMediaIngest.Core
             if (intervalHours < 0) return false; // -1 means Off / Manual Check Only
             if (intervalHours == 0) return true; // 0 means always check on startup
             if (!File.Exists(_cacheFile)) return true;
-            
+
             try
             {
                 string text = File.ReadAllText(_cacheFile);
@@ -125,7 +125,7 @@ namespace QuickMediaIngest.Core
             {
                 _logger.LogDebug(ex, "Could not read last update check timestamp; will check again.");
             }
-            
+
             return true;
         }
 

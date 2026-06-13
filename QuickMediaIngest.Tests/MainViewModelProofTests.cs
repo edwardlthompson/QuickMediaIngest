@@ -43,5 +43,16 @@ namespace QuickMediaIngest.Tests
             var vm = CreateViewModel();
             Assert.Contains("QuickMediaIngest", vm.DestinationRoot);
         }
+
+        [Fact]
+        public void SaveAndCloseSettings_ClosesDialog()
+        {
+            var vm = CreateViewModel();
+            vm.ShowSettingsDialog = true;
+
+            vm.SaveAndCloseSettingsCommand.Execute(null);
+
+            Assert.False(vm.ShowSettingsDialog);
+        }
     }
 }

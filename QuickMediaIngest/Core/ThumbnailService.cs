@@ -382,7 +382,7 @@ namespace QuickMediaIngest.Core
             bitmap.BeginInit();
             bitmap.DecodePixelWidth = Math.Max(120, decodePixelWidth);
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            
+
             var memoryStream = new MemoryStream();
             var encoder = new JpegBitmapEncoder();
             encoder.Frames.Add(frame);
@@ -391,7 +391,7 @@ namespace QuickMediaIngest.Core
 
             bitmap.StreamSource = memoryStream;
             bitmap.EndInit();
-            bitmap.Freeze(); 
+            bitmap.Freeze();
             return bitmap;
         }
 

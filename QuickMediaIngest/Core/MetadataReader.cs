@@ -31,7 +31,7 @@ namespace QuickMediaIngest.Core
         /// <param name="item">The import item to update with metadata.</param>
         public void ReadMetadata(ImportItem item)
         {
-            if (!File.Exists(item.SourcePath)) 
+            if (!File.Exists(item.SourcePath))
             {
                 return; // Can only extract local file streams easily
             }

@@ -1,0 +1,90 @@
+<UserControl x:Class="QuickMediaIngest.Controls.ScanExclusionsOverlayView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:QuickMediaIngest"
+    xmlns:models="clr-namespace:QuickMediaIngest.Core.Models"
+    xmlns:loc="clr-namespace:QuickMediaIngest.Localization"
+    xmlns:vm="clr-namespace:QuickMediaIngest.ViewModels"
+    xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <Grid>
+    <Grid x:Name="ScanExclusionsOverlay"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
+          Visibility="{Binding ShowScanExclusionsPanel, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1101">
+        <Border Background="Transparent" MouseDown="CloseScanExclusions_Click">
+            <Grid>
+                <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
+                    </Rectangle.Fill>
+                    <Rectangle.Effect>
+                        <BlurEffect Radius="14" RenderingBias="Performance"/>
+                    </Rectangle.Effect>
+                </Rectangle>
+                <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+            </Grid>
+        </Border>
+        <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                Background="{DynamicResource MenuBackgroundBrush}"
+                CornerRadius="15" Padding="22" Width="560" MaxHeight="640"
+                BorderBrush="{DynamicResource MenuForegroundBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="{loc:Loc ScanExclusions_Title}" Style="{StaticResource AppHeadingLargeTextStyle}"
+                               Foreground="{DynamicResource MenuForegroundBrush}"/>
+                    <TextBlock Text="{loc:Loc ScanExclusions_Subtitle}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="480">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Loc ScanExclusions_DrivesHeading}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Text="{loc:Loc ScanExclusions_DrivesHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <ListBox ItemsSource="{Binding ExcludedDriveEntries}" MaxHeight="140" Margin="0,0,0,16">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2,0,2">
+                                        <Button DockPanel.Dock="Right"
+                                                Content="{loc:Loc ScanExclusions_IncludeDrive}"
+                                                Style="{StaticResource DialogOutlinedButtonStyle}"
+                                                Command="{Binding DataContext.RemoveDriveExclusionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding DeviceId}"
+                                                Padding="8,2"
+                                                Margin="6,0,0,0"/>
+                                        <TextBlock Text="{Binding Display}" Style="{StaticResource AppBodyTextStyle}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="{loc:Loc ScanExclusions_FoldersHeading}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Text="{loc:Loc ScanExclusions_FoldersHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <ListBox ItemsSource="{Binding SkippedFolderRuleEntries}" MaxHeight="220">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2,0,2">
+                                        <Button DockPanel.Dock="Right"
+                                                Content="{loc:Loc ScanExclusions_RemoveFolder}"
+                                                Style="{StaticResource DialogOutlinedButtonStyle}"
+                                                Command="{Binding DataContext.RemoveSkippedFolderRuleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Padding="8,2"
+                                                Margin="6,0,0,0"/>
+                                        <TextBlock Text="{Binding Display}" Style="{StaticResource AppBodyTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+                <Button Grid.Row="2" Content="{loc:Loc Btn_Close}" HorizontalAlignment="Right" Margin="0,16,0,0"
+                        Width="120" Click="CloseScanExclusions_Click"
+                        Style="{StaticResource DialogPrimaryButtonStyle}"/>
+            </Grid>
+        </Border>
+    </Grid>
+    </Grid>
+</UserControl>

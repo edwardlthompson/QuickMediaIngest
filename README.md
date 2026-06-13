@@ -103,14 +103,67 @@ The shipping version is set in **`QuickMediaIngest/QuickMediaIngest.csproj`** (`
 
 ## Theme QA
 
-Before large UI changes, see **`docs/THEME_QA_CHECKLIST.md`** (if present).
+Before large UI changes, see **`docs/THEME_QA_CHECKLIST.md`**.
+
+---
+
+## Agent / Cursor quick start
+
+This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) scaffolding (Reference mode).
+
+```
+Read @docs/START_HERE.md and @docs/FOR_AGENTS.md.
+Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels.
+Active module: @modules/dotnet-wpf/MODULE.md
+```
+
+| Label | Owner |
+|-------|-------|
+| `AGENT` | Cursor Agent — code, docs, tests, CI |
+| `HUMAN` | Human — approvals, GitHub settings, releases |
+| `AUTO` | CI/scripts — Actions, Dependabot, pre-commit |
+
+See [`docs/START_HERE.md`](docs/START_HERE.md), [`AGENTS.md`](AGENTS.md), and [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Template update checker
+
+Tracks upstream [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) releases.
+
+| `check_interval` | Behavior |
+|------------------|----------|
+| `off` | Disabled |
+| `daily` | At most once per day |
+| `weekly` | At most once per week (default) |
+| `monthly` | At most once per month |
+
+Configure in [`.template-update.json`](.template-update.json). Manual check:
+
+```powershell
+pwsh scripts/check-template-updates.ps1
+```
+
+See [`docs/UPGRADING_FROM_TEMPLATE.md`](docs/UPGRADING_FROM_TEMPLATE.md).
+
+## Security
+
+- Report vulnerabilities via [`SECURITY.md`](SECURITY.md) (private reporting preferred)
+- Enable Dependabot alerts on GitHub: **Settings → Code security and analysis**
+- Weekly CVE triage: [`docs/SECURITY_TRIAGE.md`](docs/SECURITY_TRIAGE.md)
+
+**Human setup (one-time):** Dependabot alerts, private vulnerability reporting, branch protection on `main` requiring CI checks. Paste repo About text from [`docs/GITHUB_ABOUT.md`](docs/GITHUB_ABOUT.md).
 
 ---
 
 ## Contributing
 
-Issues and pull requests are welcome for workflow, UI, and reliability improvements.
+Issues and pull requests are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+```bash
+dotnet restore QuickMediaIngest-1.sln
+dotnet build -c Release
+dotnet test -c Release
+```
 
 ## License
 
-This project is free and open source. A formal license file may be added later.
+MIT License — see [`LICENSE`](LICENSE).

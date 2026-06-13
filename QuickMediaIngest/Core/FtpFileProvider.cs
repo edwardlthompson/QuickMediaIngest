@@ -16,8 +16,8 @@ namespace QuickMediaIngest.Core
         private readonly int _port;
         private readonly string _user;
         private readonly string _pass;
-    private AsyncFtpClient? _client;
-    private readonly SemaphoreSlim _clientLock = new SemaphoreSlim(1, 1);
+        private AsyncFtpClient? _client;
+        private readonly SemaphoreSlim _clientLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<FtpFileProvider> _logger;
 
         /// <summary>

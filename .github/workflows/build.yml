@@ -54,6 +54,9 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore QuickMediaIngest/QuickMediaIngest.csproj
 
+    - name: Test
+      run: dotnet test QuickMediaIngest-1.sln -c Release --verbosity normal
+
     - name: Build and Publish Portable EXE
       run: |
         dotnet publish QuickMediaIngest/QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishReadyToRun=true /p:Version=${{ env.VERSION }} -o ./publish/portable
@@ -74,7 +77,7 @@ jobs:
         wix build Installer/QuickMediaIngest.wxs -ext WixToolset.UI.wixext -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
     - name: Create and Push Version Tag
-      if: env.SHOULD_CREATE_TAG == 'true'
+      if: github.event_name == 'workflow_dispatch' && env.SHOULD_CREATE_TAG == 'true'
       shell: pwsh
       run: |
         git config user.name "github-actions[bot]"
@@ -92,6 +95,7 @@ jobs:
           ./publish/QuickMediaIngest.msi
 
     - name: Ensure Release Exists
+      if: github.event_name == 'workflow_dispatch'
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -111,6 +115,7 @@ jobs:
         }
 
     - name: Upload Release Assets
+      if: github.event_name == 'workflow_dispatch'
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
