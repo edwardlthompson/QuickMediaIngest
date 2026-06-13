@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.5] — 2026-06-13
+
+### Changed
+
+- **Dependabot — full dependency refresh**: MaterialDesignThemes 5.3.2, Microsoft.Extensions 10.0.9, System.Management 10.0.9, test SDK/xunit/Moq updates. Clears all outstanding Dependabot PR #4 deferred bumps.
+
+### Fixed
+
+- **MaterialDesign 5.x migration**: Runtime theme switching uses `BaseTheme.Light`/`BaseTheme.Dark`; defaults dictionary switched to `MaterialDesign2.Defaults.xaml` to preserve existing MD2 control styles.
+
+---
+
 ## [1.3.4] — 2026-06-13
 
 ### Fixed

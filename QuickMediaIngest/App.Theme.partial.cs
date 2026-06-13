@@ -55,7 +55,7 @@ namespace QuickMediaIngest
             {
                 var paletteHelper = new PaletteHelper();
                 var theme = paletteHelper.GetTheme();
-                theme.SetBaseTheme(useLightTheme ? Theme.Light : Theme.Dark);
+                theme.SetBaseTheme(useLightTheme ? BaseTheme.Light : BaseTheme.Dark);
 
                 System.Windows.Media.Color accentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
                 theme.SetPrimaryColor(accentColor);

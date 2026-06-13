@@ -12,11 +12,11 @@
 | `ADB` | Human (Android) | Android SDK, emulator/device testing (ADB provider testing) |
 | `AUTO` | CI/scripts/bots | GitHub Actions, Dependabot, pre-commit, update checker |
 
-**Current release:** [v1.3.4](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.4) (2026-06-13)
+**Current release:** [v1.3.5](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.5) (2026-06-13)
 
 **All agent/automatable sprints complete** — see [`COMPLETED_TASKS.md`](COMPLETED_TASKS.md).
 
-**Remaining:** HUMAN-only maintenance (MaterialDesign 5.x migration plan, release approval).
+**Remaining:** HUMAN-only maintenance (weekly CVE sign-off).
 
 ---
 
@@ -32,8 +32,8 @@
 
 | Task | Owner | Notes |
 |------|-------|-------|
-| Plan MaterialDesignThemes 4.x → 5.x migration | HUMAN | Breaking change; blocked Dependabot PR #4 subset |
-| Microsoft.Extensions 8 → 10 bump | AGENT + HUMAN | Defer with MD5 migration |
+| Plan MaterialDesignThemes 4.x → 5.x migration | AGENT | ✓ MD 5.3.2 with MaterialDesign2.Defaults |
+| Microsoft.Extensions 8 → 10 bump | AGENT | ✓ 10.0.9 on net8.0-windows |
 | Extract Sidebar / ShootGroups UserControls | AGENT | Optional polish |
 | Remove WPF types from Core models (`ImportItem.Thumbnail`) | AGENT | Long-term |
 | Unify FTP stacks (`FtpWebRequest` scan vs FluentFTP import) | AGENT | `FtpScanner`, `FtpFileProvider` |
