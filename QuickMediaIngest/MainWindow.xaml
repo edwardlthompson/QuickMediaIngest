@@ -235,7 +235,7 @@
 
                     <!-- Collapsed icon rail -->
                     <StackPanel x:Name="SidebarCollapsedRail" Grid.Row="1" Visibility="Collapsed" Margin="8,12,8,8">
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Click="ThemeIconButton_Click" ToolTip="{loc:Loc Theme_Tooltip}" Margin="0,0,0,6">
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Click="ThemeIconButton_Click" ToolTip="{loc:Loc Theme_Tooltip}" Margin="0,0,0,6" AutomationProperties.Name="{loc:Loc Theme_Tooltip}">
                             <materialDesign:PackIcon Kind="ThemeLightDark" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <ItemsControl ItemsSource="{Binding Sources}">
                             <ItemsControl.ItemTemplate>
@@ -250,7 +250,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}" Margin="0,0,0,6">
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}" Margin="0,0,0,6" AutomationProperties.Name="{loc:Loc A11y_NotificationsIcon}">
                             <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Width="18" Height="18"/></Button>
                     </StackPanel>
 
@@ -292,12 +292,12 @@
                         </StackPanel>
                     </Expander>
                     <StackPanel x:Name="SettingsCollapsedRail" Grid.Row="2" Visibility="Collapsed" Margin="8,8,8,12">
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleSettingsCommand}" ToolTip="{loc:Loc Btn_Preferences}" Margin="0,0,0,4"><materialDesign:PackIcon Kind="Tune" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenScanExclusionsCommand}" ToolTip="{loc:Loc Sidebar_ScanExclusionsTooltip}" Margin="0,0,0,4"><materialDesign:PackIcon Kind="FolderRemoveOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAddFtpCommand}" ToolTip="{loc:Loc Btn_AddFtpSource}" Margin="0,0,0,4"><materialDesign:PackIcon Kind="LanConnect" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenImportHistoryCommand}" ToolTip="{loc:Loc Btn_ImportHistory}" Margin="0,0,0,4"><materialDesign:PackIcon Kind="History" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAboutCommand}" ToolTip="{loc:Loc Btn_AboutUpdates}" Margin="0,0,0,4"><materialDesign:PackIcon Kind="InformationOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ExitApplicationCommand}" ToolTip="{loc:Loc Btn_Exit_Tooltip}" Margin="0,4,0,0"><materialDesign:PackIcon Kind="ExitToApp" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleSettingsCommand}" ToolTip="{loc:Loc Btn_Preferences}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_Preferences}"><materialDesign:PackIcon Kind="Tune" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenScanExclusionsCommand}" ToolTip="{loc:Loc Sidebar_ScanExclusionsTooltip}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Sidebar_ScanExclusionsTooltip}"><materialDesign:PackIcon Kind="FolderRemoveOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAddFtpCommand}" ToolTip="{loc:Loc Btn_AddFtpSource}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_AddFtpSource}"><materialDesign:PackIcon Kind="LanConnect" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenImportHistoryCommand}" ToolTip="{loc:Loc Btn_ImportHistory}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_ImportHistory}"><materialDesign:PackIcon Kind="History" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAboutCommand}" ToolTip="{loc:Loc Btn_AboutUpdates}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_AboutUpdates}"><materialDesign:PackIcon Kind="InformationOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
+                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ExitApplicationCommand}" ToolTip="{loc:Loc Btn_Exit_Tooltip}" Margin="0,4,0,0" AutomationProperties.Name="{loc:Loc Btn_Exit_Tooltip}"><materialDesign:PackIcon Kind="ExitToApp" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                     </StackPanel>
 
                     <!-- Exit: expanded sidebar only; collapsed rail uses icon-only Exit (IsChecked=true => sidebar collapsed) -->

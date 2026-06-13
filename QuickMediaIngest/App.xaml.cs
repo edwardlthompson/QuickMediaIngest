@@ -13,6 +13,7 @@ using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -190,6 +191,8 @@ namespace QuickMediaIngest
             services.AddSingleton<IFtpWorkflowService, FtpWorkflowService>();
             services.AddSingleton<IUnifiedConcreteSourceScanService, UnifiedConcreteSourceScanService>();
             services.AddSingleton<IFtpCredentialStore, WindowsFtpCredentialStore>();
+            services.AddSingleton<IFileDialogService, WpfFileDialogService>();
+            services.AddSingleton<IShellService, WpfShellService>();
 
             services.AddSingleton(typeof(ILogger<AdbFileProvider>), sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger<AdbFileProvider>());
 

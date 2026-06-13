@@ -24,6 +24,7 @@ using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest;
 
 
@@ -32,62 +33,7 @@ namespace QuickMediaIngest.ViewModels
     public partial class MainViewModel : ObservableObject
     {
 
-        private void OpenUrl(string url)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not open URL: {Url}", url);
-            }
-        }
-
-        private static string BuildUpdateHandoffScript(string downloadedUpdatePath, string ext, string currentExePath, int currentPid, string packageType)
-        {
-            string tempScript = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "updates", $"apply-update-{DateTime.UtcNow:yyyyMMddHHmmssfff}.cmd");
-            Directory.CreateDirectory(Path.GetDirectoryName(tempScript) ?? Path.GetTempPath());
-
-            string script = $@"@echo off
-setlocal enableextensions
-set ""QMI_UPDATE_FILE={downloadedUpdatePath}""
-set ""QMI_CURRENT_EXE={currentExePath}""
-set ""QMI_PID={currentPid}""
-set ""QMI_PACKAGE={packageType}""
-set ""QMI_EXT={ext}""
-
-for /L %%i in (1,1,180) do (
-  tasklist /FI ""PID eq %QMI_PID%"" | findstr /I /C:""%QMI_PID%"" >nul
-  if errorlevel 1 goto :ready
-  timeout /t 1 /nobreak >nul
-)
-
-:ready
-if /I ""%QMI_EXT%""=="".msi"" (
-  start """" /wait msiexec /i ""%QMI_UPDATE_FILE%"" /passive /norestart
-  start """" ""%QMI_CURRENT_EXE%""
-  goto :cleanup
-)
-
-if /I ""%QMI_EXT%""=="".exe"" (
-  if /I ""%QMI_PACKAGE%""==""Portable"" (
-    copy /Y ""%QMI_UPDATE_FILE%"" ""%QMI_CURRENT_EXE%"" >nul
-    start """" ""%QMI_CURRENT_EXE%""
-  ) else (
-    start """" ""%QMI_UPDATE_FILE%""
-  )
-  goto :cleanup
-)
-
-:cleanup
-del /Q ""%QMI_UPDATE_FILE%"" >nul 2>nul
-del /Q ""%~f0"" >nul 2>nul
-";
-
-            File.WriteAllText(tempScript, script, Encoding.ASCII);
-            return tempScript;
-        }
+        private void OpenUrl(string url) => _shellService.OpenUrl(url);
 
         private void ExecuteSaveFtp()
         {
@@ -136,7 +82,7 @@ del /Q ""%~f0"" >nul 2>nul
 
             string remotePath = NormalizeFtpPath(FtpRemoteFolder);
             IsTestingFtp = true;
-            StatusMessage = $"Testing FTP connection to {FtpHost}:{FtpPort}{remotePath}...";
+            StatusMessage = AppLocalizer.Format("Vm_Ftp_TestingConnection", FtpHost, FtpPort, remotePath);
             FtpDialogStatusMessage = StatusMessage;
             _logger.LogInformation("Testing FTP connection to {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
 
@@ -160,14 +106,14 @@ del /Q ""%~f0"" >nul 2>nul
                 }
 
                 StatusMessage = result.Success
-                    ? $"FTP test successful. {result.Message} Use /DCIM or /DCIM/Camera for faster phone scans."
-                    : $"FTP test failed. {result.Message}";
+                    ? AppLocalizer.Format("Vm_Ftp_TestSuccess", result.Message)
+                    : AppLocalizer.Format("Vm_Ftp_TestFailed", result.Message);
                 FtpDialogStatusMessage = StatusMessage;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "FTP connection test failed for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
-                StatusMessage = $"FTP test failed. {ex.Message}";
+                StatusMessage = AppLocalizer.Format("Vm_Ftp_TestFailed", ex.Message);
                 FtpDialogStatusMessage = StatusMessage;
             }
             finally
@@ -199,7 +145,7 @@ del /Q ""%~f0"" >nul 2>nul
 
             string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
             IsBrowsingFtpFolders = true;
-            StatusMessage = $"Browsing FTP folders at {FtpHost}:{FtpPort}{remotePath}...";
+            StatusMessage = AppLocalizer.Format("Vm_Ftp_BrowsingFolders", FtpHost, FtpPort, remotePath);
             FtpDialogStatusMessage = StatusMessage;
             _logger.LogInformation("Browsing FTP folders at {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
 
@@ -217,12 +163,12 @@ del /Q ""%~f0"" >nul 2>nul
                         timeout.Token));
 
                 BrowsedFtpFolders.Clear();
-                BrowsedFtpFolders.Add(new FtpFolderOption { Path = remotePath, Label = $"Use current folder ({remotePath})" });
+                BrowsedFtpFolders.Add(new FtpFolderOption { Path = remotePath, Label = AppLocalizer.Format("Vm_Ftp_BrowseCurrentFolder", remotePath) });
 
                 string? parentPath = GetParentFtpPath(remotePath);
                 if (!string.IsNullOrEmpty(parentPath))
                 {
-                    BrowsedFtpFolders.Add(new FtpFolderOption { Path = parentPath, Label = $"Parent folder ({parentPath})" });
+                    BrowsedFtpFolders.Add(new FtpFolderOption { Path = parentPath, Label = AppLocalizer.Format("Vm_Ftp_BrowseParentFolder", parentPath) });
                 }
 
                 foreach (string folder in folders)
@@ -235,20 +181,20 @@ del /Q ""%~f0"" >nul 2>nul
 
                 SelectedBrowsedFtpFolder = BrowsedFtpFolders.FirstOrDefault();
                 StatusMessage = BrowsedFtpFolders.Count > 0
-                    ? $"Connected to FTP. Found {BrowsedFtpFolders.Count} folder option(s) under {remotePath}."
-                    : $"Connected to FTP, but no folders were found under {remotePath}.";
+                    ? AppLocalizer.Format("Vm_Ftp_BrowseFoundFolders", BrowsedFtpFolders.Count, remotePath)
+                    : AppLocalizer.Format("Vm_Ftp_BrowseNoFolders", remotePath);
                 FtpDialogStatusMessage = StatusMessage;
             }
             catch (OperationCanceledException)
             {
                 _logger.LogError("FTP browse timed out for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
-                StatusMessage = $"Connected to FTP, but browsing {remotePath} timed out. Try /DCIM or /DCIM/Camera.";
+                StatusMessage = AppLocalizer.Format("Vm_Ftp_BrowseTimedOut", remotePath);
                 FtpDialogStatusMessage = StatusMessage;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "FTP folder browse failed for {Host}:{Port}{RemotePath}.", FtpHost, FtpPort, remotePath);
-                StatusMessage = $"FTP folder browse failed. {ex.Message}";
+                StatusMessage = AppLocalizer.Format("Vm_Ftp_BrowseFailed", ex.Message);
                 FtpDialogStatusMessage = StatusMessage;
             }
             finally
@@ -267,7 +213,7 @@ del /Q ""%~f0"" >nul 2>nul
 
             FtpRemoteFolder = SelectedBrowsedFtpFolder.Path;
             SelectedFtpPresetFolder = SelectedBrowsedFtpFolder.Path;
-            StatusMessage = $"FTP folder selected: {SelectedBrowsedFtpFolder.Path}";
+            StatusMessage = AppLocalizer.Format("Vm_Ftp_FolderSelected", SelectedBrowsedFtpFolder.Path);
             FtpDialogStatusMessage = StatusMessage;
         }
 
@@ -295,7 +241,7 @@ del /Q ""%~f0"" >nul 2>nul
                 {
                     HasLastFtpReconnectFailure = true;
                     RefreshUxEmptyStateHints();
-                    StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
+                    StatusMessage = AppLocalizer.Format("Vm_Ftp_LastSourceUnreachable", FtpHost, FtpPort, remotePath);
                     return;
                 }
 
@@ -321,13 +267,13 @@ del /Q ""%~f0"" >nul 2>nul
                     Sources.Add(ftp);
                 }
 
-                StatusMessage = $"Reconnected FTP source: {FtpHost}:{FtpPort}{remotePath}";
+                StatusMessage = AppLocalizer.Format("Vm_Ftp_Reconnected", FtpHost, FtpPort, remotePath);
             }
             catch
             {
                 HasLastFtpReconnectFailure = true;
                 RefreshUxEmptyStateHints();
-                StatusMessage = $"Last FTP source not reachable: {FtpHost}:{FtpPort}{remotePath}";
+                StatusMessage = AppLocalizer.Format("Vm_Ftp_LastSourceUnreachable", FtpHost, FtpPort, remotePath);
             }
         }
     }

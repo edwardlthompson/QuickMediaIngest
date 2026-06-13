@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
+using QuickMediaIngest.Services;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.ViewModels
@@ -310,6 +312,47 @@ namespace QuickMediaIngest.ViewModels
         {
             SaveConfig();
             ShowSettingsDialog = false;
+        }
+
+        [RelayCommand]
+        private void CloseSettingsOverlay() => ShowSettingsDialog = false;
+
+        [RelayCommand]
+        private void BrowseDestination()
+        {
+            try
+            {
+                string initial = DestinationRoot;
+                if (string.IsNullOrWhiteSpace(initial) || !Directory.Exists(initial))
+                {
+                    initial = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                }
+
+                try
+                {
+                    if (_fileDialogService.TryPickFolder(
+                            initial,
+                            AppLocalizer.Get("Dlg_SelectDestinationFolder"),
+                            out string selected))
+                    {
+                        DestinationPreset = "Custom";
+                        DestinationRoot = selected;
+                    }
+                }
+                catch
+                {
+                    _shellService.OpenFolder(initial);
+                    MessageBox.Show(
+                        AppLocalizer.Get("Msg_FolderPickerExplorerFallback"),
+                        AppLocalizer.Get("Msg_SelectFolder_Title"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Browse destination folder failed.");
+            }
         }
     }
 }

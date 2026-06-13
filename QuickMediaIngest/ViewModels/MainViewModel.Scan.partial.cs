@@ -24,6 +24,7 @@ using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest;
 
 
@@ -342,7 +343,33 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand] private void LoadPreset() => LoadLatestPreset();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
         [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
-        [RelayCommand] private void OpenChangelog() => OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/blob/main/CHANGELOG.md");
+
+        [RelayCommand]
+        private void OpenLogsFolder()
+        {
+            try
+            {
+                string logPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "QuickMediaIngest",
+                    "logs");
+                _shellService.OpenFolder(logPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open logs folder.");
+                MessageBox.Show(
+                    AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message),
+                    AppLocalizer.Get("Msg_Error_Title"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void ReportBug() => _shellService.OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/issues");
+
+        [RelayCommand] private void OpenChangelog() => _shellService.OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/blob/main/CHANGELOG.md");
         [RelayCommand]
         private void OpenGitHub()
         {
@@ -354,7 +381,7 @@ namespace QuickMediaIngest.ViewModels
                     // Prefer opening the release/tag that matches the running version
                     string tag = AppVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? AppVersion : "v" + AppVersion;
                     string releaseUrl = $"{repo}/releases/tag/{tag}";
-                    OpenUrl(releaseUrl);
+                    _shellService.OpenUrl(releaseUrl);
                     return;
                 }
             }
@@ -363,7 +390,7 @@ namespace QuickMediaIngest.ViewModels
                 _logger.LogDebug(ex, "Could not open release URL for version {Version}; falling back to repo.", AppVersion);
             }
 
-            OpenUrl(repo);
+            _shellService.OpenUrl(repo);
         }
     }
 }

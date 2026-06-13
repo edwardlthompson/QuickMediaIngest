@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.3] — 2026-06-13
+
+### Fixed
+
+- **Overlay MVVM**: Preferences, scan exclusions, import history, and dialog overlays bind to ViewModel commands instead of forwarding to `MainWindow` code-behind.
+- **FTP password binding**: `PasswordBoxAssist` keeps `FtpPass` in sync without MainWindow handlers.
+
+### Changed
+
+- **Core architecture (Sprint 3)**: Split oversized Core files — `FtpScanner`, `IngestEngine`, `ThumbnailService`, `ServiceContracts` — into focused modules (`FtpDirectoryClient`, `IngestItemProcessor`, `ThumbnailDiskCache`, factories, etc.). All `Core/**/*.cs` now ≤ 200 lines; grandfather list cleared.
+- **MainViewModel partials**: Renamed `Part9–Part17` to semantic names (`Thumbnails`, `ImportEngine`, `DriveScan`, `FtpWorkflow`, `SourceLoad`, etc.).
+- **ShootFilterService**: Decoupled from Localization; filter type IDs live in `Core/Models/FilterFileTypeIds`.
+- **FTP workflow strings**: Status messages moved to `Strings.resx` (`Vm_Ftp_*` keys).
+- **Dependencies**: FluentFTP 54.2.0, Meziantou.CredentialManager 2.0.0, MetadataExtractor 2.9.3, SQLite 1.0.119 (MaterialDesign 5.x and Microsoft.Extensions 10.x deferred).
+
+### Added
+
+- **`IFileDialogService` / `IShellService`**: WPF implementations for folder browse, logs folder, and URL launch.
+- **ADB provider tests**: `AdbDeviceProbe` + live device smoke test (`AdbFileProviderTests`).
+- **Test expansion (53 total)**: `FtpListingParser`, `IngestFileNaming`, `IngestVerification`, `LocalScanner`, `MediaExtensions`, `DatabaseService` injectable-path tests.
+- **Accessibility**: `AutomationProperties.Name` on collapsed sidebar icon buttons.
+
+---
+
 ## [1.3.2] — 2026-06-13
 
 ### Fixed

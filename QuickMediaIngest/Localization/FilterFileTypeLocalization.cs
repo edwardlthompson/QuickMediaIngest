@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Localization
 {
@@ -9,29 +10,14 @@ namespace QuickMediaIngest.Localization
     /// </summary>
     public static class FilterFileTypeLocalization
     {
-        public const string AllMedia = "flt:all_media";
-        public const string Images = "flt:images";
-        public const string Videos = "flt:videos";
-        public const string Raw = "flt:raw";
-        public const string Jpeg = "flt:jpeg";
+        public const string AllMedia = FilterFileTypeIds.AllMedia;
+        public const string Images = FilterFileTypeIds.Images;
+        public const string Videos = FilterFileTypeIds.Videos;
+        public const string Raw = FilterFileTypeIds.Raw;
+        public const string Jpeg = FilterFileTypeIds.Jpeg;
 
-        /// <summary>Maps legacy English UI values from older builds into stable IDs.</summary>
-        public static string NormalizeStoredValue(string? stored)
-        {
-            return stored switch
-            {
-                null => string.Empty,
-                "" => "",
-                "All Media" => AllMedia,
-                "Images" => Images,
-                "Videos" => Videos,
-                "RAW" => Raw,
-                "JPG/JPEG" or "JPEG" => Jpeg,
-                _ => stored,
-            };
-        }
+        public static string NormalizeStoredValue(string? stored) => FilterFileTypeIds.NormalizeStoredValue(stored);
 
-        /// <summary>Localized label for combo box rows and filter chips.</summary>
         public static string GetDisplayLabel(string? stored)
         {
             stored = NormalizeStoredValue(stored);
@@ -47,7 +33,7 @@ namespace QuickMediaIngest.Localization
                 Videos => AppLocalizer.Get("Filter_FileType_Videos"),
                 Raw => AppLocalizer.Get("Filter_FileType_RAW"),
                 Jpeg => AppLocalizer.Get("Filter_FileType_JPEG"),
-                _ => stored ?? "",
+                _ => stored ?? string.Empty,
             };
         }
     }

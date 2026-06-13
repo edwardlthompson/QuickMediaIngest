@@ -24,6 +24,7 @@ using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest;
 
 
@@ -262,6 +263,8 @@ namespace QuickMediaIngest.ViewModels
         private readonly IFtpWorkflowService _ftpWorkflowService;
         private readonly IUnifiedConcreteSourceScanService _unifiedConcreteSourceScanService;
         private readonly IFtpCredentialStore _ftpCredentialStore;
+        private readonly IFileDialogService _fileDialogService;
+        private readonly IShellService _shellService;
         private readonly IThumbnailService _thumbnailService;
         private readonly IUpdateService _updateService;
         private readonly IDeviceWatcher _deviceWatcher;

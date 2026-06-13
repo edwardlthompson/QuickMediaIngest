@@ -2,6 +2,28 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-06-13 — SQLite provider: retain System.Data.SQLite.Core
+
+**Decision:** Keep `System.Data.SQLite.Core` (1.0.119); do not migrate to `Microsoft.Data.Sqlite` in this release cycle.
+
+**Rationale:** `QuickMediaIngest.csproj` documents that SQLite native interop relies on `Assembly.Location` for path resolution; single-file publish with `IncludeAllContentForSelfExtract` is validated against `System.Data.SQLite.Core`. `Microsoft.Data.Sqlite` uses a different native bundling model and would require publish-path regression testing.
+
+**Alternatives rejected:** Immediate migration to `Microsoft.Data.Sqlite` without MSI/single-file validation.
+
+**Validation:** `DatabaseServiceTests`, `dotnet test` (53 passed).
+
+---
+
+## 2026-06-13 — Dependabot PR #4 partial merge
+
+**Decision:** Close Dependabot PR #4; apply non-breaking bumps on main (FluentFTP 54.2.0, Meziantou 2.0.0, MetadataExtractor 2.9.3, SQLite 1.0.119). Defer MaterialDesignThemes 5.x and Microsoft.Extensions 10.x.
+
+**Rationale:** Full PR failed CI (breaking API/theme changes). Safe subset clears dependency drift without MaterialDesign 5.x migration scope.
+
+**Validation:** `dotnet restore`, `dotnet build`, `dotnet test`.
+
+---
+
 ## 2026-06-13 — Persistence strategy B (JSON + VACUUM-only SQLite)
 
 **Decision:** Keep JSON files for config, import history, and presets; slim `IDatabaseService` to `TryPeriodicVacuum()` only; remove unused SQLite CRUD APIs and dead DI (`IMetadataReader`, `IWhitelistFilter`).

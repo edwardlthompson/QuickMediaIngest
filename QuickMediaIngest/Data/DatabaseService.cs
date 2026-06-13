@@ -15,14 +15,29 @@ namespace QuickMediaIngest.Data
         private readonly ILogger<DatabaseService> _logger;
 
         public DatabaseService(ILogger<DatabaseService> logger)
+            : this(logger, null)
+        {
+        }
+
+        /// <summary>For production DI and tests with an isolated database path.</summary>
+        public DatabaseService(ILogger<DatabaseService> logger, string? databasePath)
         {
             _logger = logger;
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string appFolder = Path.Combine(appData, "QuickMediaIngest");
-            _dbPath = Path.Combine(appFolder, "database.db");
+            if (!string.IsNullOrWhiteSpace(databasePath))
+            {
+                _dbPath = databasePath;
+            }
+            else
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string appFolder = Path.Combine(appData, "QuickMediaIngest");
+                _dbPath = Path.Combine(appFolder, "database.db");
+            }
 
             EnsureDatabaseFile();
         }
+
+        public string DatabasePath => _dbPath;
 
         private void EnsureDatabaseFile()
         {
@@ -44,9 +59,6 @@ namespace QuickMediaIngest.Data
             }
         }
 
-        /// <summary>
-        /// Runs <c>VACUUM</c> at most once per <paramref name="minimumDaysBetweenRuns"/> days to limit DB growth from churn.
-        /// </summary>
         public void TryPeriodicVacuum(int minimumDaysBetweenRuns = 14)
         {
             try

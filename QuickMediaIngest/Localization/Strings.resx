@@ -173,6 +173,19 @@
   <data name="Vm_Ftp_PortRange" xml:space="preserve"><value>FTP port must be between 1 and 65535.</value></data>
   <data name="Vm_Ftp_EnterHostBeforeBrowse" xml:space="preserve"><value>Enter an FTP host before browsing folders.</value></data>
   <data name="Vm_Ftp_ChooseBrowsedFolder" xml:space="preserve"><value>Choose a browsed FTP folder first.</value></data>
+  <data name="Vm_Ftp_TestingConnection" xml:space="preserve"><value>Testing FTP connection to {0}:{1}{2}…</value></data>
+  <data name="Vm_Ftp_TestSuccess" xml:space="preserve"><value>FTP test successful. {0} Use /DCIM or /DCIM/Camera for faster phone scans.</value></data>
+  <data name="Vm_Ftp_TestFailed" xml:space="preserve"><value>FTP test failed. {0}</value></data>
+  <data name="Vm_Ftp_BrowsingFolders" xml:space="preserve"><value>Browsing FTP folders at {0}:{1}{2}…</value></data>
+  <data name="Vm_Ftp_BrowseCurrentFolder" xml:space="preserve"><value>Use current folder ({0})</value></data>
+  <data name="Vm_Ftp_BrowseParentFolder" xml:space="preserve"><value>Parent folder ({0})</value></data>
+  <data name="Vm_Ftp_BrowseFoundFolders" xml:space="preserve"><value>Connected to FTP. Found {0} folder option(s) under {1}.</value></data>
+  <data name="Vm_Ftp_BrowseNoFolders" xml:space="preserve"><value>Connected to FTP, but no folders were found under {0}.</value></data>
+  <data name="Vm_Ftp_BrowseTimedOut" xml:space="preserve"><value>Connected to FTP, but browsing {0} timed out. Try /DCIM or /DCIM/Camera.</value></data>
+  <data name="Vm_Ftp_BrowseFailed" xml:space="preserve"><value>FTP folder browse failed. {0}</value></data>
+  <data name="Vm_Ftp_FolderSelected" xml:space="preserve"><value>FTP folder selected: {0}</value></data>
+  <data name="Vm_Ftp_LastSourceUnreachable" xml:space="preserve"><value>Last FTP source not reachable: {0}:{1}{2}</value></data>
+  <data name="Vm_Ftp_Reconnected" xml:space="preserve"><value>Reconnected FTP source: {0}:{1}{2}</value></data>
   <data name="Vm_Status_SkippedFolderCopied" xml:space="preserve"><value>Skipped-folder report copied to clipboard.</value></data>
   <data name="Vm_SkippedScan_TitleExcludedOnly" xml:space="preserve"><value>Excluded folders ({0})</value></data>
   <data name="Vm_SkippedScan_TitleFtpOnly" xml:space="preserve"><value>FTP listing issues ({0})</value></data>

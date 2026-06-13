@@ -3,6 +3,7 @@ using Moq;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest.ViewModels;
 using Xunit;
 
@@ -26,6 +27,8 @@ namespace QuickMediaIngest.Tests
                 new Mock<IFtpWorkflowService>().Object,
                 new Mock<IUnifiedConcreteSourceScanService>().Object,
                 new Mock<IFtpCredentialStore>().Object,
+                new Mock<IFileDialogService>().Object,
+                new Mock<IShellService>().Object,
                 new Mock<ILogger<MainViewModel>>().Object);
         }
 

@@ -354,5 +354,19 @@ namespace QuickMediaIngest.ViewModels
                 _logger.LogWarning(ex, "Clear import history failed.");
             }
         }
+
+        [RelayCommand]
+        private void ConfirmClearImportHistory()
+        {
+            var result = MessageBox.Show(
+                AppLocalizer.Get("Msg_ClearImportHistory_Body"),
+                AppLocalizer.Get("Msg_ClearImportHistory_Title"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (result == MessageBoxResult.Yes)
+            {
+                ClearImportHistoryCommand.Execute(null);
+            }
+        }
     }
 }

@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using QuickMediaIngest.Core.Models;
-using QuickMediaIngest.Localization;
-using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest.Core.Services
 {
@@ -54,7 +52,7 @@ namespace QuickMediaIngest.Core.Services
 
         private static bool MatchesFileTypeFilter(ImportItem item, string selectedFilter)
         {
-            selectedFilter = FilterFileTypeLocalization.NormalizeStoredValue(selectedFilter);
+            selectedFilter = FilterFileTypeIds.NormalizeStoredValue(selectedFilter);
             if (string.IsNullOrWhiteSpace(selectedFilter))
             {
                 return true;
@@ -63,15 +61,15 @@ namespace QuickMediaIngest.Core.Services
             string extension = item.FileType?.TrimStart('.').ToUpperInvariant() ?? string.Empty;
             switch (selectedFilter)
             {
-                case FilterFileTypeLocalization.AllMedia:
+                case FilterFileTypeIds.AllMedia:
                     return true;
-                case FilterFileTypeLocalization.Images:
+                case FilterFileTypeIds.Images:
                     return !item.IsVideo;
-                case FilterFileTypeLocalization.Videos:
+                case FilterFileTypeIds.Videos:
                     return item.IsVideo;
-                case FilterFileTypeLocalization.Raw:
+                case FilterFileTypeIds.Raw:
                     return RawPreviewExtensions.Contains($".{extension.ToLowerInvariant()}");
-                case FilterFileTypeLocalization.Jpeg:
+                case FilterFileTypeIds.Jpeg:
                     return extension is "JPG" or "JPEG";
                 default:
                     return string.Equals(item.FileType, selectedFilter, StringComparison.OrdinalIgnoreCase);

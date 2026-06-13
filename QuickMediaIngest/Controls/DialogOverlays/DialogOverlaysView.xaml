@@ -6,9 +6,10 @@
     xmlns:loc="clr-namespace:QuickMediaIngest.Localization"
     xmlns:vm="clr-namespace:QuickMediaIngest.ViewModels"
     xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
+    xmlns:behaviors="clr-namespace:QuickMediaIngest.Controls.Behaviors"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Grid>
-    <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" Loaded="AddFtpOverlay_Loaded" Unloaded="AddFtpOverlay_Unloaded">
+    <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
                 <VisualBrush Visual="{Binding ElementName=MainChromeRoot, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Fill"/>
@@ -38,7 +39,7 @@
                     </StackPanel>
 
                     <TextBlock Text="{loc:Loc Ftp_Password}" Style="{StaticResource AppBodyTextStyle}" Margin="0,6,0,0"/>
-                    <PasswordBox PasswordChar="●" PasswordChanged="PasswordBox_PasswordChanged"/>
+                    <PasswordBox PasswordChar="●" behaviors:PasswordBoxAssist.BoundPassword="{Binding FtpPass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     <TextBlock Text="{loc:Loc Ftp_PasswordVaultHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
                     <TextBlock Text="{loc:Loc Ftp_RemoteFolder}" Style="{StaticResource AppBodyTextStyle}" Margin="0,6,0,0"/>
@@ -346,8 +347,8 @@
                     <Separator Margin="0,12,0,12" />
                     <TextBlock Text="{loc:Loc About_Diagnostics}" FontWeight="SemiBold" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                        <Button Content="{loc:Loc About_OpenLogsFolder}" Click="OpenLogs_Click" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_ReportBug}" Click="ReportBug_Click" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="{loc:Loc About_OpenLogsFolder}" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="{loc:Loc About_ReportBug}" Command="{Binding ReportBugCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
                         <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
                         <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" />
                     </StackPanel>

@@ -24,6 +24,7 @@ using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Services;
 using QuickMediaIngest;
 
 
@@ -230,6 +231,8 @@ namespace QuickMediaIngest.ViewModels
             IFtpWorkflowService ftpWorkflowService,
             IUnifiedConcreteSourceScanService unifiedConcreteSourceScanService,
             IFtpCredentialStore ftpCredentialStore,
+            IFileDialogService fileDialogService,
+            IShellService shellService,
             ILogger<MainViewModel> logger)
         {
             _scanner = scanner;
@@ -238,6 +241,8 @@ namespace QuickMediaIngest.ViewModels
             _ftpWorkflowService = ftpWorkflowService;
             _unifiedConcreteSourceScanService = unifiedConcreteSourceScanService;
             _ftpCredentialStore = ftpCredentialStore;
+            _fileDialogService = fileDialogService;
+            _shellService = shellService;
             _thumbnailService = thumbnailService;
             _updateService = updateService;
             _deviceWatcher = deviceWatcher;

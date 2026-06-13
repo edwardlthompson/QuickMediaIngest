@@ -1,7 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
 using QuickMediaIngest.Core.Models;
-using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest.Core.Services
 {

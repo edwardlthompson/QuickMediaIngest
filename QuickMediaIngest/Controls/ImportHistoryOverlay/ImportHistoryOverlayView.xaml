@@ -12,7 +12,10 @@
     <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
           Visibility="{Binding ShowImportHistoryDialog, Converter={StaticResource BooleanToVisibilityConverter}}"
           Panel.ZIndex="955">
-        <Border Background="Transparent" MouseDown="CloseImportHistory_Click">
+        <Border Background="Transparent">
+            <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding CloseImportHistoryCommand}" />
+            </Border.InputBindings>
             <Grid>
                 <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
                     <Rectangle.Fill>
@@ -48,7 +51,7 @@
                 </ListView>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Width="90" Margin="6" Content="{loc:Loc History_Export}" Command="{Binding ExportImportHistoryCommand}" Style="{StaticResource DialogPrimaryButtonStyle}"/>
-                    <Button Width="90" Margin="6" Content="{loc:Loc History_Clear}" Click="ImportHistory_Clear_Click" Style="{StaticResource DialogPrimaryButtonStyle}"/>
+                    <Button Width="90" Margin="6" Content="{loc:Loc History_Clear}" Command="{Binding ConfirmClearImportHistoryCommand}" Style="{StaticResource DialogPrimaryButtonStyle}"/>
                     <Button Width="90" Margin="6" Content="{loc:Loc Btn_Close}" Command="{Binding CloseImportHistoryCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                 </StackPanel>
             </Grid>

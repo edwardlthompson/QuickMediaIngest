@@ -11,7 +11,10 @@
     <Grid x:Name="SettingsOverlay"
           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
           Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1100">
-        <Border Background="Transparent" MouseDown="CloseSettings_Click">
+        <Border Background="Transparent">
+            <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding CloseSettingsOverlayCommand}" />
+            </Border.InputBindings>
             <Grid>
                 <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
                     <Rectangle.Fill>
@@ -59,7 +62,7 @@
                                           Margin="0,0,0,12"/>
                                 <DockPanel Margin="0,0,0,4">
                                     <Button x:Name="SettingsBrowseBtn" Content="{loc:Loc Settings_Browse}" DockPanel.Dock="Right"
-                                            Padding="10,5" Click="Browse_Click"
+                                            Padding="10,5" Command="{Binding BrowseDestinationCommand}"
                                             Style="{StaticResource DialogOutlinedButtonStyle}"/>
                                     <TextBox x:Name="DestPathDisplay" IsReadOnly="True" Margin="0,0,10,0"
                                              Text="{Binding DestinationRoot, Mode=TwoWay}"/>

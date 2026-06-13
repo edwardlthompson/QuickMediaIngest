@@ -11,7 +11,10 @@
     <Grid x:Name="ScanExclusionsOverlay"
           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
           Visibility="{Binding ShowScanExclusionsPanel, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1101">
-        <Border Background="Transparent" MouseDown="CloseScanExclusions_Click">
+        <Border Background="Transparent">
+            <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding CloseScanExclusionsCommand}" />
+            </Border.InputBindings>
             <Grid>
                 <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
                     <Rectangle.Fill>
@@ -81,7 +84,7 @@
                     </StackPanel>
                 </ScrollViewer>
                 <Button Grid.Row="2" Content="{loc:Loc Btn_Close}" HorizontalAlignment="Right" Margin="0,16,0,0"
-                        Width="120" Click="CloseScanExclusions_Click"
+                        Width="120" Command="{Binding CloseScanExclusionsCommand}"
                         Style="{StaticResource DialogPrimaryButtonStyle}"/>
             </Grid>
         </Border>

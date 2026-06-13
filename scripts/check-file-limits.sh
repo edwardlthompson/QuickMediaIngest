@@ -8,13 +8,17 @@ VIEWMODEL_LIMIT=400
 CORE_LIMIT=200
 ERRORS=0
 
-# Grandfathered until Sprint 3 Core splits complete (remove entries as files are split)
-GRANDFATHER=(
-  "QuickMediaIngest/Core/FtpScanner.cs"
-  "QuickMediaIngest/Core/IngestEngine.cs"
-  "QuickMediaIngest/Core/ThumbnailService.cs"
-  "QuickMediaIngest/Core/ServiceContracts.cs"
-)
+# WPF-adapted file line limits with grandfather list for Sprint 1 remediation
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+XAML_LIMIT=800
+VIEWMODEL_LIMIT=400
+CORE_LIMIT=200
+ERRORS=0
+
+# Grandfathered Core files (empty when Sprint 3 splits complete)
+GRANDFATHER=()
 
 is_grandfathered() {
   local rel="$1"

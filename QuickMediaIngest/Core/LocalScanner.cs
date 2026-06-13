@@ -86,7 +86,7 @@ namespace QuickMediaIngest.Core
                         FileName = info.Name,
                         FileSize = info.Length,
                         DateTaken = info.LastWriteTime,
-                        IsVideo = IsVideoFile(ext),
+                        IsVideo = MediaExtensions.IsVideoExtension(ext),
                         FileType = ext.TrimStart('.').ToUpper()
                     });
                 }
@@ -99,20 +99,6 @@ namespace QuickMediaIngest.Core
             return items;
         }
 
-        private static bool IsMediaFile(string ext)
-        {
-            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" ||
-                   ext == ".bmp" || ext == ".tif" || ext == ".tiff" || ext == ".webp" ||
-                   ext == ".dng" || ext == ".cr2" || ext == ".cr3" || ext == ".nef" ||
-                   ext == ".arw" || ext == ".raf" || ext == ".orf" || ext == ".rw2" ||
-                   ext == ".srw" || ext == ".heic" || ext == ".heif" ||
-                   IsVideoFile(ext);
-        }
-
-        private static bool IsVideoFile(string ext)
-        {
-            return ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv" ||
-                   ext == ".mts" || ext == ".m2ts" || ext == ".mpg" || ext == ".mpeg";
-        }
+        private static bool IsMediaFile(string ext) => MediaExtensions.IsMediaExtension(ext);
     }
 }

@@ -1,4 +1,3 @@
-using System.Windows;
 using System.Windows.Controls;
 
 namespace QuickMediaIngest.Controls
@@ -9,8 +8,5 @@ namespace QuickMediaIngest.Controls
         {
             InitializeComponent();
         }
-
-        private void CloseScanExclusions_Click(object sender, RoutedEventArgs e) =>
-            (Window.GetWindow(this) as MainWindow)?.CloseScanExclusions_Click(sender, e);
     }
 }
