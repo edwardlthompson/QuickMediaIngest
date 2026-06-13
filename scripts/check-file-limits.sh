@@ -8,8 +8,12 @@ VIEWMODEL_LIMIT=400
 CORE_LIMIT=200
 ERRORS=0
 
-# Grandfathered until Sprint 1 splits complete (remove entries as files are split)
+# Grandfathered until Sprint 3 Core splits complete (remove entries as files are split)
 GRANDFATHER=(
+  "QuickMediaIngest/Core/FtpScanner.cs"
+  "QuickMediaIngest/Core/IngestEngine.cs"
+  "QuickMediaIngest/Core/ThumbnailService.cs"
+  "QuickMediaIngest/Core/ServiceContracts.cs"
 )
 
 is_grandfathered() {
