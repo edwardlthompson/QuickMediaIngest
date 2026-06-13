@@ -19,7 +19,7 @@ jobs:
     name: File Encoding (UTF-8)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check text files are UTF-8
         run: bash scripts/check-file-encoding.sh
 
@@ -27,7 +27,7 @@ jobs:
     name: File Size Budgets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check WPF file line limits
         run: bash scripts/check-file-limits.sh
 
@@ -35,7 +35,7 @@ jobs:
     name: Validate Template Index
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate TEMPLATE_INDEX.json paths
         run: bash scripts/validate-template-index.sh
 
@@ -43,7 +43,7 @@ jobs:
     name: Validate Bootstrap Artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check Sprint 0 artifacts exist
         run: bash scripts/validate-bootstrap.sh
 
@@ -51,8 +51,8 @@ jobs:
     name: .NET — Build & Test
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.422"
           global-json-file: global.json
@@ -74,6 +74,6 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for upstream template updates
         run: bash scripts/check-template-updates.sh --verbose
