@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch: # Allow manual triggering
 
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
@@ -17,6 +21,7 @@ jobs:
       uses: actions/checkout@v6
       with:
         fetch-depth: 0
+        fetch-tags: true
 
     - name: Get Version from Project
       shell: pwsh
@@ -37,9 +42,9 @@ jobs:
       shell: pwsh
       run: |
         $tag = "v${{ env.VERSION }}"
-        git fetch --tags --force
-        $existingTag = git tag -l $tag
-        $tagExists = -not [string]::IsNullOrWhiteSpace($existingTag)
+        git fetch origin --tags --force
+        $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+        $tagExists = -not [string]::IsNullOrWhiteSpace($remoteTag)
         $shouldCreateTag = -not $tagExists
 
         echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
@@ -49,7 +54,7 @@ jobs:
           Write-Host "No existing tag found for $tag. Tag will be created."
         }
         else {
-          Write-Host "Tag $tag already exists."
+          Write-Host "Tag $tag already exists on origin."
         }
 
     - name: Restore Dependencies
@@ -78,13 +83,30 @@ jobs:
         wix build Installer/QuickMediaIngest.wxs -ext WixToolset.UI.wixext -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
     - name: Create and Push Version Tag
-      if: github.event_name == 'workflow_dispatch' && env.SHOULD_CREATE_TAG == 'true'
+      if: github.event_name == 'workflow_dispatch'
       shell: pwsh
       run: |
+        $tag = "${{ env.RELEASE_TAG }}"
+        git fetch origin --tags --force
+        $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+        if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
+          Write-Host "Tag $tag already exists on origin; skipping tag creation."
+          exit 0
+        }
+
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git tag ${{ env.RELEASE_TAG }}
-        git push origin ${{ env.RELEASE_TAG }}
+        git tag $tag
+        git push origin $tag
+        if ($LASTEXITCODE -ne 0) {
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
+            Write-Host "Tag $tag was created by another run; continuing."
+            exit 0
+          }
+
+          throw "Failed to push tag $tag"
+        }
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v7
