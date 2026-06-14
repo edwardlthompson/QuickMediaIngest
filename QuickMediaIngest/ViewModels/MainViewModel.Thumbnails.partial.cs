@@ -134,36 +134,64 @@ namespace QuickMediaIngest.ViewModels
             }
 
             StatusMessage = $"Retrying {failedItems.Count} preview(s)...";
-            await Task.Run(() =>
-            {
-                Parallel.ForEach(failedItems, new ParallelOptions { MaxDegreeOfParallelism = GetThumbnailWorkerCount() }, item =>
-                {
-                    string key = BuildItemKey(item);
-                    object? thumb = null;
-                    try
-                    {
-                        thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Retry thumbnail failed for {Path}.", item.SourcePath);
-                    }
 
-                    Application.Current.Dispatcher.InvokeAsync(() =>
+            var failedLocal = failedItems.Where(i => !i.IsFtpSource).ToList();
+            var failedFtp = failedItems.Where(i => i.IsFtpSource).ToList();
+
+            if (failedLocal.Count > 0)
+            {
+                await Task.Run(() =>
+                {
+                    Parallel.ForEach(failedLocal, new ParallelOptions { MaxDegreeOfParallelism = GetThumbnailWorkerCount() }, item =>
                     {
-                        if (thumb != null)
+                        string key = BuildItemKey(item);
+                        object? thumb = null;
+                        try
                         {
-                            item.Thumbnail = thumb;
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                            _thumbnailByItemKey[key] = thumb;
+                            thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                            _logger.LogDebug(ex, "Retry thumbnail failed for {Path}.", item.SourcePath);
                         }
+
+                        Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            if (thumb != null)
+                            {
+                                item.Thumbnail = thumb;
+                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                                _thumbnailByItemKey[key] = thumb;
+                            }
+                            else
+                            {
+                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                            }
+                        });
                     });
                 });
-            });
+            }
+
+            if (failedFtp.Count > 0 && SelectedSource is FtpSourceItem ftpSource)
+            {
+                await LoadFtpThumbnailBatchAsync(failedFtp, ftpSource, failedFtp.Count, 0, false);
+            }
+            else if (failedFtp.Count > 0 && SelectedSource is UnifiedSourceItem)
+            {
+                var ftpSourcesByKey = Sources
+                    .OfType<FtpSourceItem>()
+                    .ToDictionary(BuildSourceKey, f => f, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var group in failedFtp.GroupBy(i => i.SourceId, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!ftpSourcesByKey.TryGetValue(group.Key, out var ftp))
+                    {
+                        continue;
+                    }
+
+                    await LoadFtpThumbnailBatchAsync(group.ToList(), ftp, group.Count(), 0, false);
+                }
+            }
 
             await Application.Current.Dispatcher.InvokeAsync(RefreshPreviewHealthSummary);
             StatusMessage = AppLocalizer.Get("Vm_Status_PreviewRetryFinished");
@@ -254,7 +282,7 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
-        private async Task LoadThumbnailsAsync(List<ItemGroup> groups, object source, string sourceLabel)
+        private async Task LoadThumbnailsAsync(List<ItemGroup> groups, object source, string sourceLabel, CancellationToken cancellationToken = default)
         {
             if (source is UnifiedSourceItem)
             {
@@ -264,7 +292,7 @@ namespace QuickMediaIngest.ViewModels
 
             if (source is FtpSourceItem ftp)
             {
-                await LoadFtpThumbnailsAsync(groups, ftp, sourceLabel, preferBackgroundBatch: false);
+                await LoadFtpThumbnailsAsync(groups, ftp, sourceLabel, preferBackgroundBatch: false, cancellationToken);
                 return;
             }
 
@@ -342,11 +370,9 @@ namespace QuickMediaIngest.ViewModels
             FtpThumbnailPhaseDetail = string.Empty;
         }
 
-        private async Task LoadFtpThumbnailsAsync(List<ItemGroup> groups, FtpSourceItem ftp, string sourceLabel, bool preferBackgroundBatch = true)
+        private async Task LoadFtpThumbnailsAsync(List<ItemGroup> groups, FtpSourceItem ftp, string sourceLabel, bool preferBackgroundBatch = true, CancellationToken cancellationToken = default)
         {
-            var allItems = groups
-                .SelectMany(g => g.Items)
-                .ToList();
+            var allItems = OrderItemsForViewportPriority(groups);
 
             if (allItems.Count == 0)
             {
@@ -365,7 +391,7 @@ namespace QuickMediaIngest.ViewModels
             var initialItems = allItems.Take(initialCount).ToList();
             var remainingItems = allItems.Skip(initialCount).ToList();
 
-            int loadedInitial = await LoadFtpThumbnailBatchAsync(initialItems, ftp, total, 0, true);
+            int loadedInitial = await LoadFtpThumbnailBatchAsync(initialItems, ftp, total, 0, true, cancellationToken);
 
             if (remainingItems.Count == 0)
             {
@@ -377,14 +403,25 @@ namespace QuickMediaIngest.ViewModels
 
             _ = Task.Run(async () =>
             {
-                int loadedRemaining = await LoadFtpThumbnailBatchAsync(remainingItems, ftp, total, initialCount, false);
-                int loadedTotal = loadedInitial + loadedRemaining;
-
-                Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
-                    StatusMessage = AppLocalizer.Format("Vm_Status_FtpBackgroundPreviewComplete", loadedTotal, total);
-                });
-            });
+                    int loadedRemaining = await LoadFtpThumbnailBatchAsync(remainingItems, ftp, total, initialCount, false, cancellationToken);
+                    int loadedTotal = loadedInitial + loadedRemaining;
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        StatusMessage = AppLocalizer.Format("Vm_Status_FtpBackgroundPreviewComplete", loadedTotal, total);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "FTP background thumbnail batch failed for {SourceLabel}.", sourceLabel);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        StatusMessage = AppLocalizer.Format("Vm_Status_PreviewBuildFailed", ex.Message);
+                    });
+                }
+            }, cancellationToken);
         }
     }
 }

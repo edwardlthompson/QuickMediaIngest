@@ -37,218 +37,208 @@ namespace QuickMediaIngest.ViewModels
             FtpSourceItem ftp,
             int totalItemCount,
             int startIndex,
-            bool updateScanProgressMessage)
+            bool updateScanProgressMessage,
+            CancellationToken cancellationToken = default)
         {
             if (items.Count == 0)
             {
                 return 0;
             }
 
-            string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
-            Directory.CreateDirectory(tempDir);
+            EnsureFtpSourceCredentials(ftp);
+            var endpoint = ToFtpEndpoint(ftp);
+            var itemByKey = items.ToDictionary(BuildItemKey, i => i, StringComparer.OrdinalIgnoreCase);
 
-            int loadedCount = 0;
-            int skippedCount = 0;
-            int processedCount = 0;
-            int workerCount = GetFtpThumbnailWorkerCount();
+            int loadedFromCache = 0;
+            var workItems = new List<FtpThumbnailWorkItem>();
 
-            var indexedItems = items.Select((item, index) => (item, index)).ToList();
-            await Parallel.ForEachAsync(
-                indexedItems,
-                new ParallelOptions { MaxDegreeOfParallelism = workerCount },
-                async (entry, _) =>
+            foreach (var item in items)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string itemKey = BuildItemKey(item);
+
+                if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb))
                 {
-                    var item = entry.item;
-                    int overallIndex = startIndex + entry.index + 1;
-                    string itemKey = BuildItemKey(item);
-
-                    string ext = Path.GetExtension(item.FileName);
-                    if (string.IsNullOrWhiteSpace(ext))
+                    if (cachedThumb is System.Windows.Media.Imaging.BitmapSource cachedBitmap
+                        && FtpThumbnailCache.IsAcceptable(cachedBitmap))
                     {
-                        ext = ".jpg";
-                    }
-
-                    string tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{ext}");
-
-                    try
-                    {
-                        if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
-                        {
-                            Interlocked.Increment(ref loadedCount);
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                item.Thumbnail = cachedThumb;
-                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                            });
-                        }
-                        else
-                        {
-                            int timeoutSeconds = IsLikelyVideoPath(item.FileName) ? 120 : 30;
-                            bool downloaded = await DownloadFtpFileWithTimeoutAsync(ftp, item.SourcePath, tempPath, timeoutSeconds);
-                            if (!downloaded)
-                            {
-                                Interlocked.Increment(ref skippedCount);
-                                await Application.Current.Dispatcher.InvokeAsync(() =>
-                                {
-                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                                });
-                            }
-                            else
-                            {
-                                var thumb = await Task.Run(() => _thumbnailService.GetThumbnail(tempPath, BuildThumbnailHints()));
-                                if (thumb != null)
-                                {
-                                    Interlocked.Increment(ref loadedCount);
-                                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                                    {
-                                        item.Thumbnail = thumb;
-                                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                                        _thumbnailByItemKey[itemKey] = thumb;
-                                    });
-                                }
-                                else
-                                {
-                                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                                    {
-                                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        Interlocked.Increment(ref skippedCount);
+                        loadedFromCache++;
                         await Application.Current.Dispatcher.InvokeAsync(() =>
                         {
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                        });
-                    }
-                    finally
-                    {
-                        try
-                        {
-                            if (File.Exists(tempPath))
-                            {
-                                File.Delete(tempPath);
-                            }
-                        }
-                        catch
-                        {
-                            // Ignore temp cleanup failures.
-                        }
+                            item.Thumbnail = cachedBitmap;
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                        }, System.Windows.Threading.DispatcherPriority.Background, cancellationToken);
+                        continue;
                     }
 
-                    int processed = Interlocked.Increment(ref processedCount);
-                    if (processed == 1 || processed % 10 == 0 || processed == items.Count)
+                    _thumbnailByItemKey.TryRemove(itemKey, out _);
+                }
+
+                if (ShouldSkipFtpThumbnailWorkItem(item, items))
+                {
+                    continue;
+                }
+
+                var diskThumb = FtpThumbnailCache.TryLoad(ftp.Host, ftp.Port, item.SourcePath, item.FileSize);
+                if (diskThumb != null)
+                {
+                    loadedFromCache++;
+                    _thumbnailByItemKey[itemKey] = diskThumb;
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        item.Thumbnail = diskThumb;
+                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                    }, System.Windows.Threading.DispatcherPriority.Background, cancellationToken);
+                }
+                else
+                {
+                    workItems.Add(new FtpThumbnailWorkItem
+                    {
+                        ItemKey = itemKey,
+                        RemotePath = item.SourcePath,
+                        FileName = item.FileName,
+                        FileSize = item.FileSize
+                    });
+                }
+            }
+
+            int loadedCount = loadedFromCache;
+            int skippedCount = 0;
+
+            if (workItems.Count > 0)
+            {
+                FtpThumbnailBatchResult batch = await _ftpThumbnailService.LoadBatchAsync(
+                    endpoint,
+                    workItems,
+                    BuildThumbnailHints(),
+                    BuildFtpThumbnailLoadOptions(),
+                    async progress =>
                     {
                         await Application.Current.Dispatcher.InvokeAsync(() =>
                         {
-                            ScannedFiles = startIndex + processed;
+                            ScannedFiles = startIndex + progress.Processed;
                             TotalFilesToScan = totalItemCount;
-                            ScanProgressPercent = totalItemCount > 0 ? ((startIndex + processed) * 100) / totalItemCount : 0;
-                            CurrentScanFolder = item.SourcePath;
-                            CurrentScanFolderProcessedFiles = processed;
-                            CurrentScanFolderTotalFiles = items.Count;
+                            ScanProgressPercent = totalItemCount > 0 ? ((startIndex + progress.Processed) * 100) / totalItemCount : 0;
+                            CurrentScanFolder = progress.CurrentRemotePath ?? string.Empty;
+                            CurrentScanFolderProcessedFiles = progress.Processed;
+                            CurrentScanFolderTotalFiles = workItems.Count;
                             if (updateScanProgressMessage)
                             {
-                                ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingFtpPreviewsProgress", Math.Min(totalItemCount, startIndex + processed), totalItemCount);
+                                ScanProgressMessage = AppLocalizer.Format(
+                                    "Vm_Scan_LoadingFtpPreviewsProgress",
+                                    Math.Min(totalItemCount, startIndex + progress.Processed),
+                                    totalItemCount);
                             }
-                        });
-                    }
-                });
+                        }, System.Windows.Threading.DispatcherPriority.Background);
+                    },
+                    async result =>
+                    {
+                        await ApplyFtpThumbnailResultAsync(result, itemByKey);
+                        await Application.Current.Dispatcher.InvokeAsync(RefreshPreviewHealthSummary);
+                    },
+                    cancellationToken);
+
+                loadedCount += batch.LoadedCount;
+                skippedCount = batch.SkippedCount;
+            }
+
+            await ApplyRenderedSiblingThumbnailsAsync(items);
 
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 if (skippedCount > 0)
                 {
-                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingFtpPreviewsWithSkips", Math.Min(totalItemCount, startIndex + items.Count), totalItemCount, skippedCount);
+                    ScanProgressMessage = AppLocalizer.Format(
+                        "Vm_Scan_LoadingFtpPreviewsWithSkips",
+                        Math.Min(totalItemCount, startIndex + items.Count),
+                        totalItemCount,
+                        skippedCount);
                 }
 
                 FtpThumbnailPhaseDetail = $"FTP previews: loaded {loadedCount}/{items.Count} in batch · skipped {skippedCount}";
                 RefreshPreviewHealthSummary();
-            });
+            }, System.Windows.Threading.DispatcherPriority.Background);
 
             return loadedCount;
         }
 
-        private static async Task<bool> DownloadFtpFileWithTimeoutAsync(
-            FtpSourceItem ftp,
-            string remotePath,
-            string localPath,
-            int timeoutSeconds)
+        private async Task ApplyFtpThumbnailResultAsync(
+            FtpThumbnailItemResult result,
+            IReadOnlyDictionary<string, ImportItem> itemByKey)
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds)));
-            try
-            {
-                await Task.Run(() => DownloadFtpFileSync(ftp, remotePath, localPath, timeout.Token), timeout.Token);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool IsLikelyVideoPath(string path)
-        {
-            string ext = Path.GetExtension(path);
-            return ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".mov", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".m4v", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".avi", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".wmv", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".3gp", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".mts", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".m2ts", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static void DownloadFtpFileSync(FtpSourceItem ftp, string remotePath, string localPath, CancellationToken cancellationToken)
-        {
-            Uri uri = BuildFtpFileUri(ftp.Host, ftp.Port, remotePath);
-
-#pragma warning disable SYSLIB0014
-            var request = (FtpWebRequest)WebRequest.Create(uri);
-#pragma warning restore SYSLIB0014
-            request.Method = WebRequestMethods.Ftp.DownloadFile;
-            request.Credentials = new NetworkCredential(ftp.User, ftp.Pass);
-            request.UseBinary = true;
-            request.UsePassive = true;
-            request.KeepAlive = false;
-            request.Timeout = 30000;
-            request.ReadWriteTimeout = 30000;
-
-            using var response = (FtpWebResponse)request.GetResponse();
-            using var source = response.GetResponseStream();
-            using var dest = File.Create(localPath);
-
-            if (source == null)
+            if (!itemByKey.TryGetValue(result.ItemKey, out var item))
             {
                 return;
             }
 
-            byte[] buffer = new byte[65536];
-            int read;
-            while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                dest.Write(buffer, 0, read);
+                if (result.Thumbnail != null && FtpThumbnailCache.IsAcceptable(result.Thumbnail))
+                {
+                    item.Thumbnail = result.Thumbnail;
+                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                    _thumbnailByItemKey[result.ItemKey] = result.Thumbnail;
+                }
+                else
+                {
+                    item.Thumbnail = null;
+                    item.ThumbnailPreviewStatus = result.Thumbnail != null
+                        ? ThumbnailPreviewStatus.Failed
+                        : result.Status;
+                }
+            }, System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private async Task ApplyRenderedSiblingThumbnailsAsync(IReadOnlyList<ImportItem> items)
+        {
+            if (!GroupRawAndRenderedPairs)
+            {
+                return;
+            }
+
+            var byStem = items
+                .GroupBy(i => Path.GetFileNameWithoutExtension(i.FileName), StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var group in byStem)
+            {
+                ImportItem? rendered = group.FirstOrDefault(i =>
+                {
+                    string ext = Path.GetExtension(i.FileName).ToLowerInvariant();
+                    return ext is ".heic" or ".heif" or ".jpg" or ".jpeg"
+                        && i.Thumbnail is System.Windows.Media.Imaging.BitmapSource renderedBitmap
+                        && FtpThumbnailCache.IsAcceptable(renderedBitmap);
+                });
+
+                if (rendered == null)
+                {
+                    continue;
+                }
+
+                foreach (ImportItem raw in group.Where(i =>
+                    MediaExtensions.IsRawExtension(Path.GetExtension(i.FileName))
+                    && !(i.Thumbnail is System.Windows.Media.Imaging.BitmapSource rawBitmap
+                         && FtpThumbnailCache.IsAcceptable(rawBitmap))))
+                {
+                    string rawKey = BuildItemKey(raw);
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        raw.Thumbnail = rendered.Thumbnail;
+                        raw.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                        _thumbnailByItemKey[rawKey] = rendered.Thumbnail;
+                    }, System.Windows.Threading.DispatcherPriority.Background);
+                }
             }
         }
 
-        private static Uri BuildFtpFileUri(string host, int port, string remotePath)
+        private async Task ApplyFtpThumbnailBatchResultsAsync(
+            IReadOnlyList<FtpThumbnailItemResult> results,
+            IReadOnlyDictionary<string, ImportItem> itemByKey)
         {
-            string normalized = NormalizeFtpPath(remotePath);
-            string encodedPath = string.Join("/", normalized
-                .Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .Select(Uri.EscapeDataString));
-
-            string uriText = string.IsNullOrEmpty(encodedPath)
-                ? $"ftp://{host}:{port}/"
-                : $"ftp://{host}:{port}/{encodedPath}";
-
-            return new Uri(uriText);
+            foreach (var result in results)
+            {
+                await ApplyFtpThumbnailResultAsync(result, itemByKey);
+            }
         }
 
         [RelayCommand]
@@ -276,6 +266,11 @@ namespace QuickMediaIngest.ViewModels
                 "Unified load starting: {SourceCount} sources: {SourceSummary}. Sidebar uses removable drives by default; enable fixed drives in drive selection to merge them here.",
                 concreteSources.Count,
                 string.Join(", ", concreteSources.Select(s => s.ToString() ?? "")));
+
+            foreach (var ftp in concreteSources.OfType<FtpSourceItem>())
+            {
+                EnsureFtpSourceCredentials(ftp);
+            }
 
             try
             {
@@ -360,6 +355,42 @@ namespace QuickMediaIngest.ViewModels
             {
                 ShowScanProgressDialog = false;
             }
+        }
+
+        private bool ShouldSkipFtpThumbnailWorkItem(ImportItem item, IReadOnlyList<ImportItem> batchItems)
+        {
+            if (!GroupRawAndRenderedPairs)
+            {
+                return false;
+            }
+
+            string ext = Path.GetExtension(item.FileName);
+            if (!MediaExtensions.IsRawExtension(ext))
+            {
+                return false;
+            }
+
+            string stem = Path.GetFileNameWithoutExtension(item.FileName);
+            foreach (var other in batchItems)
+            {
+                if (ReferenceEquals(other, item))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(Path.GetFileNameWithoutExtension(other.FileName), stem, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string otherExt = Path.GetExtension(other.FileName).ToLowerInvariant();
+                if (otherExt is ".heic" or ".heif" or ".jpg" or ".jpeg")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

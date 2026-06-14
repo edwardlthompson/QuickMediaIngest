@@ -27,6 +27,7 @@ namespace QuickMediaIngest.Tests
                 new Mock<IFtpWorkflowService>().Object,
                 new Mock<IUnifiedConcreteSourceScanService>().Object,
                 new Mock<IFtpCredentialStore>().Object,
+                new Mock<IFtpThumbnailService>().Object,
                 new Mock<IFileDialogService>().Object,
                 new Mock<IShellService>().Object,
                 new Mock<ILogger<MainViewModel>>().Object);

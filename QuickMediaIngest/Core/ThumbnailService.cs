@@ -1,11 +1,12 @@
 #nullable enable
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using Microsoft.Extensions.Logging;
-using System.Windows.Media;
+using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using ImageMagick;
+using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
 {
@@ -27,20 +28,80 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            bool isRaw = MediaExtensions.IsRawExtension(ext);
-            bool isVideo = MediaExtensions.IsVideoExtension(ext);
             string cachePath = ThumbnailDiskCache.GetCachePath(filePath);
-
             try
             {
-                return ThumbnailDiskCache.TryLoad(cachePath);
+                BitmapSource? cached = ThumbnailDiskCache.TryLoad(cachePath);
+                if (cached != null)
+                {
+                    return cached;
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogDebug(ex, "Thumbnail cache read failed; will regenerate. Path: {CachePath}.", cachePath);
             }
 
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            bool isRaw = MediaExtensions.IsRawExtension(ext);
+            bool isVideo = MediaExtensions.IsVideoExtension(ext);
+
+            if (!isVideo)
+            {
+                try
+                {
+                    BitmapSource? vipsThumb = VipsThumbnailDecoder.TryGetThumbnail(filePath, isRaw ? 320 : 240, _logger);
+                    if (vipsThumb != null)
+                    {
+                        TrySaveThumbnailCache(cachePath, vipsThumb);
+                        return vipsThumb;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "libvips thumbnail extraction failed for {FilePath}.", filePath);
+                }
+
+                try
+                {
+                    BitmapSource? magickThumb = TryGetMagickThumbnail(filePath, isRaw ? 320 : 240);
+                    if (magickThumb != null)
+                    {
+                        TrySaveThumbnailCache(cachePath, magickThumb);
+                        return magickThumb;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Magick thumbnail extraction failed for {FilePath}.", filePath);
+                }
+            }
+
+            Dispatcher? dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                if (dispatcher.CheckAccess())
+                {
+                    return GetThumbnailCore(filePath, hints, cachePath, skipMagick: true);
+                }
+
+                return dispatcher.Invoke(
+                    () => GetThumbnailCore(filePath, hints, cachePath, skipMagick: true),
+                    DispatcherPriority.Background);
+            }
+
+            return StaRunner.Run(() => GetThumbnailCore(filePath, hints, cachePath, skipMagick: true));
+        }
+
+        private BitmapSource? GetThumbnailCore(
+            string filePath,
+            ThumbnailHints? hints,
+            string cachePath,
+            bool skipMagick)
+        {
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            bool isRaw = MediaExtensions.IsRawExtension(ext);
+            bool isVideo = MediaExtensions.IsVideoExtension(ext);
             BitmapSource? thumb = null;
 
             if (ext is ".jpg" or ".jpeg")
@@ -98,7 +159,7 @@ namespace QuickMediaIngest.Core
                     var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
                     if (decoder.Frames.Count > 0)
                     {
-                        thumb = CreateResizedThumbnail(decoder.Frames[0], isRaw ? 320 : 240);
+                        thumb = CreateResizedThumbnail(decoder.Frames[0], 240);
                     }
                 }
                 catch (Exception ex)
@@ -123,20 +184,42 @@ namespace QuickMediaIngest.Core
                 }
             }
 
-            if (thumb != null)
+            if (thumb == null && !skipMagick && !isVideo)
             {
                 try
                 {
-                    ThumbnailDiskCache.TrySave(thumb, cachePath);
+                    thumb = TryGetMagickThumbnail(filePath, isRaw ? 320 : 240);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore cache write errors.
+                    _logger.LogDebug(ex, "Magick thumbnail extraction failed for {FilePath}.", filePath);
                 }
             }
 
-            return thumb;
+            if (thumb != null)
+            {
+                TrySaveThumbnailCache(cachePath, thumb);
+                return thumb;
+            }
+
+            _logger.LogWarning("All thumbnail decode paths failed for {FilePath}.", filePath);
+            return null;
         }
+
+        private static void TrySaveThumbnailCache(string cachePath, BitmapSource thumb)
+        {
+            try
+            {
+                ThumbnailDiskCache.TrySave(thumb, cachePath);
+            }
+            catch
+            {
+                // Ignore cache write errors.
+            }
+        }
+
+        private static BitmapSource? TryGetMagickThumbnail(string filePath, int decodePixelWidth) =>
+            MagickThumbnailDecoder.TryGetThumbnail(filePath, decodePixelWidth);
 
         private static bool TryGetSiblingRenderedPath(string rawPath, out string siblingPath)
         {
@@ -178,18 +261,21 @@ namespace QuickMediaIngest.Core
 
         private static BitmapImage CreateResizedThumbnail(BitmapFrame frame, int decodePixelWidth)
         {
+            byte[] bytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                var encoder = new JpegBitmapEncoder();
+                encoder.Frames.Add(frame);
+                encoder.Save(memoryStream);
+                bytes = memoryStream.ToArray();
+            }
+
+            using var pixelStream = new MemoryStream(bytes);
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.DecodePixelWidth = Math.Max(120, decodePixelWidth);
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-
-            var memoryStream = new MemoryStream();
-            var encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(frame);
-            encoder.Save(memoryStream);
-            memoryStream.Position = 0;
-
-            bitmap.StreamSource = memoryStream;
+            bitmap.StreamSource = pixelStream;
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;

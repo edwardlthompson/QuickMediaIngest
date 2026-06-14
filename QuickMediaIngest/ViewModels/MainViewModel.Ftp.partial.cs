@@ -81,21 +81,72 @@ namespace QuickMediaIngest.ViewModels
         }
         partial void OnDeleteAfterImportChanged(bool value)
         {
-            SaveConfig();
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
             RefreshImportReadinessSummary();
             OnPropertyChanged(nameof(IsDeleteAfterImportEnabled));
         }
-        partial void OnDeleteAfterImportPromptDismissedChanged(bool value) => SaveConfig();
+        partial void OnDeleteAfterImportPromptDismissedChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
 
         public bool IsFtpBusy => IsTestingFtp || IsBrowsingFtpFolders;
         partial void OnIsBrowsingFtpFoldersChanged(bool value) => OnPropertyChanged(nameof(IsFtpBusy));
 
-        partial void OnLimitFtpThumbnailLoadChanged(bool value) => SaveConfig();
+        partial void OnLimitFtpThumbnailLoadChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+        }
+
         partial void OnFtpInitialThumbnailCountChanged(int value)
         {
+            if (_loadingConfig)
+            {
+                return;
+            }
+
             if (value < 20) FtpInitialThumbnailCount = 20;
             else if (value > 2000) FtpInitialThumbnailCount = 2000;
             SaveConfig();
+        }
+
+        partial void OnFtpHostChanged(string value)
+        {
+            if (_loadingConfig || string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (!value.Contains("ftp://", StringComparison.OrdinalIgnoreCase) &&
+                !value.Contains("ftps://", StringComparison.OrdinalIgnoreCase) &&
+                !value.Contains(':', StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!FtpHostNormalizer.TryParseHostAndPort(value, out string normalized, out int? port))
+            {
+                return;
+            }
+
+            if (port.HasValue && FtpPort != port.Value)
+            {
+                FtpPort = port.Value;
+            }
+
+            if (!string.Equals(FtpHost, normalized, StringComparison.Ordinal))
+            {
+                FtpHost = normalized;
+            }
         }
 
         private List<string> _ribbonTileOrder = new();
@@ -108,25 +159,6 @@ namespace QuickMediaIngest.ViewModels
         public void SaveTileOrder(IEnumerable<string> order)
         {
             _ribbonTileOrder = order.ToList();
-            SaveConfig();
-        }
-
-        public double SavedWindowWidth => _savedWindowWidth;
-        public double SavedWindowHeight => _savedWindowHeight;
-        public bool SavedWindowMaximized => _savedWindowMaximized;
-        public double? SavedWindowLeft => _savedWindowLeft;
-        public double? SavedWindowTop => _savedWindowTop;
-
-        public void SaveWindowState(double width, double height, bool maximized, double? left = null, double? top = null)
-        {
-            _savedWindowWidth = width;
-            _savedWindowHeight = height;
-            _savedWindowMaximized = maximized;
-            if (!maximized && left.HasValue && top.HasValue)
-            {
-                _savedWindowLeft = left;
-                _savedWindowTop = top;
-            }
             SaveConfig();
         }
 
@@ -186,7 +218,17 @@ namespace QuickMediaIngest.ViewModels
         }
         partial void OnSettingsMenuExpandedChanged(bool value) => SaveConfig();
         partial void OnThumbnailPerformanceModeChanged(string value) => SaveConfig();
-        partial void OnThumbnailSizeChanged(double value) => SaveConfig();
+        partial void OnThumbnailSizeChanged(double value)
+        {
+            double clamped = Math.Clamp(value, 50, 300);
+            if (Math.Abs(clamped - value) > 0.01)
+            {
+                ThumbnailSize = clamped;
+                return;
+            }
+
+            SaveConfig();
+        }
         partial void OnExpandPreviewStacksChanged(bool value)
         {
             RebuildGroupsFromCurrentItems();

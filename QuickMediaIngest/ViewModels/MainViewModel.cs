@@ -231,6 +231,7 @@ namespace QuickMediaIngest.ViewModels
             IFtpWorkflowService ftpWorkflowService,
             IUnifiedConcreteSourceScanService unifiedConcreteSourceScanService,
             IFtpCredentialStore ftpCredentialStore,
+            IFtpThumbnailService ftpThumbnailService,
             IFileDialogService fileDialogService,
             IShellService shellService,
             ILogger<MainViewModel> logger)
@@ -241,6 +242,7 @@ namespace QuickMediaIngest.ViewModels
             _ftpWorkflowService = ftpWorkflowService;
             _unifiedConcreteSourceScanService = unifiedConcreteSourceScanService;
             _ftpCredentialStore = ftpCredentialStore;
+            _ftpThumbnailService = ftpThumbnailService;
             _fileDialogService = fileDialogService;
             _shellService = shellService;
             _thumbnailService = thumbnailService;

@@ -25,6 +25,7 @@ using System.Threading;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Localization;
+using QuickMediaIngest.Services;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -84,29 +85,28 @@ namespace QuickMediaIngest
             }
         }
 
+        private void DeleteAfterImportCheckBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _deleteAfterImportUserInitiated = true;
+        }
+
         private void DeleteAfterImportCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (DataContext is not MainViewModel vm)
             {
                 return;
             }
-            if (vm.DeleteAfterImportPromptDismissed)
-            {
-                return;
-            }
 
-            var result = MessageBox.Show(
-                AppLocalizer.Get("Msg_DeleteAfterImport_ConfirmBody"),
-                AppLocalizer.Get("Msg_DeleteAfterImport_ConfirmTitle"),
-                MessageBoxButton.OKCancel,
-                MessageBoxImage.Warning);
-
-            vm.DeleteAfterImportPromptDismissed = true;
-
-            if (result != MessageBoxResult.OK && sender is System.Windows.Controls.Primitives.ToggleButton tb)
-            {
-                tb.IsChecked = false;
-            }
+            DeleteAfterImportConfirmHelper.HandleChecked(
+                vm,
+                ref _deleteAfterImportUserInitiated,
+                () =>
+                {
+                    if (sender is System.Windows.Controls.Primitives.ToggleButton tb)
+                    {
+                        tb.IsChecked = false;
+                    }
+                });
         }
 
         private void SidebarCollapseToggle_Toggled(object sender, RoutedEventArgs e)

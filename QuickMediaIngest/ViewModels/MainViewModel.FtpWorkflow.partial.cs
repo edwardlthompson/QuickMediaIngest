@@ -35,18 +35,38 @@ namespace QuickMediaIngest.ViewModels
 
         private void OpenUrl(string url) => _shellService.OpenUrl(url);
 
+        private string ResolveFtpPassword() =>
+            FtpSourceCredentials.ResolvePassword(FtpPass, FtpHost, FtpPort, FtpHost, _ftpCredentialStore);
+
+        private string ResolveFtpPasswordForSource(FtpSourceItem ftp) =>
+            FtpSourceCredentials.ResolvePassword(ftp.Pass, ftp.Host, ftp.Port, ftp.Host, _ftpCredentialStore);
+
+        private void EnsureFtpSourceCredentials(FtpSourceItem ftp)
+        {
+            ftp.Pass = ResolveFtpPasswordForSource(ftp);
+        }
+
+        private FtpEndpoint ToFtpEndpoint(FtpSourceItem ftp)
+        {
+            EnsureFtpSourceCredentials(ftp);
+            string pass = ResolveFtpPasswordForSource(ftp);
+            ftp.Pass = pass;
+            return new FtpEndpoint(ftp.Host, ftp.Port, ftp.User, pass);
+        }
+
         private void ExecuteSaveFtp()
         {
             if (string.IsNullOrEmpty(FtpHost)) return;
 
             string remoteFolder = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+            string password = ResolveFtpPassword();
 
             var ftp = new FtpSourceItem
             {
-                Host = FtpHost,
+                Host = FtpHostNormalizer.Normalize(FtpHost),
                 Port = FtpPort,
                 User = FtpUser,
-                Pass = FtpPass,
+                Pass = password,
                 RemoteFolder = remoteFolder
             };
 
@@ -55,6 +75,7 @@ namespace QuickMediaIngest.ViewModels
 
             FtpRemoteFolder = remoteFolder;
             ShowAddFtpDialog = false;
+            IsFirstRun = false;
             SaveConfig();
             SelectedSource = ftp; // triggers scan instantly
         }
@@ -88,13 +109,14 @@ namespace QuickMediaIngest.ViewModels
 
             try
             {
+                string password = ResolveFtpPassword();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var result = await Task.Run(async () =>
                     await _ftpWorkflowService.TestConnectionAsync(
                         FtpHost,
                         FtpPort,
                         FtpUser,
-                        FtpPass,
+                        password,
                         remotePath,
                         15,
                         timeout.Token));
@@ -103,6 +125,8 @@ namespace QuickMediaIngest.ViewModels
                 {
                     HasLastFtpReconnectFailure = false;
                     RefreshUxEmptyStateHints();
+                    IsFirstRun = false;
+                    SaveConfig();
                 }
 
                 StatusMessage = result.Success
@@ -151,13 +175,14 @@ namespace QuickMediaIngest.ViewModels
 
             try
             {
+                string password = ResolveFtpPassword();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var folders = await Task.Run(async () =>
                     await _ftpScanner.ListDirectoriesAsync(
                         FtpHost,
                         FtpPort,
                         FtpUser,
-                        FtpPass,
+                        password,
                         remotePath,
                         15,
                         timeout.Token));
@@ -225,6 +250,7 @@ namespace QuickMediaIngest.ViewModels
             }
 
             string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+            string password = ResolveFtpPassword();
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
@@ -232,7 +258,7 @@ namespace QuickMediaIngest.ViewModels
                     FtpHost,
                     FtpPort,
                     FtpUser,
-                    FtpPass,
+                    password,
                     remotePath,
                     8,
                     timeout.Token);
@@ -250,10 +276,10 @@ namespace QuickMediaIngest.ViewModels
 
                 var ftp = new FtpSourceItem
                 {
-                    Host = FtpHost,
+                    Host = FtpHostNormalizer.Normalize(FtpHost),
                     Port = FtpPort,
                     User = FtpUser,
-                    Pass = FtpPass,
+                    Pass = password,
                     RemoteFolder = remotePath
                 };
 
@@ -266,8 +292,17 @@ namespace QuickMediaIngest.ViewModels
                 {
                     Sources.Add(ftp);
                 }
+                else
+                {
+                    var existing = Sources.OfType<FtpSourceItem>().First(s =>
+                        string.Equals(s.Host, ftp.Host, StringComparison.OrdinalIgnoreCase) &&
+                        s.Port == ftp.Port &&
+                        string.Equals(NormalizeFtpPath(s.RemoteFolder), remotePath, StringComparison.OrdinalIgnoreCase));
+                    existing.Pass = password;
+                }
 
                 StatusMessage = AppLocalizer.Format("Vm_Ftp_Reconnected", FtpHost, FtpPort, remotePath);
+                SaveConfig();
             }
             catch
             {

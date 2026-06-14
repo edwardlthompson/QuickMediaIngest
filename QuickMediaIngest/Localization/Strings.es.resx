@@ -161,6 +161,7 @@
   <data name="Settings_ForceLowercase" xml:space="preserve"><value>Forzar salida en minúsculas</value></data>
   <data name="Settings_PreviewExamples" xml:space="preserve"><value>Vista previa (ejemplos)</value></data>
   <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Rendimiento de miniaturas</value></data>
+  <data name="Settings_ThumbnailPerformanceHint" xml:space="preserve"><value>Ultra usa más descargas y decodificación en paralelo en PCs rápidos. Bajo es más seguro para servidores FTP de teléfonos que limitan conexiones.</value></data>
   <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Agrupar RAW y renderizados en una sola pila de vista previa</value></data>
   <data name="Settings_ExpandStacked" xml:space="preserve"><value>Expandir pilas RAW/renderizado lado a lado</value></data>
   <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Gestión de duplicados</value></data>

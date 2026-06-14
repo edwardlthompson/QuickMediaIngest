@@ -1,5 +1,75 @@
 # Changelog
 
+## [1.3.16] — 2026-06-13
+
+### Fixed
+
+- **FTP thumbnails stuck pending**: Purging corrupt in-memory cache no longer skips FTP re-fetch; items are correctly re-queued.
+- **Preview health during load**: Health summary updates incrementally as each thumbnail completes.
+- **Content validator**: Relaxed variance threshold so legitimate dark/uniform photos are not rejected.
+
+---
+
+## [1.3.15] — 2026-06-13
+
+### Fixed
+
+- **FTP thumbnail green/black corrupt previews**: Content validator rejects solid-green, solid-black, and flat-color decode garbage; stale corrupt FTP disk cache entries are purged on load.
+- **FTP cache version bump** (`ftp-thumb-v2`): Forces rebuild of previews poisoned by v1.3.13/v1.3.14 bad decodes.
+- **RAW/DNG FTP previews**: When HEIC/JPG sibling loads, skipped DNG items now inherit the rendered thumbnail.
+
+---
+
+## [1.3.14] — 2026-06-13
+
+### Fixed
+
+- **FTP thumbnail green/corrupt previews**: Tiered decode no longer accepts libvips output on partial HEIC buffers; early tiers use embedded-preview-only; Magick only at final cap tier.
+- **FTP thumbnail missing previews**: Reject undersized/corrupt decode results and escalate tiers; cap parallel full-file fallbacks to 2; log background batch failures.
+- **HEIC embedded reader**: Require ≥2 KB JPEG segment and validate decoded dimensions before accepting.
+
+---
+
+## [1.3.13] — 2026-06-13
+
+### Added
+
+- **Tiered FTP preview download**: Escalates 64 KB → 256 KB → 512 KB → type cap only when decode fails; HEIC cap lowered to 2 MB.
+- **HEIC embedded preview reader**: Scans partial downloads for JPEG segments before full Magick decode.
+- **FluentFTP streaming pool** (Max/Ultra): Reused connections for capped preview downloads with FtpWebRequest fallback.
+- **libvips decode path** (NetVips): Shrink-on-load thumbnails when native libs are available; Magick remains fallback.
+- **Viewport-priority FTP thumbnails**: Expanded / top shoot groups load first.
+- **FTP disk cache pre-check** in ViewModel before scheduling network work.
+
+### Fixed
+
+- **Thumbnail zoom persistence**: Ctrl+wheel and slider both use 50–300 range; `ThumbnailSize` clamped on save.
+
+### Changed
+
+- **FTP thumbnail pipeline**: Separate download parallelism (capped at 6) and decode parallelism (CPU-scaled via `FtpThumbnailLoadOptions`).
+
+---
+
+## [1.3.12] — 2026-06-13
+
+### Fixed
+
+- **Delete After Import persistence**: Safety confirmation runs only on user-initiated toggles, not when the setting is restored from `config.json` on startup. `DeleteAfterImportPromptDismissed` is set only after the user confirms.
+
+### Added
+
+- **Delete After Import in Preferences**: Same setting available under Import Settings alongside other persistent import options.
+- **FTP thumbnail disk cache**: Decoded FTP previews are cached by `host|port|remotePath|fileSize` for fast reload on reconnect.
+- **Thumbnail Performance hint**: Preferences explains Ultra vs Low for fast PCs vs phone FTP servers.
+
+### Changed
+
+- **FTP thumbnail parallelism**: `GetFtpThumbnailWorkerCount()` scales with CPU count and Thumbnail Performance mode (Ultra up to 16 workers on powerful PCs).
+- **RAW preview dedup**: When RAW+rendered grouping is on, standalone DNG FTP downloads are skipped when a same-stem HEIC/JPG is in the batch.
+
+---
+
 ## [1.3.5] — 2026-06-13
 
 ### Changed

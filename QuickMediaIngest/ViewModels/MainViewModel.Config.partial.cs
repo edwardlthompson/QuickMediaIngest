@@ -5,7 +5,8 @@ using System.Linq;
 using System.Windows;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
-using QuickMediaIngest.Services;
+using QuickMediaIngest.Core;
+using QuickMediaIngest.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.ViewModels
@@ -14,19 +15,21 @@ namespace QuickMediaIngest.ViewModels
     {
         public void SaveConfig()
         {
+            if (_loadingConfig)
+            {
+                return;
+            }
+
             try
             {
                 try
                 {
                     if (!string.IsNullOrWhiteSpace(FtpHost))
                     {
-                        if (!string.IsNullOrEmpty(FtpPass))
+                        string password = ResolveFtpPassword();
+                        if (!string.IsNullOrEmpty(password))
                         {
-                            _ftpCredentialStore.WritePassword(FtpHost, FtpPort, FtpUser, FtpPass);
-                        }
-                        else
-                        {
-                            _ftpCredentialStore.DeletePassword(FtpHost, FtpPort);
+                            _ftpCredentialStore.WritePassword(FtpHost, FtpPort, FtpUser, password);
                         }
                     }
                 }
@@ -100,8 +103,11 @@ namespace QuickMediaIngest.ViewModels
                     ImportSingleThreaded = ImportSingleThreaded,
                     LastNotifiedUpdateTag = LastNotifiedUpdateTag,
                     DestinationPreset = DestinationPreset,
-                    LastSessionDestinationRoot = LastSessionDestinationRoot
+                    LastSessionDestinationRoot = LastSessionDestinationRoot,
+                    SavedFtpSources = BuildSavedFtpSourcesSnapshot()
                 };
+
+                PreserveFtpFieldsForSave(config, path);
 
                 string json = System.Text.Json.JsonSerializer.Serialize(config);
                 File.WriteAllText(path, json);
@@ -109,6 +115,152 @@ namespace QuickMediaIngest.ViewModels
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Saving configuration failed.");
+            }
+        }
+
+        private List<SavedFtpSourceEntry> BuildSavedFtpSourcesSnapshot()
+        {
+            return Sources
+                .OfType<FtpSourceItem>()
+                .Select(ftp => new SavedFtpSourceEntry
+                {
+                    Host = FtpHostNormalizer.Normalize(ftp.Host),
+                    Port = ftp.Port,
+                    User = ftp.User,
+                    RemoteFolder = NormalizeFtpPath(ftp.RemoteFolder)
+                })
+                .GroupBy(s => $"{s.Host}|{s.Port}|{s.RemoteFolder}", StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+        }
+
+        private void PreserveFtpFieldsForSave(AppConfig config, string configPath)
+        {
+            if (string.IsNullOrWhiteSpace(config.FtpHost))
+            {
+                var sidebar = Sources.OfType<FtpSourceItem>().FirstOrDefault();
+                if (sidebar != null)
+                {
+                    config.FtpHost = FtpHostNormalizer.Normalize(sidebar.Host);
+                    config.FtpPort = sidebar.Port;
+                    config.FtpUser = sidebar.User;
+                    config.FtpRemoteFolder = NormalizeFtpPath(sidebar.RemoteFolder);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(config.FtpHost) &&
+                (config.SavedFtpSources == null || config.SavedFtpSources.Count == 0))
+            {
+                config.SavedFtpSources = new List<SavedFtpSourceEntry>
+                {
+                    new()
+                    {
+                        Host = config.FtpHost,
+                        Port = config.FtpPort,
+                        User = config.FtpUser,
+                        RemoteFolder = NormalizeFtpPath(config.FtpRemoteFolder)
+                    }
+                };
+            }
+
+            if (!File.Exists(configPath))
+            {
+                return;
+            }
+
+            try
+            {
+                var existing = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath));
+                if (existing == null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(config.FtpHost) && !string.IsNullOrWhiteSpace(existing.FtpHost))
+                {
+                    config.FtpHost = FtpHostNormalizer.Normalize(existing.FtpHost);
+                    config.FtpPort = existing.FtpPort > 0 ? existing.FtpPort : 21;
+                    config.FtpUser = existing.FtpUser ?? string.Empty;
+                    config.FtpRemoteFolder = NormalizeFtpPath(existing.FtpRemoteFolder);
+                }
+
+                if ((config.SavedFtpSources == null || config.SavedFtpSources.Count == 0) &&
+                    existing.SavedFtpSources is { Count: > 0 })
+                {
+                    config.SavedFtpSources = existing.SavedFtpSources;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not merge existing FTP settings during save.");
+            }
+        }
+
+        private void RestoreFtpSourcesFromConfig(IReadOnlyList<SavedFtpSourceEntry>? savedEntries)
+        {
+            var entries = new List<SavedFtpSourceEntry>();
+            if (savedEntries is { Count: > 0 })
+            {
+                entries.AddRange(savedEntries);
+            }
+            else if (!string.IsNullOrWhiteSpace(FtpHost))
+            {
+                entries.Add(new SavedFtpSourceEntry
+                {
+                    Host = FtpHost,
+                    Port = FtpPort,
+                    User = FtpUser,
+                    RemoteFolder = NormalizeFtpPath(FtpRemoteFolder)
+                });
+            }
+
+            foreach (var entry in entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry.Host))
+                {
+                    continue;
+                }
+
+                string host = FtpHostNormalizer.Normalize(entry.Host);
+                string remoteFolder = NormalizeFtpPath(entry.RemoteFolder);
+                bool exists = Sources.OfType<FtpSourceItem>().Any(s =>
+                    string.Equals(s.Host, host, StringComparison.OrdinalIgnoreCase) &&
+                    s.Port == entry.Port &&
+                    string.Equals(NormalizeFtpPath(s.RemoteFolder), remoteFolder, StringComparison.OrdinalIgnoreCase));
+
+                if (exists)
+                {
+                    continue;
+                }
+
+                string password = FtpSourceCredentials.ResolvePassword(
+                    string.Empty,
+                    host,
+                    entry.Port,
+                    entry.Host,
+                    _ftpCredentialStore);
+
+                Sources.Add(new FtpSourceItem
+                {
+                    Host = host,
+                    Port = entry.Port > 0 ? entry.Port : 21,
+                    User = entry.User,
+                    Pass = password,
+                    RemoteFolder = remoteFolder
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(FtpHost))
+            {
+                var first = entries.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Host));
+                if (first != null)
+                {
+                    FtpHost = FtpHostNormalizer.Normalize(first.Host);
+                    FtpPort = first.Port > 0 ? first.Port : 21;
+                    FtpUser = first.User;
+                    FtpRemoteFolder = NormalizeFtpPath(first.RemoteFolder);
+                    FtpPass = FtpSourceCredentials.ResolvePassword(FtpPass, FtpHost, FtpPort, FtpHost, _ftpCredentialStore);
+                }
             }
         }
 
@@ -140,13 +292,27 @@ namespace QuickMediaIngest.ViewModels
                             NamingLowercase = config.NamingLowercase;
                             if (!string.IsNullOrWhiteSpace(config.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = config.ThumbnailPerformanceMode;
                             GroupRawAndRenderedPairs = config.GroupRawAndRenderedPairs;
-                            if (!string.IsNullOrWhiteSpace(config.FtpHost)) FtpHost = config.FtpHost;
+                            string legacyFtpHost = config.FtpHost ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(legacyFtpHost))
+                            {
+                                FtpHost = FtpHostNormalizer.Normalize(legacyFtpHost);
+                            }
+
                             FtpPort = config.FtpPort > 0 ? config.FtpPort : 21;
                             if (!string.IsNullOrWhiteSpace(config.FtpUser)) FtpUser = config.FtpUser;
-                            if (_ftpCredentialStore.TryReadPassword(FtpHost, FtpPort, out string vaultPassword) &&
+
+                            if (_ftpCredentialStore.TryReadPasswordWithLegacyKeys(FtpHost, FtpPort, legacyFtpHost, out string vaultPassword) &&
                                 !string.IsNullOrEmpty(vaultPassword))
                             {
                                 FtpPass = vaultPassword;
+                                try
+                                {
+                                    _ftpCredentialStore.WritePassword(FtpHost, FtpPort, FtpUser, vaultPassword);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "Could not migrate FTP credential key to normalized host.");
+                                }
                             }
                             else if (!string.IsNullOrEmpty(config.FtpPass))
                             {
@@ -178,6 +344,7 @@ namespace QuickMediaIngest.ViewModels
                             if (config.ThumbnailSize > 0) ThumbnailSize = config.ThumbnailSize;
                             ScanIncludeSubfolders = config.ScanIncludeSubfolders;
                             TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
+                            // Legacy FTP thumbnail batch limits — no UI; always load all previews on startup.
                             LimitFtpThumbnailLoad = false;
                             FtpInitialThumbnailCount = 0;
                             ExpandPreviewStacks = config.ExpandPreviewStacks;
@@ -293,6 +460,7 @@ namespace QuickMediaIngest.ViewModels
                             });
 
                             RefreshDestinationPresetLabels();
+                            RestoreFtpSourcesFromConfig(config.SavedFtpSources);
                         }
                         finally
                         {

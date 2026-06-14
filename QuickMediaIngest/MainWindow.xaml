@@ -8,7 +8,8 @@
     xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:controls="clr-namespace:QuickMediaIngest.Controls"
-    Title="{loc:Loc Main_WindowTitle}" Height="620" Width="960"
+    Title="{loc:Loc Main_WindowTitle}" MinWidth="400" MinHeight="300"
+    WindowStartupLocation="Manual"
     Icon="QuickMediaIngest.ico"
     TextElement.Foreground="{DynamicResource MaterialDesignBody}"
     TextElement.FontWeight="Regular"
@@ -46,10 +47,7 @@
                    IsHitTestVisible="False"
                    Visibility="Hidden"
                    Text="{Binding AccessibilityAnnouncement}" />
-        <!-- Overlays (dialogs, notifications) -->
-        <controls:DialogOverlaysView x:Name="DialogOverlaysViewControl" Grid.ColumnSpan="2" />
-        <controls:ImportHistoryOverlayView x:Name="ImportHistoryOverlayViewControl" Grid.ColumnSpan="2" />
-        <!-- Main layout: Sidebar + Main Content -->
+        <!-- Overlays rendered after MainChromeRoot so they appear above main UI -->
         <Grid x:Name="MainChromeRoot">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="SidebarColumn" Width="260" MinWidth="56" />
@@ -354,6 +352,7 @@
                                                           Content="{loc:Loc Toolbar_DeleteAfterImport}"
                                                           Style="{StaticResource TopBarDangerToggleStyle}"
                                                           IsChecked="{Binding DeleteAfterImport, Mode=TwoWay}"
+                                                          PreviewMouseLeftButtonDown="DeleteAfterImportCheckBox_PreviewMouseLeftButtonDown"
                                                           Checked="DeleteAfterImportCheckBox_Checked"
                                                           ToolTip="{loc:Loc Toolbar_DeleteAfterImportTooltip}"/>
                                         </Border>
@@ -599,7 +598,9 @@
                                                 <StackPanel Margin="0,0,8,8" Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             Visibility="{Binding IsPreviewVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                     <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="4" Padding="2">
-                                                        <Grid MaxWidth="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        <Grid MinWidth="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              MinHeight="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              MaxWidth="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                                               MaxHeight="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}">
                                                             <Image Source="{Binding Thumbnail}"
                                                                    Stretch="Uniform"
@@ -733,6 +734,8 @@
                 </Border>
             </Grid>
         </Grid>
+        <controls:DialogOverlaysView x:Name="DialogOverlaysViewControl" />
+        <controls:ImportHistoryOverlayView x:Name="ImportHistoryOverlayViewControl" />
         <!-- Settings: root-level overlay so VisualBrush blur matches other modals (not a child of MainChromeRoot) -->
         <controls:PreferencesOverlayView x:Name="PreferencesOverlayViewControl" />
 

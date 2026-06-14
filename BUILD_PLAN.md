@@ -1,7 +1,6 @@
 # Build Plan
 
-> Prioritized task board with owner labels, Sequential and Parallel lanes per sprint.
-> Move completed items to `COMPLETED_TASKS.md`.
+> Prioritized task board with owner labels. Completed milestones live in `COMPLETED_TASKS.md`.
 
 ## Owner Label Legend
 
@@ -12,11 +11,34 @@
 | `ADB` | Human (Android) | Android SDK, emulator/device testing (ADB provider testing) |
 | `AUTO` | CI/scripts/bots | GitHub Actions, Dependabot, pre-commit, update checker |
 
-**Current release:** [v1.3.5](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.5) (2026-06-13)
+**Task format:** `- [ ] [OWNER] Description`
 
-**All agent/automatable sprints complete** — see [`COMPLETED_TASKS.md`](COMPLETED_TASKS.md).
+**Current release:** v1.3.16
 
-**Remaining:** HUMAN-only maintenance (weekly CVE sign-off).
+**Active work:** HUMAN smoke for FTP thumbnails on LAN (`10.0.0.23:2221/DCIM`)
+
+---
+
+## HUMAN Verification — v1.3.12 / v1.3.13
+
+Source: `10.0.0.23:2221/DCIM` · Thumbnail Performance: **Ultra**
+
+### Settings (v1.3.12)
+
+- [ ] [HUMAN] Delete After Import: enable → confirm → restart → toggle stays on; `config.json` has `"DeleteAfterImport": true`; no startup dialog when previously confirmed
+
+### FTP thumbnails (v1.3.12 + v1.3.13)
+
+- [ ] [HUMAN] Cold load: log shows most files succeed at 64–512 KB tier (not 8 MB each); top/expanded shoots populate first
+- [ ] [HUMAN] Reconnect same source: `FTP thumbnail cache hit` before network work; near-instant grid
+- [ ] [HUMAN] Tier 3 (Max/Ultra): FluentFTP pool active; libvips decode when native DLLs load in published exe
+- [ ] [HUMAN] Zoom: set slider to 200 → restart → slider at 200; `config.json` has `"ThumbnailSize": 200`
+
+### CI
+
+- [ ] [AUTO] `dotnet test` + CI green after push
+
+**Acceptance reference:** see Milestones 8–9 in `COMPLETED_TASKS.md` for shipped features and key files.
 
 ---
 
@@ -24,19 +46,17 @@
 
 ### Weekly (recurring)
 
-- [x] [AGENT] CVE triage pass — 2026-06-13: no open critical Dependabot alerts (`gh api dependabot/alerts`)
-- [ ] [HUMAN] Run weekly CVE triage pass per `docs/SECURITY_TRIAGE.md` (recommended: Monday; sign-off)
+- [x] [AGENT] CVE triage pass — 2026-06-13: no open critical Dependabot alerts
+- [ ] [HUMAN] Run weekly CVE triage per `docs/SECURITY_TRIAGE.md` (recommended: Monday; sign-off)
 - [ ] [AUTO] Trivy + CodeQL + CI green after next push
 
 ### Backlog (not blocking)
 
 | Task | Owner | Notes |
 |------|-------|-------|
-| Plan MaterialDesignThemes 4.x → 5.x migration | AGENT | ✓ MD 5.3.2 with MaterialDesign2.Defaults |
-| Microsoft.Extensions 8 → 10 bump | AGENT | ✓ 10.0.9 on net8.0-windows |
 | Extract Sidebar / ShootGroups UserControls | AGENT | Optional polish |
 | Remove WPF types from Core models (`ImportItem.Thumbnail`) | AGENT | Long-term |
-| Unify FTP stacks (`FtpWebRequest` scan vs FluentFTP import) | AGENT | `FtpScanner`, `FtpFileProvider` |
+| Unify FTP scan listing with thumbnail transport stack | AGENT | Thumbnail path done in M9; scan listing remains |
 | Headless WPF smoke test in CI | AGENT | Sprint 6 follow-up |
 | MSI install/uninstall CI step | AGENT | WiX validation |
 
@@ -47,8 +67,10 @@
 | Gate | Owner | Status |
 |------|-------|--------|
 | Core `/**/*.cs` ≤ 200 lines (no grandfather) | AUTO | ✓ |
-| Core test coverage baseline (53 tests) | AUTO | ✓ |
+| Unit test baseline (89 tests, excl. integration/smoke) | AUTO | ✓ |
 | ADB provider device smoke test | ADB | ✓ (device `b5214fc6`) |
 | Overlay MVVM decouple | AUTO | ✓ |
 | Weekly CVE triage within last 7 days | HUMAN | Agent pass done; human sign-off pending |
-| MaterialDesign 5.x migration plan | HUMAN | Pending |
+| FTP thumbnails on LAN test source | HUMAN | Code shipped v1.3.13; smoke pending |
+| Delete After Import persists across restart | HUMAN | Code shipped v1.3.12; smoke pending |
+| Thumbnail zoom (`ThumbnailSize`) persists | HUMAN | Code shipped v1.3.13; smoke pending |

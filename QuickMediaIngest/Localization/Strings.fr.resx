@@ -97,6 +97,7 @@
   <data name="Settings_ForceLowercase" xml:space="preserve"><value>Forcer la sortie en minuscules</value></data>
   <data name="Settings_PreviewExamples" xml:space="preserve"><value>Aperçu (exemples)</value></data>
   <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Rendu des vignettes</value></data>
+  <data name="Settings_ThumbnailPerformanceHint" xml:space="preserve"><value>Ultra utilise davantage de téléchargements et de décodages parallèles sur les PC rapides. Faible est plus sûr pour les serveurs FTP des téléphones qui limitent les connexions.</value></data>
   <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Grouper RAW et rendus dans une même pile d’aperçus</value></data>
   <data name="Settings_ExpandStacked" xml:space="preserve"><value>Déplier les piles RAW/rendus côte à côte</value></data>
   <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Gestion des doublons</value></data>

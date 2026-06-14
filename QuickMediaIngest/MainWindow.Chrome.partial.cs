@@ -34,20 +34,7 @@ namespace QuickMediaIngest
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (DataContext is not MainViewModel vm)
-            {
-                return;
-            }
-            if (WindowState == WindowState.Maximized)
-            {
-                vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
-            }
-            else
-            {
-                vm.SaveWindowState(Width, Height, false, Left, Top);
-            }
-
-            vm.SaveConfig();
+            PersistWindowState();
         }
 
         private void RibbonTileHandle_PreviewMouseMove(object sender, MouseEventArgs e)

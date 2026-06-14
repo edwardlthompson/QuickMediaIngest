@@ -79,5 +79,15 @@ namespace QuickMediaIngest
         public List<string> SelectedDriveDeviceIds { get; set; } = new();
         public List<string> SelectedDrivePaths { get; set; } = new();
         public Dictionary<string, List<string>> SkippedFoldersBySource { get; set; } = new();
+        public List<SavedFtpSourceEntry> SavedFtpSources { get; set; } = new();
+    }
+
+    /// <summary>Persisted FTP sidebar source (password stored in Credential Manager).</summary>
+    public sealed class SavedFtpSourceEntry
+    {
+        public string Host { get; set; } = string.Empty;
+        public int Port { get; set; } = 21;
+        public string User { get; set; } = string.Empty;
+        public string RemoteFolder { get; set; } = "/DCIM";
     }
 }

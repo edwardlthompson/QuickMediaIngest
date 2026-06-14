@@ -30,7 +30,7 @@ namespace QuickMediaIngest.Core
         /// <param name="logger">Logger for diagnostic output.</param>
         public FtpFileProvider(string host, int port, string user, string pass, ILogger<FtpFileProvider> logger)
         {
-            _host = host;
+            _host = FtpHostNormalizer.Normalize(host);
             _port = port;
             _user = user;
             _pass = pass;

@@ -8,6 +8,9 @@ namespace QuickMediaIngest.Core.Services
         /// <summary>Target key: host + port. Returns false if not found.</summary>
         bool TryReadPassword(string host, int port, out string password);
 
+        /// <summary>Reads password using current and legacy Credential Manager target keys.</summary>
+        bool TryReadPasswordWithLegacyKeys(string host, int port, string? rawHost, out string password);
+
         void WritePassword(string host, int port, string userName, string password);
 
         /// <summary>Remove stored secret for this FTP endpoint (empty password).</summary>

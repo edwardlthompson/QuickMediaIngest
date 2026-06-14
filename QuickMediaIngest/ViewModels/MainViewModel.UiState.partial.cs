@@ -263,6 +263,7 @@ namespace QuickMediaIngest.ViewModels
         private readonly IFtpWorkflowService _ftpWorkflowService;
         private readonly IUnifiedConcreteSourceScanService _unifiedConcreteSourceScanService;
         private readonly IFtpCredentialStore _ftpCredentialStore;
+        private readonly IFtpThumbnailService _ftpThumbnailService;
         private readonly IFileDialogService _fileDialogService;
         private readonly IShellService _shellService;
         private readonly IThumbnailService _thumbnailService;
@@ -281,10 +282,31 @@ namespace QuickMediaIngest.ViewModels
         private bool _savedWindowMaximized = false;
         private double? _savedWindowLeft;
         private double? _savedWindowTop;
+
+        public double SavedWindowWidth => _savedWindowWidth;
+        public double SavedWindowHeight => _savedWindowHeight;
+        public bool SavedWindowMaximized => _savedWindowMaximized;
+        public double? SavedWindowLeft => _savedWindowLeft;
+        public double? SavedWindowTop => _savedWindowTop;
+
+        public void SaveWindowState(double width, double height, bool maximized, double? left = null, double? top = null)
+        {
+            _savedWindowWidth = width;
+            _savedWindowHeight = height;
+            _savedWindowMaximized = maximized;
+            if (left.HasValue && top.HasValue)
+            {
+                _savedWindowLeft = left;
+                _savedWindowTop = top;
+            }
+            SaveConfig();
+        }
+
         private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource? _importCancellationSource;
+        private CancellationTokenSource? _ftpThumbnailCts;
         private readonly Dictionary<string, bool> _shootGroupExpandedMemory = new(StringComparer.OrdinalIgnoreCase);
         private readonly UnifiedSourceItem _unifiedSource = new();
         private bool _updatingNamingFromUi = false;

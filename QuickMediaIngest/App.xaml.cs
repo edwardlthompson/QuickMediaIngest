@@ -190,6 +190,8 @@ namespace QuickMediaIngest
             services.AddSingleton<IShootFilterService, ShootFilterService>();
             services.AddSingleton<IFtpWorkflowService, FtpWorkflowService>();
             services.AddSingleton<IUnifiedConcreteSourceScanService, UnifiedConcreteSourceScanService>();
+            services.AddSingleton<FtpFileDownloader>();
+            services.AddSingleton<IFtpThumbnailService, FtpThumbnailService>();
             services.AddSingleton<IFtpCredentialStore, WindowsFtpCredentialStore>();
             services.AddSingleton<IFileDialogService, WpfFileDialogService>();
             services.AddSingleton<IShellService, WpfShellService>();

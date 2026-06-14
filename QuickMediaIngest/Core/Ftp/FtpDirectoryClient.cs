@@ -54,7 +54,7 @@ namespace QuickMediaIngest.Core
             string path,
             int timeoutSeconds)
         {
-            var uri = BuildFtpUri(host, port, path);
+            var uri = FtpUriBuilder.Build(host, port, path);
 
 #pragma warning disable SYSLIB0014
             var request = (FtpWebRequest)WebRequest.Create(uri);
@@ -86,18 +86,5 @@ namespace QuickMediaIngest.Core
             return entries;
         }
 
-        private static Uri BuildFtpUri(string host, int port, string path)
-        {
-            string normalized = FtpListingParser.NormalizeRemotePath(path);
-            string encodedPath = string.Join(
-                "/",
-                normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.EscapeDataString));
-
-            string uriText = string.IsNullOrEmpty(encodedPath)
-                ? $"ftp://{host}:{port}/"
-                : $"ftp://{host}:{port}/{encodedPath}";
-
-            return new Uri(uriText);
-        }
     }
 }

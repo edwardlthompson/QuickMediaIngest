@@ -161,6 +161,7 @@
   <data name="Settings_ForceLowercase" xml:space="preserve"><value>Force lowercase output</value></data>
   <data name="Settings_PreviewExamples" xml:space="preserve"><value>Preview (examples)</value></data>
   <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Thumbnail Performance</value></data>
+  <data name="Settings_ThumbnailPerformanceHint" xml:space="preserve"><value>Ultra uses more parallel preview downloads and decoding on fast PCs. Low is safer for phone FTP servers that throttle many connections.</value></data>
   <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Group RAW + rendered files into a single preview stack</value></data>
   <data name="Settings_ExpandStacked" xml:space="preserve"><value>Expand stacked RAW/rendered previews side-by-side</value></data>
   <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Duplicate Handling</value></data>

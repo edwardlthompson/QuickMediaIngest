@@ -26,6 +26,7 @@ using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.ViewModels;
+using QuickMediaIngest.Services;
 
 namespace QuickMediaIngest
 {
@@ -39,6 +40,8 @@ namespace QuickMediaIngest
         private Border? _activeRibbonDraggedTile;
         private int _activeRibbonPreviewIndex = -1;
         private double _savedShootGroupsScrollOffset;
+        private bool _isRestoringWindowState;
+        private bool _deleteAfterImportUserInitiated;
 
         public Visual BlurBackdropSource => MainChromeRoot;
 
@@ -169,15 +172,6 @@ namespace QuickMediaIngest
                 {
                     vm.ShowAddFtpDialog = true;
                     _logger.LogInformation("Debug: showing Add FTP dialog on launch due to QMI_SHOW_FTP_ON_LAUNCH=1");
-                    try
-                    {
-                        DialogOverlaysViewControl.FtpOverlay.Visibility = Visibility.Visible;
-                        DialogOverlaysViewControl.FtpOverlay.BringIntoView();
-                    }
-                    catch
-                    {
-                        // Ignore overlay timing issues.
-                    }
                 }
             }
             catch
@@ -235,22 +229,57 @@ namespace QuickMediaIngest
                 return;
             }
 
-            Width = vm.SavedWindowWidth;
-            Height = vm.SavedWindowHeight;
-            if (vm.SavedWindowLeft.HasValue && vm.SavedWindowTop.HasValue)
+            _isRestoringWindowState = true;
+            try
             {
-                WindowStartupLocation = WindowStartupLocation.Manual;
-                Left = vm.SavedWindowLeft.Value;
-                Top = vm.SavedWindowTop.Value;
+                double width = Math.Max(WindowStateHelper.MinWidth, vm.SavedWindowWidth);
+                double height = Math.Max(WindowStateHelper.MinHeight, vm.SavedWindowHeight);
+                bool hasSavedPosition = vm.SavedWindowLeft.HasValue && vm.SavedWindowTop.HasValue;
+
+                if (hasSavedPosition)
+                {
+                    var workingAreas = WindowStateHelper.GetAllWorkingAreas();
+                    var clamped = WindowStateHelper.ClampToVisibleBounds(
+                        width,
+                        height,
+                        vm.SavedWindowLeft!.Value,
+                        vm.SavedWindowTop!.Value,
+                        workingAreas);
+
+                    width = clamped.Width;
+                    height = clamped.Height;
+                    WindowStartupLocation = WindowStartupLocation.Manual;
+                    Left = clamped.Left;
+                    Top = clamped.Top;
+                }
+
+                Width = width;
+                Height = height;
+
+                if (vm.SavedWindowMaximized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+                else
+                {
+                    WindowState = WindowState.Normal;
+                }
             }
-            if (vm.SavedWindowMaximized)
+            finally
             {
-                WindowState = WindowState.Maximized;
+                _isRestoringWindowState = false;
             }
-            else
+        }
+
+        private void PersistWindowState()
+        {
+            if (_isRestoringWindowState || DataContext is not MainViewModel vm)
             {
-                WindowState = WindowState.Normal;
+                return;
             }
+
+            var bounds = WindowStateHelper.GetBoundsToPersist(this);
+            vm.SaveWindowState(bounds.Width, bounds.Height, bounds.Maximized, bounds.Left, bounds.Top);
         }
 
         private void MainContent_Loaded(object sender, RoutedEventArgs e)
@@ -289,7 +318,7 @@ namespace QuickMediaIngest
                 if (DataContext is MainViewModel vm)
                 {
                     double newSize = vm.ThumbnailSize + (e.Delta > 0 ? 10 : -10);
-                    if (newSize >= 80 && newSize <= 250) // Bounds check matching Slider
+                    if (newSize >= 50 && newSize <= 300)
                     {
                         vm.ThumbnailSize = newSize;
                     }
@@ -305,8 +334,8 @@ namespace QuickMediaIngest
                 return;
             }
 
-            if (WindowState == WindowState.Normal && DataContext is MainViewModel vmSize)
-                vmSize.SaveWindowState(Width, Height, false, Left, Top);
+            if (WindowState == WindowState.Normal && !_isRestoringWindowState)
+                PersistWindowState();
 
             _ribbonLayoutRefreshQueued = true;
             Dispatcher.BeginInvoke(new Action(() =>
@@ -325,12 +354,12 @@ namespace QuickMediaIngest
 
         private void Window_StateChanged(object sender, EventArgs e)
         {
-            if (DataContext is not MainViewModel vm) return;
+            if (_isRestoringWindowState)
+            {
+                return;
+            }
 
-            if (WindowState == WindowState.Maximized)
-                vm.SaveWindowState(vm.SavedWindowWidth, vm.SavedWindowHeight, true);
-            else if (WindowState == WindowState.Normal)
-                vm.SaveWindowState(Width, Height, false, Left, Top);
+            PersistWindowState();
         }
     }
 }

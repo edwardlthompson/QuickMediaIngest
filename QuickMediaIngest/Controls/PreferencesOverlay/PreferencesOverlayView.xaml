@@ -159,7 +159,13 @@
                             </Expander.Header>
                             <StackPanel Margin="0,8,0,0">
                                 <CheckBox Content="{loc:Loc Settings_EmbedKeywords}" IsChecked="{Binding EmbedKeywordsOnImport, Mode=TwoWay}" Margin="0,0,0,6"/>
-                                <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}" Margin="0,0,0,14"/>
+                                <CheckBox Content="{loc:Loc Settings_ConfirmImport}" IsChecked="{Binding ConfirmBeforeImport, Mode=TwoWay}" Margin="0,0,0,6"/>
+                                <CheckBox x:Name="DeleteAfterImportPrefsCheckBox"
+                                          Content="{loc:Loc Toolbar_DeleteAfterImport}"
+                                          IsChecked="{Binding DeleteAfterImport, Mode=TwoWay}"
+                                          PreviewMouseLeftButtonDown="DeleteAfterImportCheckBox_PreviewMouseLeftButtonDown"
+                                          Checked="DeleteAfterImportCheckBox_Checked"
+                                          Margin="0,0,0,14"/>
 
                                 <TextBlock Text="{loc:Loc Settings_ImportBehaviorSection}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                                 <CheckBox Content="{loc:Loc Settings_OpenDestinationWhenDone}" IsChecked="{Binding OpenDestinationFolderWhenImportCompletes, Mode=TwoWay}" Margin="0,0,0,6"/>
@@ -178,7 +184,8 @@
 
                                 <TextBlock Text="{loc:Loc Settings_ImportSubsection_Previews}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                                 <TextBlock Text="{loc:Loc Settings_ThumbnailPerformance}" FontWeight="SemiBold" Margin="0,4,0,4"/>
-                                <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,10"/>
+                                <ComboBox ItemsSource="{Binding ThumbnailPerformanceOptions}" SelectedItem="{Binding ThumbnailPerformanceMode, Mode=TwoWay}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{loc:Loc Settings_ThumbnailPerformanceHint}" TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,0,0,10"/>
                                 <CheckBox Content="{loc:Loc Settings_GroupRawRendered}"
                                           IsChecked="{Binding GroupRawAndRenderedPairs, Mode=TwoWay}"
                                           Margin="0,0,0,8"/>

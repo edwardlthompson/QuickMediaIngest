@@ -34,6 +34,11 @@ namespace QuickMediaIngest.ViewModels
 
         private async void LoadSourceItems(object source, bool forceRefresh = false)
         {
+            _ftpThumbnailCts?.Cancel();
+            _ftpThumbnailCts?.Dispose();
+            _ftpThumbnailCts = new CancellationTokenSource();
+            CancellationToken thumbnailToken = _ftpThumbnailCts.Token;
+
             foreach (var existing in Groups)
             {
                 existing.PropertyChanged -= Group_PropertyChanged;
@@ -65,6 +70,7 @@ namespace QuickMediaIngest.ViewModels
                 {
                     string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(ScanPath) ? ftp.RemoteFolder : ScanPath);
                     ftp.RemoteFolder = remotePath;
+                    EnsureFtpSourceCredentials(ftp);
                     sourceLabel = $"{ftp.Host}{remotePath}";
                     sourceKey = BuildSourceKey(ftp);
 
@@ -196,7 +202,14 @@ namespace QuickMediaIngest.ViewModels
 
                 if (Groups.Count > 0)
                 {
-                    await LoadThumbnailsAsync(Groups.ToList(), source, sourceLabel);
+                    if (source is FtpSourceItem)
+                    {
+                        ShowScanProgressDialog = false;
+                        ScanDialogTitle = AppLocalizer.Get("Vm_Scan_BuildingPreviewsDialogTitle");
+                        StatusMessage = AppLocalizer.Format("Vm_Scan_LoadingFtpPreviewsProgress", 0, items.Count);
+                    }
+
+                    await LoadThumbnailsAsync(Groups.ToList(), source, sourceLabel, thumbnailToken);
                     _sourceItemsCache[sourceKey] = CloneItems(_currentSourceItems);
                 }
                 else

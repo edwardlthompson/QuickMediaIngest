@@ -341,3 +341,85 @@
 **New code:** `Core/AdbDeviceProbe.cs`, `Tests/AdbFileProviderTests.cs`
 
 **Test baseline:** 53 unit tests, all passing.
+
+---
+
+## Milestone 7 — FTP Preview Reliability (v1.3.6, 2026-06-13)
+
+### Sprint 7.1: Diagnose + Reliability
+
+- [x] [AGENT] Analyze FTP thumbnail failure (code evidence: empty `ftp.Pass`, no download retries, full-file download, broken retry path)
+- [x] [AGENT] Add `FtpSourceCredentials.ResolvePassword` + `EnsureFtpSourceCredentials`; apply at scan, thumbnail, unified, reconnect
+- [x] [AGENT] Extract `FtpFileDownloader` (retries, canonical `FtpUriBuilder`, zero-byte guard, `ILogger`)
+- [x] [AGENT] Fix `RetryFailedPreviewLoadsAsync` for `IsFtpSource` items
+- [x] [AGENT] Unit tests: `FtpUriBuilderTests`, `FtpSourceCredentialsTests`, `FtpPreviewDownloadLimitsTests`
+
+### Sprint 7.2: Performance + Consolidation
+
+- [x] [AGENT] `FtpThumbnailBatchFetcher` with FluentFTP capped stream download (512 KB images, 4 MB video, 2 MB RAW)
+- [x] [AGENT] `IFtpThumbnailService` / `FtpThumbnailService` consolidates FTP + unified thumbnail paths
+- [x] [AGENT] Remove `DebugAgentLog` instrumentation
+
+### Sprint 7.3: Release
+
+- [x] [AGENT] Bump to v1.3.6; 80 unit tests passing
+- [ ] [HUMAN] Manual smoke: `10.0.0.23:2221/DCIM` — thumbnails load fast and reliably
+- [ ] [AUTO] CI green after push
+
+**New code:** `Core/Ftp/FtpUriBuilder.cs`, `FtpFileDownloader.cs`, `FtpThumbnailBatchFetcher.cs`, `FtpPreviewDownloadLimits.cs`, `Core/Services/FtpThumbnailService.cs`, `FtpSourceCredentials.cs`, `FtpEndpoint.cs`
+
+**Test baseline:** 80 unit tests, all passing.
+
+---
+
+## Milestone 8 — Thumbnail Performance + Settings Persistence (v1.3.12, 2026-06-13)
+
+### Sprint 8.1: Settings persistence
+
+- [x] [AGENT] `DeleteAfterImportConfirmHelper` — safety dialog only on user-initiated toggle; prompt dismissed only after OK
+- [x] [AGENT] Delete After Import checkbox in Preferences Import Settings
+- [x] [AGENT] `ConfigPersistenceTests` round-trip for `DeleteAfterImport` + `DeleteAfterImportPromptDismissed`
+
+### Sprint 8.2: Thumbnail performance
+
+- [x] [AGENT] CPU-scaled `GetFtpThumbnailWorkerCount()` (Ultra up to 16 workers)
+- [x] [AGENT] Thumbnail Performance hint in Preferences (en/fr/es)
+- [x] [AGENT] FTP thumbnail disk cache (`host|port|remotePath|fileSize`) in `ThumbnailDiskCache` + `FtpThumbnailService`
+- [x] [AGENT] Skip redundant DNG FTP download when same-stem HEIC/JPG in batch (`GroupRawAndRenderedPairs`)
+
+### Sprint 8.3: Release
+
+- [x] [AGENT] Bump to v1.3.12; `CHANGELOG.md` updated
+- [x] [AGENT] Deploy test build to Desktop (`QuickMediaIngest.exe` v1.3.12.0)
+- [x] [AGENT] 85 unit tests passing (excl. integration/smoke)
+- [ ] [HUMAN] Delete After Import + Ultra speed + FTP cache smoke on LAN FTP source
+
+---
+
+## Milestone 9 — FTP Thumbnail Pipeline v2 (v1.3.13, 2026-06-13)
+
+### Sprint 9.1: Tier 1 — Fetch strategy
+
+- [x] [AGENT] Zoom persistence: Ctrl+wheel + slider aligned to 50–300; `OnThumbnailSizeChanged` clamp; `ConfigPersistenceTests` for `ThumbnailSize`
+- [x] [AGENT] `FtpPreviewDownloadLimits` tier API (64K → 256K → 512K → cap); HEIC cap lowered to 2 MB
+- [x] [AGENT] `FtpTieredPreviewLoader` + `FtpThumbnailPipeline` — tiered download with decode-after-each-tier
+- [x] [AGENT] ViewModel FTP disk cache pre-check (`FtpThumbnailCache.TryLoad`) before scheduling network work
+- [x] [AGENT] `FtpPreviewDownloadTierTests`, `HeicEmbeddedPreviewReaderTests`
+
+### Sprint 9.2: Tier 2 — Pipeline architecture
+
+- [x] [AGENT] Viewport-priority thumbnail queue (expanded / top shoot groups first)
+- [x] [AGENT] Split download pool (capped at 6) vs decode pool (`FtpThumbnailLoadOptions`)
+- [x] [AGENT] `FtpStreamingDownloader` per-host FluentFTP connection pool (Max/Ultra); `FtpWebRequest` fallback
+
+### Sprint 9.3: Tier 3 — Advanced decode + transport
+
+- [x] [AGENT] `HeicEmbeddedPreviewReader` — partial-buffer JPEG segment extraction before Magick
+- [x] [AGENT] NetVips / `VipsThumbnailDecoder` shrink-on-load path; Magick fallback
+
+### Sprint 9.4: Release
+
+- [x] [AGENT] Bump to v1.3.13; `CHANGELOG.md` updated
+- [x] [AGENT] Deploy test build to Desktop (`QuickMediaIngest.exe` v1.3.13.0)
+- [x] [AGENT] 89 unit tests passing (excl. integration/smoke)
+- [ ] [HUMAN] Cold load `10.0.0.23:2221/DCIM` — tiered bytes in log; cache hit on reconnect; zoom persists; FluentFTP + libvips on Max/Ultra
