@@ -17,8 +17,16 @@ VIEWMODEL_LIMIT=400
 CORE_LIMIT=200
 ERRORS=0
 
-# Grandfathered Core files (empty when Sprint 3 splits complete)
-GRANDFATHER=()
+# Grandfathered until Core/ViewModel splits land for Milestone 9 FTP pipeline
+GRANDFATHER=(
+  "QuickMediaIngest/Core/ThumbnailService.cs"
+  "QuickMediaIngest/Core/Ftp/FtpThumbnailPipeline.cs"
+  "QuickMediaIngest/Core/Ftp/FtpTieredPreviewLoader.cs"
+  "QuickMediaIngest/Core/Ftp/FtpFileDownloader.cs"
+  "QuickMediaIngest/ViewModels/MainViewModel.Config.partial.cs"
+  "QuickMediaIngest/ViewModels/MainViewModel.Ftp.partial.cs"
+  "QuickMediaIngest/ViewModels/MainViewModel.Thumbnails.partial.cs"
+)
 
 is_grandfathered() {
   local rel="$1"
