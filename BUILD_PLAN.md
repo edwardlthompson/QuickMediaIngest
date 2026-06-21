@@ -23,7 +23,7 @@
 
 **Current release:** v1.3.16
 
-**Active work:** `[AUTO]` Push + CI green (Template Migration Sprint close-out)
+**Active work:** Template Migration Sprint ✅ complete — pick up **Backlog** Parallel lane items
 
 ---
 
@@ -53,14 +53,14 @@
 - ✅ [AGENT] Update `AGENTS.md`, `docs/FOR_AGENTS.md`, `docs/START_HERE.md`, `PROMPT_LIBRARY.md`, `README.md`
 - ✅ [AGENT] Update `AGENT_MEMORY.md`; bump `.template-version` to `0.11.0`
 
-#### Phase 5 — Validation & sign-off
+#### Phase 5 — Validation & sign-off ✅
 
 - ✅ [AGENT] Run gate suite: `validate-bootstrap.sh`, `feature-gate.sh --stack dotnet-wpf`, `pre-release-gate.sh`, `check-batch-commands.sh` — pre-release partial: Dependabot strict needs `gh` security_events scope
-- ✅ [AGENT] Run `dotnet test -c Release` — 91 passed, 5 skipped (fixed WPF + ADB gate tests)
+- ✅ [AGENT] Run `dotnet test -c Release` — 101 passed (incl. human verification smoke)
 - ✅ [AGENT] Document super-command smoke results in `DECISION_LOG.md`
 - ✅ [HUMAN] Confirm `/bootstrap`, `/build`, `/verify`, `/ship`, `/gates`, `/audit` in Cursor `/` menu
 - ✅ [HUMAN] Sign off template version bump (v0.11.0)
-- 🔲 [AUTO] Push branch; CI green on all new gates
+- ✅ [AUTO] Push branch; CI green on all new gates — `e59ec6f` + CI fix `7720986` (`.gitattributes` CRLF)
 
 ---
 
@@ -98,7 +98,7 @@ Source: `10.0.0.23:2221/DCIM` · Thumbnail Performance: **Ultra**
 
 ### CI
 
-- 🔲 [AUTO] `dotnet test` + CI green after push
+- ✅ [AUTO] `dotnet test` + CI green after push — CI `27889916358` green on `7720986`
 
 **Acceptance reference:** see Milestones 8–9 in `COMPLETED_TASKS.md` for shipped features and key files.
 
@@ -110,7 +110,7 @@ Source: `10.0.0.23:2221/DCIM` · Thumbnail Performance: **Ultra**
 
 - ✅ [AGENT] CVE triage pass — 2026-06-13: no open critical Dependabot alerts
 - 🔲 [HUMAN] Run weekly CVE triage per `docs/SECURITY_TRIAGE.md` (recommended: Monday; sign-off) — or run `.\scripts\smoke-human-verification.ps1`
-- 🔲 [AUTO] Trivy + CodeQL + CI green after next push
+- ✅ [AUTO] Trivy + CodeQL + CI green after next push — `7720986` on `main`
 
 ### Backlog (not blocking)
 
