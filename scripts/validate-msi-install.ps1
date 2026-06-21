@@ -41,11 +41,28 @@ try {
     Write-Host "OK MSI extract: $($exe.FullName)"
 
     if ($SmokeLibvips) {
-        & $exe.FullName --smoke-libvips
-        if ($LASTEXITCODE -ne 0) {
-            throw "libvips smoke failed with exit code $LASTEXITCODE"
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $exe.FullName
+        $psi.Arguments = '--smoke-libvips'
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        $smokeProc = [System.Diagnostics.Process]::Start($psi)
+        if (-not $smokeProc) {
+            throw 'Failed to start libvips smoke process'
         }
-        Write-Host "OK libvips smoke on extracted MSI payload"
+        $stdout = $smokeProc.StandardOutput.ReadToEnd()
+        $stderr = $smokeProc.StandardError.ReadToEnd()
+        if (-not $smokeProc.WaitForExit(120000)) {
+            $smokeProc.Kill()
+            throw 'libvips smoke timed out after 120s'
+        }
+        if ($smokeProc.ExitCode -ne 0 -or $stdout -notmatch 'OK libvips') {
+            throw "libvips smoke failed (exit $($smokeProc.ExitCode)): stdout=$stdout stderr=$stderr"
+        }
+        Write-Host ($stdout.Trim())
+        Write-Host 'OK libvips smoke on extracted MSI payload'
     }
 }
 finally {
