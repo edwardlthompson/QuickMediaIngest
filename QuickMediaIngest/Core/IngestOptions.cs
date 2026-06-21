@@ -24,5 +24,6 @@ namespace QuickMediaIngest.Core
         public IReadOnlyList<string>? ImportKeywords { get; set; }
         public int MaxConcurrentFileCopies { get; set; }
         public int DelayBetweenFilesMilliseconds { get; set; }
+        public ImportByteProgressTracker? ByteProgressTracker { get; set; }
     }
 }

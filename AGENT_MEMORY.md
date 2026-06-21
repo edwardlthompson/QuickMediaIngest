@@ -57,6 +57,8 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 |------|-----------|-------------|-----------------|
 | 2026-06-13 | Bootstrap parity | Template adoption in Reference mode | Split MainWindow/MainViewModel (Sprint 1) |
 | 2026-06-20 | Template v0.11.0 migration | Phased bootstrap sync; slash commands + gate loop; WPF feature-gate | Confirm `/` menu in Cursor UI; push + CI green |
+| 2026-06-21 | Release v1.3.17 | Human sign-off automation; P2–P8 backlog; MSI/libvips CI fixes | SBOM in build.yml; local `gh auth refresh -s security_events` for strict Dependabot gate |
+| 2026-06-21 | Release v1.3.18 | Byte-weighted import progress + ETA (F-002) | LAN FTP smoke tests flaky offline |
 
 ## Template Provenance
 

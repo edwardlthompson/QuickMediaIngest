@@ -93,7 +93,8 @@ namespace QuickMediaIngest.ViewModels
                 ApplyImportKeywords = applyKeywords,
                 ImportKeywords = applyKeywords ? keywords : null,
                 MaxConcurrentFileCopies = maxCopy,
-                DelayBetweenFilesMilliseconds = delayMs
+                DelayBetweenFilesMilliseconds = delayMs,
+                ByteProgressTracker = _importByteProgressTracker,
             };
         }
 
@@ -126,11 +127,7 @@ namespace QuickMediaIngest.ViewModels
                         {
                             foreach (var item in ftpBatch)
                             {
-                                ProcessedFilesForImport++;
-                                FailedFilesForImport++;
-                                CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
-                                ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
-                                StatusMessage = $"Failed {item.FileName} | missing FTP source configuration.";
+                                RegisterManualImportFailure(item, "Missing FTP source configuration.");
                             }
 
                             continue;
@@ -177,54 +174,7 @@ namespace QuickMediaIngest.ViewModels
             };
 
             var engine = _ingestEngineFactory.Create(provider);
-            engine.ProgressChanged += (percent, msg) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    StatusMessage = msg;
-                });
-            };
-
-            engine.ItemProcessed += progress =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProcessedFilesForImport++;
-                    if (!progress.Success)
-                    {
-                        FailedFilesForImport++;
-                        FailedImportRecords.Add(new FailedImportRecord
-                        {
-                            SourcePath = progress.SourcePath,
-                            FileName = progress.FileName,
-                            ErrorMessage = string.IsNullOrWhiteSpace(progress.ErrorMessage) ? "Import failed." : progress.ErrorMessage
-                        });
-                    }
-                    else
-                    {
-                        _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
-                    }
-
-                    CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
-                    CurrentGroupFileBeingImported = progress.GroupCurrent;
-                    TotalFilesInCurrentGroup = progress.GroupTotal;
-                    CurrentGroupProgressPercent = progress.GroupTotal > 0 ? (progress.GroupCurrent * 100) / progress.GroupTotal : 0;
-                    CurrentImportGroupTitle = progress.GroupTitle;
-                    ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
-
-                    string state = progress.Success
-                        ? AppLocalizer.Get("Vm_Import_StateCopying")
-                        : AppLocalizer.Get("Vm_Import_StateFailed");
-                    StatusMessage = AppLocalizer.Format(
-                        "Vm_Status_ImportProgressLine",
-                        state,
-                        progress.FileName,
-                        ProcessedFilesForImport,
-                        TotalFilesForImport,
-                        progress.GroupCurrent,
-                        progress.GroupTotal);
-                });
-            };
+            WireIngestEngineProgress(engine);
 
             await engine.IngestGroupAsync(
                 subsetGroup,

@@ -88,7 +88,6 @@ namespace QuickMediaIngest.ViewModels
         private bool _isUpdatingSelectAll = false;
         private bool _isBulkUpdatingGroupExpansion = false;
         private bool _selectAll = true;
-        private long _processedBytesForImport = 0;
         private DateTime _importStartedAtUtc = DateTime.MinValue;
         private readonly Queue<QueuedImportJob> _importQueue = new();
         private readonly object _importQueueLock = new();
@@ -297,6 +296,7 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private string importDataRateText = "-- MB/s";
         [ObservableProperty] private DateTime importStartedAtUtc = DateTime.MinValue;
         [ObservableProperty] private long processedBytesForImport = 0;
+        [ObservableProperty] private long totalBytesForImport = 0;
         [ObservableProperty] private bool showImportProgressDialog = false;
         [ObservableProperty] private bool showScanProgressDialog = false;
         [ObservableProperty] private int scanProgressPercent = 0;

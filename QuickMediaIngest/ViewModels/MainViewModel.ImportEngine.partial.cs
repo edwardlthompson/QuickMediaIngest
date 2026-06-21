@@ -100,7 +100,7 @@ namespace QuickMediaIngest.ViewModels
             ShowImportProgressDialog = true;
             StatusMessage = AppLocalizer.Get("Vm_Status_StartingImport");
             ProgressPercent = 0;
-            _processedBytesForImport = 0;
+            ProcessedBytesForImport = 0;
 
             AddNotificationFeedEntry(AppLocalizer.Get("Notify_ImportSessionStart"), isSessionDivider: true);
 
@@ -109,6 +109,7 @@ namespace QuickMediaIngest.ViewModels
             _importCancellationSource = new CancellationTokenSource();
             var importCts = _importCancellationSource;
             var stopwatch = Stopwatch.StartNew();
+            BeginImportByteProgressTracking(selectedGroups, totalFiles, stopwatch);
             var timerTask = Task.Run(async () =>
             {
                 while (!importCts.IsCancellationRequested)
@@ -125,22 +126,9 @@ namespace QuickMediaIngest.ViewModels
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
-
-                        if (ProcessedFilesForImport > 0 && TotalFilesForImport > ProcessedFilesForImport)
+                        if (_importByteProgressTracker != null)
                         {
-                            double avgSecondsPerFile = stopwatch.Elapsed.TotalSeconds / ProcessedFilesForImport;
-                            double remainingSeconds = (TotalFilesForImport - ProcessedFilesForImport) * avgSecondsPerFile;
-                            ImportEtaText = TimeSpan.FromSeconds(Math.Max(0, remainingSeconds)).ToString(@"hh\:mm\:ss");
-                        }
-                        else if (TotalFilesForImport <= ProcessedFilesForImport && TotalFilesForImport > 0)
-                        {
-                            ImportEtaText = "00:00:00";
-                        }
-
-                        if (stopwatch.Elapsed.TotalSeconds > 0.25 && _processedBytesForImport > 0)
-                        {
-                            double bytesPerSecond = _processedBytesForImport / stopwatch.Elapsed.TotalSeconds;
-                            ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
+                            UpdateImportEtaAndRate(stopwatch, _importByteProgressTracker.GetSnapshot());
                         }
                     });
                 }
@@ -168,46 +156,7 @@ namespace QuickMediaIngest.ViewModels
                     try
                     {
                         var engine = _ingestEngineFactory.Create(provider);
-
-                        engine.ProgressChanged += (percent, msg) =>
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                StatusMessage = msg;
-                            });
-                        };
-
-                        engine.ItemProcessed += progress =>
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ProcessedFilesForImport++;
-                                if (!progress.Success)
-                                {
-                                    FailedFilesForImport++;
-                                    FailedImportRecords.Add(new FailedImportRecord
-                                    {
-                                        SourcePath = progress.SourcePath,
-                                        FileName = progress.FileName,
-                                        ErrorMessage = string.IsNullOrWhiteSpace(progress.ErrorMessage) ? "Import failed." : progress.ErrorMessage
-                                    });
-                                }
-                                else
-                                {
-                                    _processedBytesForImport += Math.Max(0, progress.FileSizeBytes);
-                                }
-
-                                CurrentFileBeingImported = ProcessedFilesForImport - FailedFilesForImport;
-                                CurrentGroupFileBeingImported = progress.GroupCurrent;
-                                TotalFilesInCurrentGroup = progress.GroupTotal;
-                                CurrentGroupProgressPercent = progress.GroupTotal > 0 ? (progress.GroupCurrent * 100) / progress.GroupTotal : 0;
-                                CurrentImportGroupTitle = progress.GroupTitle;
-                                ProgressPercent = TotalFilesForImport > 0 ? (ProcessedFilesForImport * 100) / TotalFilesForImport : 0;
-
-                                string state = progress.Success ? "Copying" : "Failed";
-                                StatusMessage = $"{state} {progress.FileName} | overall {ProcessedFilesForImport}/{TotalFilesForImport} | group {progress.GroupCurrent}/{progress.GroupTotal}";
-                            });
-                        };
+                        WireIngestEngineProgress(engine);
 
                         await System.Threading.Tasks.Task.Run(async () =>
                         {
@@ -242,10 +191,9 @@ namespace QuickMediaIngest.ViewModels
                 ProgressPercent = 100;
                 CurrentGroupProgressPercent = 100;
                 ImportEtaText = "00:00:00";
-                if (stopwatch.Elapsed.TotalSeconds > 0.25 && _processedBytesForImport > 0)
+                if (_importByteProgressTracker != null && stopwatch.Elapsed.TotalSeconds > 0.25)
                 {
-                    double bytesPerSecond = _processedBytesForImport / stopwatch.Elapsed.TotalSeconds;
-                    ImportDataRateText = $"{(bytesPerSecond / (1024d * 1024d)):0.00} MB/s";
+                    UpdateImportEtaAndRate(stopwatch, _importByteProgressTracker.GetSnapshot());
                 }
 
                 _suppressStatusFeedFromStatusMessage = true;
@@ -304,6 +252,7 @@ namespace QuickMediaIngest.ViewModels
                 }
 
                 ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+                ClearImportByteProgressTracking();
                 IsImporting = false;
                 ShowImportProgressDialog = false;
                 _importCancellationSource?.Dispose();

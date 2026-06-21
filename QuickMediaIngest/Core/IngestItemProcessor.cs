@@ -25,6 +25,13 @@ namespace QuickMediaIngest.Core
             Action<IngestProgressInfo>? itemProcessed,
             CancellationToken cancellationToken)
         {
+            ImportByteProgressTracker? tracker = options.ByteProgressTracker;
+            string sourceKey = item.SourcePath;
+            long fileSizeBytes = Math.Max(0, item.FileSize);
+
+            tracker?.RegisterFileStarted(sourceKey, fileSizeBytes);
+            itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, string.Empty, true, string.Empty, isStarted: true));
+
             string status = $"Copying {item.FileName} ({itemIndex}/{total})";
             progressChanged?.Invoke((itemIndex * 100) / total, status);
 
@@ -46,11 +53,16 @@ namespace QuickMediaIngest.Core
                 {
                     success = true;
                     errorMessage = "Skipped duplicate due to duplicate policy.";
-                    itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage));
+                    tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);
+                    itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage, isStarted: false));
                     return;
                 }
 
-                await provider.CopyAsync(item.SourcePath, destPath, cancellationToken);
+                IProgress<long>? copyProgress = tracker == null
+                    ? null
+                    : new Progress<long>(bytes => tracker.ReportBytes(sourceKey, bytes));
+
+                await provider.CopyAsync(item.SourcePath, destPath, cancellationToken, copyProgress);
                 success = true;
                 logger.LogDebug("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
 
@@ -95,7 +107,8 @@ namespace QuickMediaIngest.Core
                     destPath);
             }
 
-            itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage));
+            tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);
+            itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage, isStarted: false));
         }
 
         private static IngestProgressInfo BuildProgressInfo(
@@ -106,7 +119,8 @@ namespace QuickMediaIngest.Core
             int total,
             string destPath,
             bool success,
-            string errorMessage) =>
+            string errorMessage,
+            bool isStarted) =>
             new()
             {
                 GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
@@ -118,6 +132,7 @@ namespace QuickMediaIngest.Core
                 FileSizeBytes = item.FileSize,
                 Success = success,
                 ErrorMessage = errorMessage,
+                IsStarted = isStarted,
             };
     }
 }

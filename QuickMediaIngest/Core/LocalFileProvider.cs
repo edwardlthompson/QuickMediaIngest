@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,15 +29,22 @@ namespace QuickMediaIngest.Core
         /// <param name="srcPath">Source file path.</param>
         /// <param name="destPath">Destination file path.</param>
         /// <param name="token">Cancellation token.</param>
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token)
+        /// <param name="bytesCopied">Optional progress reporter (bytes copied so far).</param>
+        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
         {
             _logger.LogDebug("Copying local file from {SourcePath} to {DestinationPath}.", srcPath, destPath);
             const int bufferSize = 1024 * 1024;
             var options = FileOptions.Asynchronous | FileOptions.SequentialScan;
-            await using (var sourceStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, options))
-            await using (var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, options))
+            await using var sourceStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, options);
+            await using var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, options);
+            byte[] buffer = new byte[bufferSize];
+            long copied = 0;
+            int read;
+            while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), token)) > 0)
             {
-                await sourceStream.CopyToAsync(destStream, bufferSize, token);
+                await destStream.WriteAsync(buffer.AsMemory(0, read), token);
+                copied += read;
+                bytesCopied?.Report(copied);
             }
         }
 

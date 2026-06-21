@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -86,7 +87,7 @@ namespace QuickMediaIngest.Core
         /// <param name="srcPath">Source path on the FTP server.</param>
         /// <param name="destPath">Destination local path.</param>
         /// <param name="token">Cancellation token.</param>
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token)
+        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
         {
             await _clientLock.WaitAsync(token);
             try
@@ -108,7 +109,10 @@ namespace QuickMediaIngest.Core
                 }
 
                 _logger.LogDebug("Downloading FTP file {SourcePath} to {DestinationPath}.", srcPath, destPath);
-                await _client.DownloadFile(destPath, srcPath, FtpLocalExists.Overwrite, FtpVerify.None, null, token);
+                IProgress<FtpProgress>? ftpProgress = bytesCopied == null
+                    ? null
+                    : new Progress<FtpProgress>(p => bytesCopied.Report(p.TransferredBytes));
+                await _client.DownloadFile(destPath, srcPath, FtpLocalExists.Overwrite, FtpVerify.None, ftpProgress, token);
             }
             finally
             {

@@ -2,7 +2,24 @@
 
 ## [Unreleased]
 
-## [1.3.17] — 2026-06-21
+## [1.3.18] — 2026-06-21
+
+### Added
+
+- **Import byte progress tracker**: `ImportByteProgressTracker` aggregates completed + in-flight bytes across parallel copies (up to 8).
+- **Per-copy progress**: `IFileProvider.CopyAsync` optional `IProgress<long>` for Local, FTP, and ADB providers.
+- **Tests**: `ImportByteProgressTrackerTests` and ingest incremental copy progress coverage.
+
+### Changed
+
+- **Import progress UI**: Progress bar and ETA/MB/s use byte-weighted math; status updates when each file starts copying.
+- **BUILD_PLAN**: Slimmed active board; F-002 archived to `COMPLETED_TASKS.md`.
+
+### Fixed
+
+- **Import ETA accuracy**: No longer derived from file-count averages that jumped when parallel batches completed.
+
+---
 
 ### Added
 

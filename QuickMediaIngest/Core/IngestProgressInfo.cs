@@ -12,5 +12,6 @@ namespace QuickMediaIngest.Core
         public long FileSizeBytes { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; } = string.Empty;
+        public bool IsStarted { get; set; }
     }
 }

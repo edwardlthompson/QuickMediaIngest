@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -21,7 +22,7 @@ namespace QuickMediaIngest.Core
             _logger = logger;
         }
 
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token)
+        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
         {
             // Use adb pull to copy file from device to local
             var psi = new ProcessStartInfo
@@ -42,6 +43,11 @@ namespace QuickMediaIngest.Core
             {
                 string error = await process.StandardError.ReadToEndAsync();
                 throw new IOException($"ADB pull failed: {error}");
+            }
+
+            if (bytesCopied != null && File.Exists(destPath))
+            {
+                bytesCopied.Report(new FileInfo(destPath).Length);
             }
         }
 

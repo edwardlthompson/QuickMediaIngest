@@ -376,6 +376,7 @@ Puede volver a ver esta visita en Configuración &gt; Acerca de.</value></data>
   <data name="Dlg_SelectFolderToScan" xml:space="preserve"><value>Seleccionar carpeta para analizar</value></data>
   <data name="Vm_Status_PreflightComplete" xml:space="preserve"><value>Prevalidación lista: {0} archivos, {1:0.00} MB. Guardado en {2}.</value></data>
   <data name="Vm_Status_ImportProgressLine" xml:space="preserve"><value>{0} {1} | total {2}/{3} | grupo {4}/{5}</value></data>
+  <data name="Vm_Status_ImportStartingLine" xml:space="preserve"><value>Iniciando {0} | en curso {1} | total {2}/{3}</value></data>
   <data name="Vm_Import_StateCopying" xml:space="preserve"><value>Copiando</value></data>
   <data name="Vm_Import_StateFailed" xml:space="preserve"><value>Error</value></data>
   <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>No se pudo vincular la regla de exclusión a una fuente. Inténtelo cuando termine de cargar la lista.</value></data>

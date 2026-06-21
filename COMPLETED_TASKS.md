@@ -467,6 +467,19 @@ Single orchestrator replaces BUILD_PLAN HUMAN checklist items:
 
 ---
 
+## Import Progress + ETA — F-002 (2026-06-21)
+
+Byte-weighted import progress with parallel copies (up to 8) unchanged:
+
+- [x] [AGENT] `ImportByteProgressTracker` + `ImportByteProgressSnapshot` — thread-safe completed + in-flight bytes
+- [x] [AGENT] `IFileProvider.CopyAsync` optional `IProgress<long>` — Local, FTP, ADB providers
+- [x] [AGENT] `IngestItemProcessor` start/complete events; `MainViewModel.ImportProgress.partial.cs` shared ETA/bar
+- [x] [AGENT] `ImportByteProgressTrackerTests` + `IngestEngineTests` incremental copy progress
+
+**Test baseline:** 113 unit tests (Release).
+
+---
+
 ## Backlog Parallel Lane — P1–P8 (2026-06-20)
 
 | P | Task | Status |
@@ -502,9 +515,9 @@ Full report: `CODE_REVIEW.md` (gitignored, local only).
 - [x] [AGENT] F-002 — `scripts/check-readme-health.sh` (README sections + doc link validation)
 - [x] [AGENT] F-003 — Gitignore `CODE_REVIEW.md` + `build_errors.md`; untrack stale `build_errors.md`
 - [x] [AUTO] Gate verification — bootstrap, feature-gate (9 stages), hygiene, readme health, 106 tests
+- [x] [AGENT] F-001 — P1–P8 backlog + v1.3.17 release (shipped `8556015`)
 
-### Open (carried to BUILD_PLAN)
+### Optional (not blocking)
 
-- [ ] [AGENT] F-001 — Commit P1–P8 backlog (~30 files); needs [HUMAN] push approval
-- [ ] [HUMAN] F-004 — `gh auth refresh -s security_events`
-- [ ] [HUMAN] Visual spot-checks (delete dialog, thumbnail slider)
+- [ ] [HUMAN] F-004 — `gh auth refresh -s security_events` (local Dependabot strict only; CI uses `GITHUB_TOKEN`)
+- [ ] [HUMAN] Optional live UI glance — headless sign-off tests cover bindings

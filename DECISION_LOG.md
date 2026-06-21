@@ -198,3 +198,34 @@
 **Remaining [HUMAN]:** Delete-after-import dialog on restart (UI); thumbnail slider visual; libvips in published portable exe.
 
 **Validation:** `dotnet test` 101 passed; `smoke-human-verification` filter 10/10 when LAN FTP up.
+
+---
+
+## 2026-06-21 — Release v1.3.17 (P1–P8 + human sign-off automation)
+
+**Decision:** Ship v1.3.17 with backlog P2–P8 complete, automated human sign-offs (`run-human-signoffs`), and CI hardening fixes discovered during `/ship`.
+
+**Changes:**
+- Human sign-offs job: removed Dependabot API step (GITHUB_TOKEN unreliable on Windows runners; dotnet `--vulnerable` + Security Scan cover release gate)
+- MSI validation: fixed `msiexec /a` argument quoting and Process-based libvips smoke exit code
+- libvips publish smoke: removed `--no-build` to restore win-x64 RID assets
+
+**Release:** [v1.3.17](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.17) — portable EXE, ZIP, MSI uploaded via `workflow_dispatch`.
+
+**Validation:** CI + Security Scan + CodeQL green on `5aa8a14`; 109 tests; zero open Critical/High Dependabot alerts.
+
+**Deferred:** CycloneDX SBOM attachment to releases (documented in INITIALIZATION_PROMPT, not yet in `build.yml`).
+
+---
+
+## 2026-06-21 — Release v1.3.18 (import progress + ETA)
+
+**Decision:** Ship F-002 — byte-weighted import progress and ETA with parallel copies unchanged.
+
+**Changes:**
+- `ImportByteProgressTracker` + per-provider copy progress callbacks
+- Shared `MainViewModel.ImportProgress.partial.cs` for bar, ETA, and status across import paths
+
+**Release:** v1.3.18 (pending tag via `workflow_dispatch`).
+
+**Validation:** 113 tests (Release); 0 open Critical/High Dependabot alerts; remote CI green on prior `5aa8a14`.

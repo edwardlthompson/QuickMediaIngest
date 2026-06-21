@@ -389,6 +389,7 @@ You can revisit this tour from Settings &gt; About.</value></data>
   <data name="Dlg_SelectFolderToScan" xml:space="preserve"><value>Select folder to scan</value></data>
   <data name="Vm_Status_PreflightComplete" xml:space="preserve"><value>Preflight complete: {0} files, {1:0.00} MB. Saved to {2}.</value></data>
   <data name="Vm_Status_ImportProgressLine" xml:space="preserve"><value>{0} {1} | overall {2}/{3} | group {4}/{5}</value></data>
+  <data name="Vm_Status_ImportStartingLine" xml:space="preserve"><value>Starting {0} | in flight {1} | overall {2}/{3}</value></data>
   <data name="Vm_Import_StateCopying" xml:space="preserve"><value>Copying</value></data>
   <data name="Vm_Import_StateFailed" xml:space="preserve"><value>Failed</value></data>
   <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>Could not attach skip rule to a source. Try again after the list finishes loading.</value></data>
