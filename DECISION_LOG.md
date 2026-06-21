@@ -226,6 +226,6 @@
 - `ImportByteProgressTracker` + per-provider copy progress callbacks
 - Shared `MainViewModel.ImportProgress.partial.cs` for bar, ETA, and status across import paths
 
-**Release:** v1.3.18 (pending tag via `workflow_dispatch`).
+**Release:** [v1.3.18](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.18) — portable EXE, ZIP, MSI via `workflow_dispatch`.
 
-**Validation:** 113 tests (Release); 0 open Critical/High Dependabot alerts; remote CI green on prior `5aa8a14`.
+**Validation:** CI + Security Scan + CodeQL green on `0221d2c`; 113 tests; zero open Critical/High Dependabot alerts.

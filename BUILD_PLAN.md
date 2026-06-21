@@ -25,7 +25,7 @@ Icons: ✅ done · 🔲 open · ⚠️ optional once
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| — | *(empty — add next feature or fix here)* | — | — |
+| TBD | Next scoped feature or fix | AGENT | 🔲 |
 
 ---
 
