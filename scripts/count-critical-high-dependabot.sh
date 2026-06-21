@@ -27,8 +27,7 @@ total = 0
 page = 1
 while page <= 50:
     proc = subprocess.run(
-        ["gh", "api", f"repos/{repo}/dependabot/alerts", "-f", "state=open",
-         "-f", f"per_page=100", "-f", f"page={page}"],
+        ["gh", "api", f"repos/{repo}/dependabot/alerts?state=open&per_page=100&page={page}"],
         capture_output=True, text=True,
     )
     if proc.returncode != 0:

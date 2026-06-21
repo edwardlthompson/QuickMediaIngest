@@ -83,7 +83,7 @@ jobs:
         run: |
           dotnet publish QuickMediaIngest/QuickMediaIngest.csproj -c Release -r win-x64 --self-contained true `
             /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true `
-            -o ./publish/ci-smoke --no-build
+            -o ./publish/ci-smoke
           & ./publish/ci-smoke/QuickMediaIngest.exe --smoke-libvips
           if ($LASTEXITCODE -ne 0) { throw "libvips smoke failed with exit code $LASTEXITCODE" }
       - name: Vulnerable packages
@@ -105,9 +105,11 @@ jobs:
   human-signoffs:
     name: Human Sign-offs (automated)
     runs-on: windows-latest
+    needs: dotnet
     permissions:
       contents: read
       security-events: read
+      actions: read
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v5
@@ -123,7 +125,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
-        run: bash scripts/check-security-triage.sh --strict
+        run: bash scripts/check-security-triage.sh --strict --wait-ci 300
 
   human-verification-smoke:
     name: Human Verification Smoke (optional LAN FTP)
