@@ -9,7 +9,7 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-REPO="${GITHUB_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
+REPO="${GITHUB_REPOSITORY:-${GITHUB_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}}"
 if [ -z "$REPO" ]; then
   echo "ERROR: gh auth required" >&2
   exit 1
@@ -31,7 +31,8 @@ while page <= 50:
         capture_output=True, text=True,
     )
     if proc.returncode != 0:
-        print("error", file=sys.stderr)
+        err = (proc.stderr or proc.stdout or "unknown").strip()
+        print(f"error: {err}", file=sys.stderr)
         raise SystemExit(1)
     alerts = json.loads(proc.stdout or "[]")
     if not alerts:

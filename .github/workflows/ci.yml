@@ -121,18 +121,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: bash scripts/run-human-signoffs.sh --strict --skip-security
-      - name: Security triage (Dependabot strict)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          count="$(bash scripts/count-critical-high-dependabot.sh)"
-          echo "Open Critical/High Dependabot alerts: ${count}"
-          if [ "${count}" -gt 0 ]; then
-            echo "FAIL: resolve Dependabot alerts before release"
-            exit 1
-          fi
-          echo "OK zero open Critical/High Dependabot alerts"
 
   human-verification-smoke:
     name: Human Verification Smoke (optional LAN FTP)

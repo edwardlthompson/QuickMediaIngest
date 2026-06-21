@@ -21,7 +21,7 @@ if ! command -v gh >/dev/null 2>&1; then
   [ "$STRICT" = true ] && exit 1 || exit 0
 fi
 
-REPO="${GITHUB_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
+REPO="${GITHUB_REPOSITORY:-${GITHUB_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}}"
 if [ -z "$REPO" ]; then
   echo "SKIP: gh not authenticated"
   [ "$STRICT" = true ] && exit 1 || exit 0
