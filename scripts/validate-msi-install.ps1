@@ -14,10 +14,21 @@ if (-not (Test-Path $MsiPath)) {
 $extractRoot = Join-Path $env:TEMP ("qmi-msi-verify-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
 
+$msiFullPath = (Resolve-Path -LiteralPath $MsiPath).Path
+$msiLength = (Get-Item -LiteralPath $msiFullPath).Length
+if ($msiLength -lt 1024) {
+    throw "MSI looks invalid (size ${msiLength} bytes): $msiFullPath"
+}
+
 try {
     Write-Host "Administrative extract to $extractRoot"
-    $args = @("/a", "`"$MsiPath`"", "/qn", "TARGETDIR=`"$extractRoot`"")
-    $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow
+    $msiexecArgs = @(
+        '/a',
+        $msiFullPath,
+        '/qn',
+        "TARGETDIR=$extractRoot"
+    )
+    $proc = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiexecArgs -Wait -PassThru -NoNewWindow
     if ($proc.ExitCode -ne 0) {
         throw "msiexec /a failed with exit code $($proc.ExitCode)"
     }
