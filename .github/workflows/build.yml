@@ -82,6 +82,10 @@ jobs:
       run: |
         wix build Installer/QuickMediaIngest.wxs -ext WixToolset.UI.wixext -d Version=${{ env.VERSION }} -o ./publish/QuickMediaIngest.msi
 
+    - name: Validate MSI install payload
+      shell: pwsh
+      run: ./scripts/validate-msi-install.ps1 -MsiPath ./publish/QuickMediaIngest.msi -SmokeLibvips
+
     - name: Create and Push Version Tag
       if: github.event_name == 'workflow_dispatch'
       shell: pwsh

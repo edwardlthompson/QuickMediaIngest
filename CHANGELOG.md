@@ -2,9 +2,28 @@
 
 ## [Unreleased]
 
+## [1.3.17] — 2026-06-21
+
+### Added
+
+- **Human sign-off automation**: `run-human-signoffs.ps1/.sh` orchestrates config, UI binding, FTP, and security triage checks.
+- **Headless UI verification**: `HumanSignoffVerificationTests` for Delete After Import and ThumbnailSize bindings after config reload.
+- **Published exe smoke**: `--smoke-libvips` flag and `smoke-published-exe` scripts for portable build validation.
+- **CI**: Headless libvips smoke, automated human-signoffs job, OpenSSF Scorecard workflow, MSI admin-extract validation.
+- **Gate scripts**: `check-readme-health.sh`, `ensure-gh-security-scope.sh`, `check-scorecard-sarif.sh`, `validate-msi-install.ps1`.
+
 ### Changed
 
-- Template migration: slash commands, Cursor rules, gate scripts (Phases 1–3).
+- **File limits**: Cleared grandfather list; split ViewModel and Core/Ftp partials under line budgets.
+- **MainWindow**: Removed dead overlay code-behind handlers; overlays bind VM commands.
+- **BUILD_PLAN**: Slimmed active board; completed work archived to `COMPLETED_TASKS.md`.
+- **WpfTestFixture**: Dedicated STA thread for reliable headless WPF tests (109 tests).
+
+### Fixed
+
+- **NetVips native DLL**: `NetVips.Native.win-x64` in publish path for single-file portable exe.
+
+---
 
 ## [1.3.16] — 2026-06-13
 

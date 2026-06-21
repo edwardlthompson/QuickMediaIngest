@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace QuickMediaIngest.Core
 {
+    /// <summary>FTP directory listing via FtpWebRequest — same transport stack as <see cref="FtpFileDownloader"/>.</summary>
     internal static class FtpDirectoryClient
     {
         public static async Task<List<FtpListingEntry>> ListDirectoryEntriesAsync(

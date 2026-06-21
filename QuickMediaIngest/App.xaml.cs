@@ -9,6 +9,7 @@ using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using NetVips;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Services;
@@ -94,6 +95,12 @@ namespace QuickMediaIngest
 
         protected override async void OnStartup(StartupEventArgs e)
         {
+            if (TryRunHeadlessSmoke(e.Args, out int smokeExitCode))
+            {
+                Shutdown(smokeExitCode);
+                return;
+            }
+
             base.OnStartup(e);
             LocalizationService.ApplyCultureFromConfigFileEarly();
             _serviceProvider = ConfigureServices();
@@ -202,6 +209,33 @@ namespace QuickMediaIngest
             services.AddTransient<MainWindow>();
 
             return services.BuildServiceProvider();
+        }
+
+        private static bool TryRunHeadlessSmoke(string[] args, out int exitCode)
+        {
+            exitCode = 0;
+            foreach (string arg in args)
+            {
+                if (!string.Equals(arg, "--smoke-libvips", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    _ = NetVips.NetVips.Version(0);
+                    Console.WriteLine("OK libvips");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"FAIL libvips: {ex.Message}");
+                    exitCode = 1;
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

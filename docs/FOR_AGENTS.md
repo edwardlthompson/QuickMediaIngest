@@ -88,6 +88,7 @@ dotnet format QuickMediaIngest-1.sln --verify-no-changes
 .\scripts\smoke-human-verification.ps1           # skip FTP when LAN offline
 .\scripts\smoke-human-verification.ps1 -RequireFtp  # fail if 10.0.0.23 unreachable
 .\scripts\validate-local.ps1 -SmokeHuman         # gates + smoke
+.\scripts\smoke-published-exe.ps1 -Rebuild     # portable exe + libvips natives
 ```
 
 ## Parallel Guardrails

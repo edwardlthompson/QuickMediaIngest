@@ -8,15 +8,8 @@ VIEWMODEL_LIMIT=400
 CORE_LIMIT=200
 ERRORS=0
 
-# Grandfathered until Core/ViewModel splits land for Milestone 9 FTP pipeline
+# Grandfathered files cleared after P3 backlog (2026-06-20)
 GRANDFATHER=(
-  "QuickMediaIngest/Core/ThumbnailService.cs"
-  "QuickMediaIngest/Core/Ftp/FtpThumbnailPipeline.cs"
-  "QuickMediaIngest/Core/Ftp/FtpTieredPreviewLoader.cs"
-  "QuickMediaIngest/Core/Ftp/FtpFileDownloader.cs"
-  "QuickMediaIngest/ViewModels/MainViewModel.Config.partial.cs"
-  "QuickMediaIngest/ViewModels/MainViewModel.Ftp.partial.cs"
-  "QuickMediaIngest/ViewModels/MainViewModel.Thumbnails.partial.cs"
 )
 
 is_grandfathered() {

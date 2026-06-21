@@ -61,7 +61,7 @@ namespace QuickMediaIngest.Core
                     continue;
                 }
 
-                BitmapSource? thumb = TryDecodeDownloaded(fileName, tempPath, hints: null);
+                BitmapSource? thumb = TryDecodeDownloaded(fileName, tempPath, hints: null, FtpPreviewDecodeMode.TieredPartial);
                 if (thumb != null)
                 {
                     _logger.LogDebug(
@@ -100,62 +100,21 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            return TryDecodeDownloaded(fileName, tempPath, hints);
+            return TryDecodeDownloaded(fileName, tempPath, hints, FtpPreviewDecodeMode.TieredPartial);
         }
 
         public BitmapSource? TryDecodeDownloaded(
             string fileName,
             string tempPath,
             ThumbnailHints? hints,
-            FtpPreviewDecodeMode mode = FtpPreviewDecodeMode.TieredPartial)
-        {
-            string ext = Path.GetExtension(fileName).ToLowerInvariant();
-
-            if (ext is ".jpg" or ".jpeg")
-            {
-                BitmapSource? exif = Accept(ExifThumbnailReader.TryGetExifThumbnail(tempPath, _logger));
-                if (exif != null)
-                {
-                    return exif;
-                }
-            }
-
-            if (ext is ".heic" or ".heif")
-            {
-                BitmapSource? embedded = Accept(HeicEmbeddedPreviewReader.TryExtractFromFile(tempPath, _logger));
-                if (embedded != null)
-                {
-                    return embedded;
-                }
-            }
-
-            if (mode == FtpPreviewDecodeMode.TieredPartial)
-            {
-                return null;
-            }
-
-            BitmapSource? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
-            if (magick != null)
-            {
-                return magick;
-            }
-
-            if (mode == FtpPreviewDecodeMode.TieredFinalCap)
-            {
-                return null;
-            }
-
-            BitmapSource? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 240, _logger));
-            if (vips != null)
-            {
-                return vips;
-            }
-
-            return Accept(_thumbnailService.GetThumbnail(tempPath, hints));
-        }
-
-        private static BitmapSource? Accept(BitmapSource? thumb) =>
-            ThumbnailPreviewValidator.IsAcceptable(thumb) ? thumb : null;
+            FtpPreviewDecodeMode mode = FtpPreviewDecodeMode.TieredPartial) =>
+            FtpTieredPreviewDecoder.TryDecodeDownloaded(
+                fileName,
+                tempPath,
+                hints,
+                _thumbnailService,
+                _logger,
+                mode);
 
         private async Task<bool> DownloadTierAsync(
             FtpEndpoint endpoint,

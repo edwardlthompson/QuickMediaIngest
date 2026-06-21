@@ -12,7 +12,7 @@ namespace QuickMediaIngest.Tests
     [Collection("Wpf")]
     public class MainViewModelProofTests
     {
-        private static MainViewModel CreateViewModel()
+        public static MainViewModel CreateViewModel()
         {
             WpfTestHost.EnsureInitialized();
             return new MainViewModel(

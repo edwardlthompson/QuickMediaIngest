@@ -423,3 +423,88 @@
 - [x] [AGENT] Deploy test build to Desktop (`QuickMediaIngest.exe` v1.3.13.0)
 - [x] [AGENT] 89 unit tests passing (excl. integration/smoke)
 - [ ] [HUMAN] Cold load `10.0.0.23:2221/DCIM` — tiered bytes in log; cache hit on reconnect; zoom persists; FluentFTP + libvips on Max/Ultra
+
+---
+
+## Template Migration Sprint — v0.11.0 (2026-06-20)
+
+Aligned with upstream [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v0.11.0** (was pinned v0.2.0). Critique mitigations in `DECISION_LOG.md`.
+
+- [x] [AGENT] Phases 1–3 — slash commands, Cursor rules, gate scripts, CI jobs (`batch-commands`, `repo-hygiene`, WPF `feature-gate.sh`)
+- [x] [AGENT] Phase 4 — `TEMPLATE_INDEX.json`, docs (`AGENTS.md`, `FOR_AGENTS.md`, `START_HERE.md`, etc.), `.template-version` bump
+- [x] [AGENT] Phase 5 — gate suite + 101 tests; super-command smoke in `DECISION_LOG.md`
+- [x] [HUMAN] Slash-command `/` menu sign-off; template version bump approval
+- [x] [AUTO] CI green — `e59ec6f`, CRLF fix `7720986`
+
+---
+
+## Human Verification Automation (2026-06-20)
+
+Automated BUILD_PLAN HUMAN rows for v1.3.12 / v1.3.13 acceptance:
+
+- [x] [AGENT] `LanFtpSmokeProbe` + `HumanVerificationSmokeTests` — tier caps, reconnect cache, Ultra mode (skip when LAN FTP offline)
+- [x] [AGENT] `ConfigFilePersistenceTests`, `MainViewModelConfigReloadTests` — Delete After Import, `ThumbnailSize`
+- [x] [AGENT] `DeleteAfterImportConfirmHelperTests`, `PublishedExeSmokeTests`
+- [x] [AGENT] `scripts/smoke-human-verification.ps1/.sh`, `scripts/smoke-published-exe.ps1/.sh`
+- [x] [AGENT] `--smoke-libvips` headless flag; `NetVips.Native.win-x64` for single-file publish
+- [x] [AUTO] Optional CI job for human-verification smoke; `--smoke-libvips` in `ci.yml`
+
+**Test baseline:** 106 unit tests (Release).
+
+---
+
+## Human Sign-off Automation (2026-06-21)
+
+Single orchestrator replaces BUILD_PLAN HUMAN checklist items:
+
+- [x] [AGENT] `scripts/run-human-signoffs.ps1/.sh` — tests, security triage, optional push/CI poll
+- [x] [AGENT] `scripts/ensure-gh-security-scope.sh` — Dependabot API probe + optional `gh auth refresh`
+- [x] [AGENT] `HumanSignoffVerificationTests` — Delete After Import + ThumbnailSize bindings after config reload
+- [x] [AGENT] STA `WpfTestFixture` for reliable headless WPF control tests
+- [x] [AUTO] CI job `human-signoffs` with `GITHUB_TOKEN` security-events read
+
+**Test baseline:** 109 unit tests (Release).
+
+---
+
+## Backlog Parallel Lane — P1–P8 (2026-06-20)
+
+| P | Task | Status |
+|---|------|--------|
+| 1 | Published portable exe libvips + native DLL smoke | ✅ |
+| 2 | `DialogOverlaysView` + remaining MainWindow handlers | ✅ |
+| 3 | Grandfather file-limit cleanup (MainViewModel + Core/Ftp) | ✅ |
+| 4 | Headless WPF smoke in CI | ✅ |
+| 5 | Core architecture (`object?` thumbnail, `ShootFilterService`, FTP stack unification) | ✅ |
+| 6 | UI UserControl extractions | ✅ N/A — `MainWindow.xaml` under 800-line limit |
+| 7 | MSI admin-extract validation in `build.yml` | ✅ |
+| 8 | Template update check + OpenSSF Scorecard workflow | ✅ |
+
+### P3 file splits (grandfather cleared)
+
+- `MainViewModel.ConfigLoad.partial.cs`, `FtpCollections.partial.cs`, `ThumbnailsLoad.partial.cs`
+- `FtpDownloadSync.cs`, `FtpTieredPreviewDecoder.cs`, `FtpThumbnailPipeline.{Fetch,Tiered,Helpers}.cs`
+- `ThumbnailService.Decode.partial.cs`
+
+### P7 / P8 CI
+
+- `scripts/validate-msi-install.ps1` — administrative MSI extract + libvips smoke
+- `.github/workflows/scorecard.yml`, `scripts/check-scorecard-sarif.sh`
+
+---
+
+## Audit Sprint R1 — 2026-06-21 (partial)
+
+Full report: `CODE_REVIEW.md` (gitignored, local only).
+
+### Completed
+
+- [x] [AGENT] F-002 — `scripts/check-readme-health.sh` (README sections + doc link validation)
+- [x] [AGENT] F-003 — Gitignore `CODE_REVIEW.md` + `build_errors.md`; untrack stale `build_errors.md`
+- [x] [AUTO] Gate verification — bootstrap, feature-gate (9 stages), hygiene, readme health, 106 tests
+
+### Open (carried to BUILD_PLAN)
+
+- [ ] [AGENT] F-001 — Commit P1–P8 backlog (~30 files); needs [HUMAN] push approval
+- [ ] [HUMAN] F-004 — `gh auth refresh -s security_events`
+- [ ] [HUMAN] Visual spot-checks (delete dialog, thumbnail slider)

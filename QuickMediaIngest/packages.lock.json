@@ -74,6 +74,12 @@
         "resolved": "3.0.0",
         "contentHash": "yUgEF9Q/H6nlfKZdbsCNqFwHp774gKLuK4X0Qf/fbODN8BLBR2TapVy9OwBi4KnnTjxGSFUA7U1oCbOEgRKv6g=="
       },
+      "NetVips.Native.win-x64": {
+        "type": "Direct",
+        "requested": "[8.18.3, )",
+        "resolved": "8.18.3",
+        "contentHash": "i12TaFaoWO86pBTGLJAUBef2Zln/1oTnzgnUmlfpee6nIwJFMdqpnfvs6FIKt+TCieaBfysdVxBmddeUsrM4cw=="
+      },
       "System.Data.SQLite.Core": {
         "type": "Direct",
         "requested": "[1.0.119, )",

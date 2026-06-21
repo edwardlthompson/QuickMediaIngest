@@ -57,3 +57,4 @@ if (-not $SkipSecurityTriage) {
 }
 
 Write-Host 'Human verification smoke passed.'
+Write-Host 'Tip: run .\scripts\run-human-signoffs.ps1 for the full automated HUMAN sign-off suite.'

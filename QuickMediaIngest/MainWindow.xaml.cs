@@ -212,16 +212,6 @@ namespace QuickMediaIngest
             }
         }
 
-        internal void AddFtpOverlay_Loaded(object sender, RoutedEventArgs e)
-        {
-            _logger?.LogInformation("AddFtpOverlay loaded on thread {ThreadId}.", Thread.CurrentThread.ManagedThreadId);
-        }
-
-        internal void AddFtpOverlay_Unloaded(object sender, RoutedEventArgs e)
-        {
-            _logger?.LogInformation("AddFtpOverlay unloaded on thread {ThreadId}.", Thread.CurrentThread.ManagedThreadId);
-        }
-
         public void ApplyWindowStateFromViewModel()
         {
             if (DataContext is not MainViewModel vm)
