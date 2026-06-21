@@ -4,7 +4,7 @@
 
 **Release:** v1.3.18 · **Template:** v0.11.0 · **Tests:** 113 (Release)
 
-**Active lane:** Maintenance — run sign-offs before the next release; add new rows here when scoped.
+**Active lane:** Maintenance — `[AGENT]` adds next scoped task to Backlog before release.
 
 ---
 
