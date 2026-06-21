@@ -14,6 +14,10 @@ Agents must obtain explicit `[HUMAN]` approval before:
 - Disabling security checks, pre-commit hooks, or CI gates
 - Committing secrets, credentials, or `.env` files
 
+## Agent Gate Halts
+
+When `watch-agent-gates.sh` exits **2** (environment block or 3-strike in `agent-progress.json`), halt immediately and escalate to `[HUMAN]`. Do not weaken CI gates to force a pass.
+
 ## Audit Trail
 
 At milestone boundaries, log significant agent actions in `DECISION_LOG.md`:

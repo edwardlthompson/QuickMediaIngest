@@ -25,10 +25,15 @@ This repo is in **Reference mode** — the application already exists at v1.3.x.
 ## Reference Read Order
 
 1. `docs/START_HERE.md`
-2. `docs/FOR_AGENTS.md`
-3. `TEMPLATE_INDEX.json`
-4. `AGENTS.md`
-5. `modules/dotnet-wpf/MODULE.md` only
+2. `docs/CURSOR_MODES.md`
+3. `docs/FOR_AGENTS.md`
+4. `TEMPLATE_INDEX.json`
+5. `AGENTS.md`
+6. `modules/dotnet-wpf/MODULE.md` only
+
+## Slash Commands
+
+Type `/` in Cursor Agent chat. Full registry: `docs/BATCH_COMMANDS.md` (agents) and `docs/help/BATCH_COMMANDS.md` (humans). Super-commands: `/gates`, `/feature`, `/ci`, `/prerelease`.
 
 ## Do Not Read Yet
 

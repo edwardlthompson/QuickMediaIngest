@@ -5,10 +5,11 @@
 ## Reference Mode (existing project)
 
 ```
-Read @docs/START_HERE.md and @docs/FOR_AGENTS.md.
+Read @docs/START_HERE.md, @docs/CURSOR_MODES.md, and @docs/FOR_AGENTS.md.
 Follow Reference Read Order.
 Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels.
 Active module: @modules/dotnet-wpf/MODULE.md
+Slash commands: @docs/BATCH_COMMANDS.md
 ```
 
 ## Bootstrap Mode (new from template)

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Template migration: slash commands, Cursor rules, gate scripts (Phases 1–3).
+
 ## [1.3.16] — 2026-06-13
 
 ### Fixed

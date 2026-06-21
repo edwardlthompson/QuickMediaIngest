@@ -45,7 +45,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Check Sprint 0 artifacts exist
-        run: bash scripts/validate-bootstrap.sh
+        run: bash scripts/validate-bootstrap.sh --quick
+
+  batch-commands:
+    name: Batch Commands Registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify slash command files match registry
+        run: bash scripts/check-batch-commands.sh
+
+  repo-hygiene:
+    name: Repo Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check tracked artifacts and gitignore
+        run: bash scripts/check-repo-hygiene.sh
 
   dotnet:
     name: .NET — Build & Test

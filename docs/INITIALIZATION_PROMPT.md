@@ -1,6 +1,6 @@
 # Project Initialization Prompt for Cursor Agent
 
-You are a Senior Software Architect and Expert AI Coding Agent. Follow this template rigorously. Use Cursor's Agent/Plan Mode for all major architectural tasks. Investigate the existing codebase first, outline your plan step-by-step using @ file references, obtain approval where needed, then execute.
+You are a Senior Software Architect and Expert AI Coding Agent. Follow this template rigorously. Use Cursor's Plan Mode for architectural tasks; Agent Mode for approved execution; Debug Mode for evidence-based triage (see `docs/CURSOR_MODES.md`). Investigate the existing codebase first, outline your plan step-by-step using @ file references, obtain approval where needed, then execute.
 
 ## 1. Project Dimensions
 
@@ -147,7 +147,7 @@ To maximize reasoning accuracy, eliminate architectural drift, and maintain cris
 
 ## 6. Universal Operational Directives
 
-- **Plan First, Code Second:** For any non-trivial task, use Plan Mode. Propose 1–3 implementation approaches with structural impact breakdowns before writing code.
+- **Plan First, Code Second:** Non-trivial work → Plan Mode with `### Critique`; trivial fixes → Agent Mode. See `docs/CURSOR_MODES.md` rubric.
 - **Design for Testability & Strict Type Safety:** Enforce strict separation of concerns (e.g., MVVM, Clean, or Hexagonal Architecture). Use strong types and runtime validation schemas at all data or input boundaries. Core business logic must remain pure and decoupled from the layout framework to allow lightning-fast testing.
 - **Deterministic Mocking:** Build a robust, high-fidelity local mock data layer (e.g., MSW or local JSON fixtures) from day one. Ensure the application can run completely offline in a deterministic "Mock Mode" to test edge cases, network timeouts, and error states reliably.
 - **Schema & State Persistence:** Prioritize a centralized, future-proof user settings and application state system. All preferences must survive updates, reboots, and upgrades via robust, automated schema migrations using platform-appropriate storage.
@@ -155,23 +155,25 @@ To maximize reasoning accuracy, eliminate architectural drift, and maintain cris
 - **Privacy & Telemetry:** Enforce opt-in only telemetry. Adhere strictly to GDPR/CCPA standards. Maintain `docs/PRIVACY.md`: data collected, retention, deletion, lawful basis. Data minimization: no PII in logs without consent. `[HUMAN]` completes DPIA checklist if processing EU personal data.
 - **Operational Readiness:** For services, expose `/health` and `/ready` endpoints. Maintain `docs/RUNBOOK.md` (deploy, rollback, common failures, escalation). Use structured logging (JSON, correlation IDs). `[HUMAN]` defines SLOs for user-facing features.
 - **Token Economy:** Keep functions highly modular and files small to stay well within optimal token performance windows.
-- **Template Update Notifications:** Child repos track upstream template version via `.template-version` and `.template-update.json`. Intervals: `off` | `daily` | `weekly` | `monthly` | `on_session`. Human selects interval during `scripts/init-project.sh` / `init-project.ps1` or by editing JSON. Checker scripts (`scripts/check-template-updates.sh` / `.ps1`) run on devcontainer start and manually; on new release they print a stdout banner. See `docs/UPGRADING_FROM_TEMPLATE.md`. `[HUMAN]` owns interval preference; `[AUTO]` owns scheduled runs.
+- **Template Update Notifications:** Child repos track upstream template version via `.template-version` and `.template-update.json`. Intervals: `off` | `daily` | `weekly` | `monthly` | `on_session`. Human selects interval during `scripts/init-project.sh` / `init-project.ps1` (or pass `--stack dotnet-wpf --reference` for existing projects) or by editing JSON. Checker scripts (`scripts/check-template-updates.sh` / `.ps1`) run on devcontainer start and manually; on new release they print a stdout banner. See `docs/UPGRADING_FROM_TEMPLATE.md`. `[HUMAN]` owns interval preference; `[AUTO]` owns scheduled runs.
 - **Weekly Security Triage:** `[HUMAN]` runs a weekly CVE triage pass (recommended: Monday, aligned with Trivy scheduled scan). Follow `docs/SECURITY_TRIAGE.md`: review GitHub → Security → Dependabot alerts (Critical/High first), triage open Dependabot PRs, fix/defer/dismiss each alert, confirm Trivy + CodeQL CI green. Log deferred Critical/High items in `DECISION_LOG.md` or `BUILD_PLAN.md` Ongoing Maintenance section.
+- **Repo hygiene:** Track source and lockfiles only — never commit `node_modules/`, `dist/`, caches, or `.env`. `[AGENT]` runs `bash scripts/check-repo-hygiene.sh` before push; `[AUTO]` CI enforces the same gate.
+- **Incremental features (Sprint 2+):** One vertical-slice feature per BUILD_PLAN row. After every `[AGENT]` step run `bash scripts/watch-agent-gates.sh --once --autofix`; agent may auto-fix lint/tests in feature scope until pass or 3-strike. `git push` still requires `[HUMAN]` approval.
 
 ## 7. Mandatory Pre-Release Quality Gate
 
-Before any version bump, release tag, or production deployment, activate a focused Debugging/Audit persona to scan the repository and verify:
+### 7a. Pre-release audit (Agent Mode)
 
-- Complete regression test compliance and visual snapshot verification (zero failures).
+Before any version bump, release tag, or production deployment, run the pre-release audit checklist in Agent Mode and verify:
+
+- Complete regression test compliance (`dotnet test -c Release` — zero failures).
 - Clean static analysis, linting, and dependency/vulnerability scans (CodeQL/Trivy).
 - **Dependabot alert gate:** zero open **Critical** or **High** Dependabot alerts (or documented exception with `[HUMAN]` approval + linked issue/ADR reference).
 - **Weekly triage current:** last CVE triage pass within 7 days of release tag (see `docs/SECURITY_TRIAGE.md`).
-- Memory profiling validation (ensuring resource cleanup and no uncontrolled heap growth).
-- State persistence sanity checks (settings survive simulated upgrades/wipes).
-- **Metadata & Packaging Sync:** Ensure app description files, changelogs, and asset configurations match the standardized target structure (e.g., Fastlane directories for Android, configuration setups for web apps, `.lrplugin` wrapper parameters within `Info.lua` for Lightroom).
+- State persistence sanity checks (settings survive simulated upgrades/restarts).
+- **Metadata & Packaging Sync:** `CHANGELOG.md`, `QuickMediaIngest.csproj` `<Version>`, WiX/MSI artifacts aligned.
 - **License compliance:** `THIRD_PARTY_LICENSES.md` current; no unapproved copyleft dependencies in distribution artifacts.
 - **UTF-8 encoding check clean** (`scripts/check-file-encoding.sh`).
-- **Lockfiles committed** and in sync with manifests; CI uses locked installs.
 - **`TEMPLATE_INDEX.json` includes all referenced paths** (`scripts/validate-template-index.sh`).
 
 ### Sprint 0 / Milestone Build Verification Gate
@@ -180,21 +182,49 @@ Before claiming any sprint complete or requesting `[HUMAN]` approval:
 
 ```text
 [AUTO] scripts/check-file-encoding.sh
+[AUTO] scripts/check-repo-hygiene.sh
+[AUTO] scripts/feature-gate.sh --stack dotnet-wpf --json
 [AUTO] scripts/validate-template-index.sh
 [AUTO] scripts/validate-bootstrap.sh
 [AUTO] scripts/check-license-compliance.sh (after deps installed)
 [AUTO] pre-commit run --all-files
-[AUTO] CI-equivalent local run (stack test commands from examples/)
+[AUTO] dotnet test QuickMediaIngest-1.sln -c Release
 ```
 
-**Agent rule:** Do NOT mark BUILD_PLAN items complete or move to `COMPLETED_TASKS.md` until all `[AUTO]` checks above exit 0. If a check fails, fix root cause — do not weaken the gate.
+**Stack-specific CI-equivalent commands (dotnet-wpf):**
+
+| Stack | Commands |
+|-------|----------|
+| dotnet-wpf | `dotnet restore` → `dotnet build -c Release` → `dotnet test -c Release` → `dotnet format --verify-no-changes` |
+
+**Post-push GitHub gate (after push to `main`):**
+
+```text
+[AUTO] scripts/check-github-ci.sh --wait 300
+```
+
+**`[HUMAN]` offline fallback:** If `gh` unavailable or `--wait` times out, verify CI + Security Scan + CodeQL manually on GitHub before sign-off.
+
+**Agent rule:** Do NOT mark BUILD_PLAN items complete or move to `COMPLETED_TASKS.md` until all `[AUTO]` checks above exit 0 **and** the post-push GitHub gate passes (or `[HUMAN]` documents manual verification). If a check fails, fix root cause — do not weaken the gate.
 
 Only when all quality checks return clean may you update the `CHANGELOG.md` (Keep a Changelog format), bump the version, and draft the GitHub Release.
+
+### 7b. Defect investigation (Debug Mode)
+
+When a build, test, or CI job fails and root cause is unclear:
+
+- Switch to Debug Mode; collect runtime evidence first (command output, CI log URL, repro steps)
+- Check `KNOWLEDGE_BASE.md` and `docs/FOR_AGENTS.md` Failure Playbook
+- Confirm repro locally before editing production code
+- After root cause identified, switch to Agent Mode to apply the fix
+- 3-strike: `watch-agent-gates.sh` exit 2 or `agent-progress.json` strikes ≥ 3 — escalate to human with evidence summary (not hypotheses)
 
 ## 8. Startup Sequence
 
 1. Confirm understanding of the specified Platform, Stack, Purpose, and FOSS distribution pipelines.
-2. Initialize core repository architecture, root documentation (`README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`), and the Workspace Memory files. `README.md` must include: project purpose and stack, quick start, BUILD_PLAN label legend, template update checker table, security section (Dependabot alerts + weekly triage link to `docs/SECURITY_TRIAGE.md`), and links to `docs/START_HERE.md`, `CONTRIBUTING.md`, and the active module guide.
+1a. Pick Cursor mode per `docs/CURSOR_MODES.md` (Ask to explore, Plan for architecture, Agent for approved execution).
+1b. Bookmark `docs/help/BATCH_COMMANDS.md` — type `/` in Agent chat for shortcut workflows (`/verify`, `/gates`).
+2. Initialize core repository architecture, root documentation (`README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`), and the Workspace Memory files. `README.md` must include: project purpose and stack, quick start, BUILD_PLAN label legend, template update checker table, security section (Dependabot alerts + weekly triage link to `docs/SECURITY_TRIAGE.md`), and links to `docs/START_HERE.md`, `docs/CURSOR_MODES.md`, `CONTRIBUTING.md`, and the active module guide.
 3. Configure a local development sandbox (e.g., Devcontainer configuration), scaffolding scripts for components/features, and local git hooks (Gitleaks/TruffleHog + Linter/Formatter pre-commit hooks). Add `.env.example` for documented environment variables.
 4. Establish a single, end-to-end "Golden Path" reference feature—including pure business logic, runtime type validation, a mocked data source, a layout matching text-based UI specs, and 100% unit/integration/visual test coverage—to serve as the structural template for all future development.
 5. Propose the complete initial directory structure, the first formal ADR (`docs/adr/0001-core-architecture.md` or `DECISION_LOG.md`) establishing state/persistence baselines, and the step-by-step `BUILD_PLAN.md` for approval. `BUILD_PLAN.md` must use owner labels, Sequential and Parallel lanes per sprint, and an Ongoing Maintenance section with weekly security triage.
@@ -208,8 +238,8 @@ Only when all quality checks return clean may you update the `CHANGELOG.md` (Kee
 13. `[HUMAN]` Paste `docs/GITHUB_ABOUT.md` description and topics into **GitHub → Settings → General → About**.
 14. `[AGENT]` Verify `.github/dependabot.yml` covers all active package ecosystems.
 15. `[AUTO]` Run `scripts/validate-bootstrap.sh` to confirm Sprint 0 artifacts exist.
-16. `[AGENT]` Run full **Build Verification Gate** (Section 7 checklist); fix all failures.
-17. `[AGENT]` Cross-link all playbooks in `README.md`; sync `UPGRADING_FROM_TEMPLATE.md` and `PROMPT_LIBRARY.md`.
+16. `[AGENT]` Run full **Build Verification Gate** (Section 7a checklist) including `feature-gate.sh --stack dotnet-wpf`; fix all failures.
+17. `[AGENT]` Cross-link all playbooks in `README.md`; sync `UPGRADING_FROM_TEMPLATE.md`, `PROMPT_LIBRARY.md`, and `docs/CURSOR_MODES.md`.
 18. `[HUMAN]` Approve Sprint 0 only after `[AUTO]` CI green on `main` and Build Verification Gate passes.
 
 **Begin now.**

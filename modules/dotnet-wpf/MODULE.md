@@ -57,3 +57,5 @@ Grandfathered files are listed in `scripts/check-file-limits.sh` until Sprint 1 
 | Scaffold, tests, CI, docs | `AGENT` |
 | Release approval, GitHub settings | `HUMAN` |
 | `dotnet test`, encoding, bootstrap validation | `AUTO` |
+
+After each `[AGENT]` step, run `bash scripts/watch-agent-gates.sh --once --autofix` (or `.\scripts\validate-local.ps1`). On exit **2**, halt per 3-strike rule.

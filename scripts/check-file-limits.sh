@@ -8,15 +8,6 @@ VIEWMODEL_LIMIT=400
 CORE_LIMIT=200
 ERRORS=0
 
-# WPF-adapted file line limits with grandfather list for Sprint 1 remediation
-set -euo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-XAML_LIMIT=800
-VIEWMODEL_LIMIT=400
-CORE_LIMIT=200
-ERRORS=0
-
 # Grandfathered until Core/ViewModel splits land for Milestone 9 FTP pipeline
 GRANDFATHER=(
   "QuickMediaIngest/Core/ThumbnailService.cs"

@@ -2,7 +2,7 @@
 
 ## Phased Loading
 
-SessionStart → START_HERE.md → Mode → AGENTS.md → BUILD_PLAN Sequential → Active module → Plan Mode → Execute
+SessionStart → START_HERE.md → CURSOR_MODES.md → Mode → AGENTS.md → BUILD_PLAN Sequential → Active module → Plan Mode → Execute
 
 ## Token Economy
 
@@ -56,7 +56,17 @@ Overlay UserControls inherit `DataContext` from the shell; prefer VM `RelayComma
 **Windows (recommended):**
 
 ```powershell
-.\scripts\validate-local.ps1
+.\scripts\validate-local.ps1              # full local validation
+.\scripts\validate-local.ps1 -QuickBootstrap   # bootstrap + batch commands (no build)
+.\scripts\validate-local.ps1 -WatchGates       # watch-agent-gates loop
+.\scripts\validate-local.ps1 -PreRelease       # pre-release gate
+```
+
+**Agent gate loop (Git Bash on Windows):**
+
+```bash
+bash scripts/watch-agent-gates.sh --once --autofix
+bash scripts/feature-gate.sh
 ```
 
 **Individual gates:**
@@ -70,6 +80,14 @@ dotnet build QuickMediaIngest-1.sln -c Release
 dotnet test QuickMediaIngest-1.sln -c Release
 dotnet list QuickMediaIngest-1.sln package --vulnerable --include-transitive
 dotnet format QuickMediaIngest-1.sln --verify-no-changes
+```
+
+**Human verification smoke (BUILD_PLAN v1.3.12/13 checks):**
+
+```powershell
+.\scripts\smoke-human-verification.ps1           # skip FTP when LAN offline
+.\scripts\smoke-human-verification.ps1 -RequireFtp  # fail if 10.0.0.23 unreachable
+.\scripts\validate-local.ps1 -SmokeHuman         # gates + smoke
 ```
 
 ## Parallel Guardrails

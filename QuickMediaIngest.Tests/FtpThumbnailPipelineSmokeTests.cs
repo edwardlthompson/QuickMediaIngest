@@ -22,20 +22,27 @@ namespace QuickMediaIngest.Tests
             _output = output;
         }
 
-        [Fact(Skip = "Live FTP smoke; run manually against 10.0.0.23 DCIM.")]
+        [Fact]
         public async Task FtpThumbnailService_LoadsJpgHeicAndDngRepresentatives()
         {
+            if (!LanFtpSmokeProbe.EnsureReachable(_output))
+            {
+                return;
+            }
+
             WpfTestHost.EnsureInitialized();
+            LanFtpEndpoint ep = LanFtpSmokeProbe.FromEnvironment();
+            string basePath = ep.RemoteFolder.TrimEnd('/');
 
             var thumbnailService = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
             var downloader = new FtpFileDownloader(NullLogger<FtpFileDownloader>.Instance);
             var service = new FtpThumbnailService(thumbnailService, downloader, NullLogger<FtpThumbnailService>.Instance);
 
-            var endpoint = new FtpEndpoint("10.0.0.23", 2221, "android", "android");
+            var endpoint = ep.ToFtpEndpoint();
             var items = new[]
             {
-                Work("/DCIM/Camera/pns_gate_16x9_test.jpg", "pns_gate_16x9_test.jpg", 12463),
-                Work("/DCIM/20260612_213411_1.heic", "20260612_213411_1.heic", 6227701),
+                Work($"{basePath}/Camera/pns_gate_16x9_test.jpg", "pns_gate_16x9_test.jpg", 12463),
+                Work($"{basePath}/20260612_213411_1.heic", "20260612_213411_1.heic", 6227701),
             };
 
             try

@@ -1,48 +1,67 @@
 # Post-template clone customization helper
+# Usage: .\scripts\init-project.ps1 [-Reference] [-NoPrune] [-Stack dotnet-wpf] ...
+param(
+    [string]$Stack = "",
+    [string]$ProjectName = "",
+    [string]$ProjectPurpose = "",
+    [string]$Interval = "",
+    [switch]$Reference,
+    [switch]$NoPrune,
+    [switch]$NonInteractive
+)
+
+$ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $Root
 
+function Invoke-PyScript {
+    param([string[]]$ScriptArgs)
+    if (Get-Command python -ErrorAction SilentlyContinue) { & python @ScriptArgs; return }
+    if (Get-Command python3 -ErrorAction SilentlyContinue) { & python3 @ScriptArgs; return }
+    throw 'Python not found'
+}
+
 Write-Host "=== agent-project-bootstrap init ===" -ForegroundColor Cyan
+if ($Reference) { Write-Host "(Reference mode — preserving customized docs)" -ForegroundColor Yellow }
 Write-Host ""
 
-$ProjectName = Read-Host "Project name"
-$ProjectPurpose = Read-Host "One-line purpose"
-$Stack = Read-Host "Primary stack (dotnet-wpf/web/python/android/multi) [dotnet-wpf]"
+if (-not $NonInteractive) {
+    if (-not $ProjectName) { $ProjectName = Read-Host "Project name" }
+    if (-not $ProjectPurpose) { $ProjectPurpose = Read-Host "One-line purpose" }
+    if (-not $Stack) { $Stack = Read-Host "Primary stack (dotnet-wpf/web/python/android/node/multi/none) [dotnet-wpf]" }
+    if (-not $Interval) { $Interval = Read-Host "Template update check interval (off/daily/weekly/monthly/on_session) [weekly]" }
+}
 if (-not $Stack) { $Stack = "dotnet-wpf" }
-$Interval = Read-Host "Template update check interval (off/daily/weekly/monthly/on_session) [weekly]"
 if (-not $Interval) { $Interval = "weekly" }
 
-$files = @(
-    "docs/INITIALIZATION_PROMPT.md",
-    "AGENT_MEMORY.md"
-)
-
-foreach ($file in $files) {
-    $path = Join-Path $Root $file
-    if (Test-Path $path) {
-        $content = Get-Content $path -Raw
-        $content = $content -replace '\[INSERT PLATFORM / TECH STACK HERE\]', $Stack
-        $content = $content -replace '\[INSERT DETAILED APP DESCRIPTION AND GOALS HERE\]', $ProjectPurpose
-        Set-Content $path $content -Encoding UTF8
+if (-not $Reference) {
+    foreach ($file in @("docs/INITIALIZATION_PROMPT.md", "AGENT_MEMORY.md")) {
+        $path = Join-Path $Root $file
+        if (Test-Path $path) {
+            $content = Get-Content $path -Raw
+            $content = $content -replace '\[INSERT PLATFORM / TECH STACK HERE\]', $Stack
+            $content = $content -replace '\[INSERT DETAILED APP DESCRIPTION AND GOALS HERE\]', $ProjectPurpose
+            [System.IO.File]::WriteAllText($path, $content)
+        }
     }
-}
 
-$config = Get-Content (Join-Path $Root ".template-update.json") -Raw | ConvertFrom-Json
-$config.check_interval = $Interval
-$config | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Root ".template-update.json") -Encoding UTF8
+    $configPath = Join-Path $Root ".template-update.json"
+    $config = Get-Content $configPath -Raw | ConvertFrom-Json
+    $config.check_interval = $Interval
+    $config | ConvertTo-Json -Depth 5 | Set-Content $configPath -Encoding UTF8
 
-$CodeOwner = Read-Host "GitHub username for CODEOWNERS (without @)"
-if ($CodeOwner) {
-    $codeownersPath = Join-Path $Root ".github/CODEOWNERS"
-    if (Test-Path $codeownersPath) {
-        $co = Get-Content $codeownersPath -Raw
-        $co = $co -replace '@\[PROJECT_OWNER\]', "@$CodeOwner"
-        [System.IO.File]::WriteAllText($codeownersPath, $co)
+    $CodeOwner = Read-Host "GitHub username for CODEOWNERS (without @)"
+    if ($CodeOwner) {
+        $codeownersPath = Join-Path $Root ".github/CODEOWNERS"
+        if (Test-Path $codeownersPath) {
+            $co = Get-Content $codeownersPath -Raw
+            $co = $co -replace '@\[PROJECT_OWNER\]', "@$CodeOwner"
+            [System.IO.File]::WriteAllText($codeownersPath, $co)
+        }
     }
-}
 
-$About = "$ProjectName — $ProjectPurpose. Built with agent-project-bootstrap. FOSS MIT."
-@"
+    $About = "$ProjectName — $ProjectPurpose. Built with agent-project-bootstrap. FOSS MIT."
+    @"
 # GitHub About Block
 
 ## Draft Description (edit to ≤350 chars)
@@ -53,29 +72,40 @@ $About
 
 Add topics relevant to your project and stack.
 "@ | Set-Content (Join-Path $Root "docs/GITHUB_ABOUT.md") -Encoding UTF8
-
-$Prune = Read-Host "Prune unused examples/modules? (y/N)"
-if ($Prune -eq "y" -or $Prune -eq "Y") {
-    switch ($Stack) {
-        "web" { Remove-Item -Recurse -Force examples/python, examples/android, modules/python, modules/android, modules/lightroom -ErrorAction SilentlyContinue }
-        "python" { Remove-Item -Recurse -Force examples/web, examples/android, modules/web, modules/android, modules/lightroom -ErrorAction SilentlyContinue }
-        "android" { Remove-Item -Recurse -Force examples/web, examples/python, modules/web, modules/python, modules/lightroom -ErrorAction SilentlyContinue }
-        "dotnet-wpf" { Remove-Item -Recurse -Force examples -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force modules/web, modules/python, modules/android, modules/lightroom -ErrorAction SilentlyContinue }
-        default { Write-Host "Keeping all examples (multi-stack)" }
-    }
 }
+
+Invoke-PyScript -ScriptArgs @("scripts/sync-stack-config.py", $Root, "", "")
+
+$pruned = "false"
+if (-not $Reference -and -not $NoPrune) {
+    if (-not $NonInteractive) {
+        $Prune = Read-Host "Prune unused examples/modules? (y/N)"
+    } else {
+        $Prune = "N"
+    }
+    if ($Prune -eq "y" -or $Prune -eq "Y") {
+        $pruned = "true"
+        switch ($Stack) {
+            "web" { Remove-Item -Recurse -Force examples/python, examples/android, examples/node, modules/python, modules/android, modules/node -ErrorAction SilentlyContinue }
+            "python" { Remove-Item -Recurse -Force examples/web, examples/android, examples/node, modules/web, modules/android, modules/node -ErrorAction SilentlyContinue }
+            "android" { Remove-Item -Recurse -Force examples/web, examples/python, examples/node, modules/web, modules/python, modules/node -ErrorAction SilentlyContinue }
+            "dotnet-wpf" {
+                Remove-Item -Recurse -Force examples -ErrorAction SilentlyContinue
+                Remove-Item -Recurse -Force modules/web, modules/python, modules/android, modules/node, modules/lightroom, modules/rust, modules/go -ErrorAction SilentlyContinue
+            }
+            default { Write-Host "Keeping all examples (multi-stack)" }
+        }
+    }
+} else {
+    Write-Host "Skipping prune (reference mode or -NoPrune)."
+}
+
+Invoke-PyScript -ScriptArgs @("scripts/init-stack-sync.py", $Stack, $Root, $pruned)
+Write-Host "Wrote .cursor/stack-selection.json and synced AGENT_MEMORY active modules."
 
 Write-Host ""
 Write-Host "=== Done ===" -ForegroundColor Green
-Write-Host ""
-Write-Host "Next steps:"
-Write-Host "  1. Review SECURITY.md, CODEOWNERS, playbooks, and .env.example"
-Write-Host "  2. Enable Dependabot alerts + private vulnerability reporting: docs/SECURITY_TRIAGE.md"
-Write-Host "  3. Configure branch protection on main (required checks, linear history)"
-Write-Host "  4. Open Cursor and paste:"
-Write-Host ""
-Write-Host "  Read @docs/START_HERE.md and @docs/INITIALIZATION_PROMPT.md."
-Write-Host "  Follow Section 8 Startup Sequence."
-Write-Host "  Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels."
-Write-Host ""
-Write-Host "GitHub About draft: docs/GITHUB_ABOUT.md"
+Write-Host "Stack selection: .cursor/stack-selection.json"
+if ($Reference) {
+    Write-Host "Reference mode complete — customized docs preserved."
+}

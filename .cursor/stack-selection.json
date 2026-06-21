@@ -1,0 +1,9 @@
+{
+  "stack": "dotnet-wpf",
+  "pruned": false,
+  "active_modules": [
+    "dotnet-wpf"
+  ],
+  "parallel_scope_note": "Sprint 1 Parallel: WPF scope only (`QuickMediaIngest/**`, `QuickMediaIngest.Tests/**`)",
+  "selected_at": "2026-06-20T13:26:46+00:00"
+}

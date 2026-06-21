@@ -109,13 +109,15 @@ Before large UI changes, see **`docs/THEME_QA_CHECKLIST.md`**.
 
 ## Agent / Cursor quick start
 
-This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) scaffolding (Reference mode).
+This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) scaffolding (Reference mode, template **v0.11.0**).
 
 ```
-Read @docs/START_HERE.md and @docs/FOR_AGENTS.md.
+Read @docs/START_HERE.md, @docs/CURSOR_MODES.md, and @docs/FOR_AGENTS.md.
 Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels.
 Active module: @modules/dotnet-wpf/MODULE.md
 ```
+
+**Slash commands:** type `/` in Agent chat — see [`docs/help/BATCH_COMMANDS.md`](docs/help/BATCH_COMMANDS.md). Gate loop: `bash scripts/watch-agent-gates.sh --once --autofix` or `.\scripts\validate-local.ps1 -WatchGates`.
 
 | Label | Owner |
 |-------|-------|

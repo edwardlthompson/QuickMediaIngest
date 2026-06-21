@@ -24,17 +24,25 @@ namespace QuickMediaIngest.Tests
             _output = output;
         }
 
-        [Fact(Skip = "Live FTP batch smoke; run manually against 10.0.0.23 DCIM.")]
+        [Fact]
         public async Task FtpThumbnailService_LoadsAllDcimHeicFiles_BalancedMode()
         {
+            if (!LanFtpSmokeProbe.EnsureReachable(_output))
+            {
+                return;
+            }
+
             WpfTestHost.EnsureInitialized();
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+
+            LanFtpEndpoint ep = LanFtpSmokeProbe.FromEnvironment();
+            string basePath = ep.RemoteFolder.TrimEnd('/');
 
             var thumbnailService = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
             var downloader = new FtpFileDownloader(NullLogger<FtpFileDownloader>.Instance);
             var service = new FtpThumbnailService(thumbnailService, downloader, NullLogger<FtpThumbnailService>.Instance);
 
-            var endpoint = new FtpEndpoint("10.0.0.23", 2221, "android", "android");
+            var endpoint = ep.ToFtpEndpoint();
             string[] heicFiles =
             {
                 "20260608_223005.heic",
@@ -48,8 +56,8 @@ namespace QuickMediaIngest.Tests
 
             var items = heicFiles.Select(name => new FtpThumbnailWorkItem
             {
-                ItemKey = $"smoke|/DCIM/{name}",
-                RemotePath = $"/DCIM/{name}",
+                ItemKey = $"smoke|{basePath}/{name}",
+                RemotePath = $"{basePath}/{name}",
                 FileName = name,
                 FileSize = 6_000_000
             }).ToList();
@@ -89,17 +97,25 @@ namespace QuickMediaIngest.Tests
             Assert.All(result.Items.Where(i => i.Thumbnail != null), i => Assert.True(i.Thumbnail!.PixelWidth >= 32));
         }
 
-        [Fact(Skip = "Long-running live FTP batch; run manually when validating DCIM Ultra.")]
+        [Fact]
         public async Task FtpThumbnailService_LoadsAllDcimHeicFiles_UltraMode()
         {
+            if (!LanFtpSmokeProbe.EnsureReachable(_output))
+            {
+                return;
+            }
+
             WpfTestHost.EnsureInitialized();
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+            LanFtpEndpoint ep = LanFtpSmokeProbe.FromEnvironment();
+            string basePath = ep.RemoteFolder.TrimEnd('/');
 
             var thumbnailService = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
             var downloader = new FtpFileDownloader(NullLogger<FtpFileDownloader>.Instance);
             var service = new FtpThumbnailService(thumbnailService, downloader, NullLogger<FtpThumbnailService>.Instance);
 
-            var endpoint = new FtpEndpoint("10.0.0.23", 2221, "android", "android");
+            var endpoint = ep.ToFtpEndpoint();
             string[] heicFiles =
             {
                 "20260608_223005.heic",
@@ -113,8 +129,8 @@ namespace QuickMediaIngest.Tests
 
             var items = heicFiles.Select(name => new FtpThumbnailWorkItem
             {
-                ItemKey = $"smoke|/DCIM/{name}",
-                RemotePath = $"/DCIM/{name}",
+                ItemKey = $"smoke|{basePath}/{name}",
+                RemotePath = $"{basePath}/{name}",
                 FileName = name,
                 FileSize = 6_000_000
             }).ToList();

@@ -1,5 +1,5 @@
 {
-  "template_version": "0.2.0",
+  "template_version": "0.11.0",
   "entry_points": {
     "bootstrap": "docs/START_HERE.md",
     "reference": "docs/FOR_AGENTS.md",
@@ -290,6 +290,174 @@
       "path": ".cursor/rules/wpf-mvvm.mdc",
       "purpose": "WPF MVVM and Material Design conventions",
       "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/batch-commands.mdc",
+      "purpose": "Slash command bare-word and super-command routing",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/cursor-modes.mdc",
+      "purpose": "Cursor Ask/Plan/Agent/Debug mode router",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/ci-gates.mdc",
+      "purpose": "CI gate conventions for agents",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/repo-hygiene.mdc",
+      "purpose": "Repo hygiene and tracked-artifact rules",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/security-triage.mdc",
+      "purpose": "Security triage agent guidance",
+      "read_when": "security_triage",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/testing.mdc",
+      "purpose": "Testing conventions for agents",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/windows-encoding.mdc",
+      "purpose": "UTF-8 encoding rules on Windows",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/foss-compliance.mdc",
+      "purpose": "FOSS license and privacy compliance",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/read-before-write.mdc",
+      "purpose": "Read-before-write and critique checklist",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/CURSOR_MODES.md",
+      "purpose": "Cursor mode router (Ask/Plan/Agent/Debug)",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/BATCH_COMMANDS.md",
+      "purpose": "Slash command registry for agents",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/help/BATCH_COMMANDS.md",
+      "purpose": "Human cheat sheet for slash commands",
+      "read_when": "session_start",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursorignore",
+      "purpose": "Cursor index exclusions (must not block rules/commands)",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/stack-selection.json",
+      "purpose": "Active stack selection (dotnet-wpf)",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent"
+    },
+    {
+      "path": "CODE_REVIEW.md.example",
+      "purpose": "Ephemeral code review audit template",
+      "read_when": "contributing",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "RELEASE_NOTES.md.example",
+      "purpose": "Ephemeral release notes draft template",
+      "read_when": "release",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/feature-gate.sh",
+      "purpose": "Stack-aware feature gate (dotnet-wpf)",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/watch-agent-gates.sh",
+      "purpose": "Agent gate loop with autofix",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-batch-commands.sh",
+      "purpose": "Validate slash command registry",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-repo-hygiene.sh",
+      "purpose": "Repo hygiene orchestrator",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/agent-progress.sh",
+      "purpose": "Agent gate progress and 3-strike tracking",
+      "read_when": "contributing",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/pre-release-gate.sh",
+      "purpose": "Pre-release validation gate",
+      "read_when": "release",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/init-project.sh",
+      "purpose": "Post-clone init with --reference and dotnet-wpf stack",
+      "read_when": "bootstrap_session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/init-stack-sync.py",
+      "purpose": "Sync stack-selection.json and AGENT_MEMORY modules",
+      "read_when": "bootstrap_session_start",
       "update_when": "milestone_boundary",
       "owner": "maintainer"
     },

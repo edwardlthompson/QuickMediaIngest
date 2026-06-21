@@ -5,11 +5,12 @@ alwaysApply: true
 
 # Core Directives
 
-On session start, read docs/START_HERE.md before any edits.
+On session start, read docs/START_HERE.md, pick Cursor mode via docs/CURSOR_MODES.md, then edit.
 
 ## Plan First, Code Second
 
-- Use Plan Mode for all non-trivial tasks
+- Cursor mode routing: see cursor-modes.mdc and docs/CURSOR_MODES.md
+- Plan Mode for non-trivial tasks; Ask for read-only exploration
 - Include mandatory ### Critique subsection in every plan
 
 ## Read-Before-Write
@@ -20,10 +21,12 @@ On session start, read docs/START_HERE.md before any edits.
 
 - Sequential lane before Parallel lane
 - Respect AGENT, HUMAN, ADB, AUTO labels
+- After major `[AGENT]` steps: `bash scripts/watch-agent-gates.sh --once --autofix`
 
 ## 3-Strike Rule
 
 Halt after 3 consecutive failed fix attempts; escalate to human.
+`watch-agent-gates.sh` exit **2** means environment block or strikes ≥ 3 in `.cursor/agent-progress.json` — **do not retry in a loop**.
 
 ## Memory Files
 
@@ -32,3 +35,7 @@ Update only at session start, milestone boundary, or architectural pivot.
 ## Token Economy
 
 WPF adapted limits: .xaml 800, ViewModels/*.xaml.cs 400, Core/ 200 lines. Read active module only.
+
+## Batch Commands
+
+Slash workflows: `.cursor/rules/batch-commands.mdc` and docs/help/BATCH_COMMANDS.md

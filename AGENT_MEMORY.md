@@ -56,9 +56,10 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | Date | Milestone | What worked | What to improve |
 |------|-----------|-------------|-----------------|
 | 2026-06-13 | Bootstrap parity | Template adoption in Reference mode | Split MainWindow/MainViewModel (Sprint 1) |
+| 2026-06-20 | Template v0.11.0 migration | Phased bootstrap sync; slash commands + gate loop; WPF feature-gate | Confirm `/` menu in Cursor UI; push + CI green |
 
 ## Template Provenance
 
 - **Source template:** `edwardlthompson/agent-project-bootstrap`
-- **Template version:** `0.2.0` (see `.template-version`)
+- **Template version:** `0.11.0` (see `.template-version`)
 - **Last update check:** See `.template-update.json`

@@ -1,10 +1,12 @@
 # Agent Router
 
 1. **First read:** `docs/START_HERE.md`
-2. **Bootstrap mode:** `docs/INITIALIZATION_PROMPT.md`
-3. **Reference mode:** `docs/FOR_AGENTS.md` + `TEMPLATE_INDEX.json`
-4. **Task board:** `BUILD_PLAN.md` (Sequential before Parallel)
-5. **Living memory:** update `AGENT_MEMORY.md` only at milestone boundaries
+2. **Cursor modes:** `docs/CURSOR_MODES.md` (Ask / Plan / Agent / Debug)
+3. **Bootstrap mode:** `docs/INITIALIZATION_PROMPT.md`
+4. **Reference mode:** `docs/FOR_AGENTS.md` + `TEMPLATE_INDEX.json`
+5. **Task board:** `BUILD_PLAN.md` (Sequential before Parallel)
+6. **Slash commands:** type `/` in Agent chat — see `docs/help/BATCH_COMMANDS.md`
+7. **Living memory:** update `AGENT_MEMORY.md` only at milestone boundaries
 
 > Legacy `.cursorrules` is deprecated. Use `.cursor/rules/*.mdc` and this file instead.
 
@@ -38,9 +40,21 @@ dotnet test -c Release --no-build
 
 Output: `publish/local-test/QuickMediaIngest.exe`
 
+## Gate Loop
+
+After major `[AGENT]` steps:
+
+```powershell
+.\scripts\validate-local.ps1 -QuickBootstrap
+# or with agent autofix loop (Git Bash):
+bash scripts/watch-agent-gates.sh --once --autofix
+```
+
+On exit **2**: halt (3-strike or environment block). See `.cursor/agent-progress.json`.
+
 ## Session Protocol
 
-- On session start: read `START_HERE.md`, then `BUILD_PLAN.md` Sequential lane
+- On session start: read `START_HERE.md`, `docs/CURSOR_MODES.md`, then `BUILD_PLAN.md` Sequential lane
 - On milestone end: update `AGENT_MEMORY.md`, append to `DECISION_LOG.md` or `docs/adr/`
 - On 3-strike failure: halt and escalate to human
 - On context bloat: write `.cursor-session-state`, ask human to clear chat

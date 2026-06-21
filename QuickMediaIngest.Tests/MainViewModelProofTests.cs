@@ -9,10 +9,12 @@ using Xunit;
 
 namespace QuickMediaIngest.Tests
 {
+    [Collection("Wpf")]
     public class MainViewModelProofTests
     {
         private static MainViewModel CreateViewModel()
         {
+            WpfTestHost.EnsureInitialized();
             return new MainViewModel(
                 new Mock<ILocalScanner>().Object,
                 new Mock<IFtpScanner>().Object,

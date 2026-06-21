@@ -20,21 +20,28 @@ namespace QuickMediaIngest.Tests
             _output = output;
         }
 
-        [Fact(Skip = "Optional live FTP smoke test; run manually against LAN server.")]
+        [Fact]
         public async Task FtpPreviewDownload_AndThumbnail_DecodesJpg()
         {
+            if (!LanFtpSmokeProbe.EnsureReachable(_output))
+            {
+                return;
+            }
+
+            LanFtpEndpoint ep = LanFtpSmokeProbe.FromEnvironment();
             var downloader = new FtpFileDownloader(NullLogger<FtpFileDownloader>.Instance);
             var thumbnailService = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
             string tempPath = Path.Combine(Path.GetTempPath(), $"qmi-jpg-{Guid.NewGuid():N}.jpg");
+            string remotePath = $"{ep.RemoteFolder.TrimEnd('/')}/Camera/pns_gate_16x9_test.jpg";
 
             try
             {
                 bool downloaded = await downloader.TryDownloadPreviewAsync(
-                    "10.0.0.23",
-                    2221,
-                    "android",
-                    "android",
-                    "/DCIM/Camera/pns_gate_16x9_test.jpg",
+                    ep.Host,
+                    ep.Port,
+                    ep.User,
+                    ep.Pass,
+                    remotePath,
                     tempPath,
                     "pns_gate_16x9_test.jpg",
                     20,
@@ -60,21 +67,28 @@ namespace QuickMediaIngest.Tests
             }
         }
 
-        [Fact(Skip = "Optional live FTP smoke test; run manually against LAN server.")]
+        [Fact]
         public async Task FtpPreviewDownload_AndThumbnail_DecodesHeic()
         {
+            if (!LanFtpSmokeProbe.EnsureReachable(_output))
+            {
+                return;
+            }
+
+            LanFtpEndpoint ep = LanFtpSmokeProbe.FromEnvironment();
             var downloader = new FtpFileDownloader(NullLogger<FtpFileDownloader>.Instance);
             var thumbnailService = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
             string tempPath = Path.Combine(Path.GetTempPath(), $"qmi-heic-{Guid.NewGuid():N}.heic");
+            string remotePath = $"{ep.RemoteFolder.TrimEnd('/')}/20260608_223005.heic";
 
             try
             {
                 bool downloaded = await downloader.TryDownloadPreviewAsync(
-                    "10.0.0.23",
-                    2221,
-                    "android",
-                    "android",
-                    "/DCIM/20260608_223005.heic",
+                    ep.Host,
+                    ep.Port,
+                    ep.User,
+                    ep.Pass,
+                    remotePath,
                     tempPath,
                     "20260608_223005.heic",
                     20,

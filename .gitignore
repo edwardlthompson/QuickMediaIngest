@@ -1,6 +1,11 @@
 ## Ignore Visual Studio & .NET build artifacts
 [Bb]in/
 [Oo]bj/
+node_modules/
+dist/
+__pycache__/
+coverage/
+.env
 *.user
 *.suo
 *.useroscc
@@ -29,3 +34,10 @@ _build_verify_out/
 _build_verify_tests_out/
 _test_audit/
 _b/
+
+## Agent ephemeral state (gitignored progress tracking)
+.cursor/agent-progress.json
+
+## Test output
+TestResults/
+**/TestResults/
