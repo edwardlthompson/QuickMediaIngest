@@ -19,7 +19,7 @@ jobs:
     name: File Encoding (UTF-8)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check text files are UTF-8
         run: bash scripts/check-file-encoding.sh
 
@@ -27,7 +27,7 @@ jobs:
     name: File Size Budgets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check WPF file line limits
         run: bash scripts/check-file-limits.sh
 
@@ -35,7 +35,7 @@ jobs:
     name: Validate Template Index
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Validate TEMPLATE_INDEX.json paths
         run: bash scripts/validate-template-index.sh
 
@@ -43,7 +43,7 @@ jobs:
     name: Validate Bootstrap Artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check Sprint 0 artifacts exist
         run: bash scripts/validate-bootstrap.sh --quick
 
@@ -51,7 +51,7 @@ jobs:
     name: Batch Commands Registry
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Verify slash command files match registry
         run: bash scripts/check-batch-commands.sh
 
@@ -59,7 +59,7 @@ jobs:
     name: Repo Hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check tracked artifacts and gitignore
         run: bash scripts/check-repo-hygiene.sh
 
@@ -67,7 +67,7 @@ jobs:
     name: .NET — Build & Test
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.422"
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check for upstream template updates
         run: bash scripts/check-template-updates.sh --verbose
 
@@ -111,7 +111,7 @@ jobs:
       security-events: read
       actions: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.422"
@@ -127,7 +127,7 @@ jobs:
     runs-on: windows-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.422"
