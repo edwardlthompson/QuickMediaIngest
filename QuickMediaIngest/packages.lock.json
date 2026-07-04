@@ -44,9 +44,9 @@
       },
       "Meziantou.Framework.Win32.CredentialManager": {
         "type": "Direct",
-        "requested": "[2.0.0, )",
-        "resolved": "2.0.0",
-        "contentHash": "Q5Et3CvMopLaw4c+Cg8xOGJQCx7T17W0EmUxHQvrhsJ65+MhFUnyU7JSrVxoPJptoOK2jOYoaWtscb2j+FlL6A=="
+        "requested": "[2.0.2, )",
+        "resolved": "2.0.2",
+        "contentHash": "Wa0ElU/7je9155Y4IWDV0HhrUm4EijrE/49OOTO+fg7MJdr+mlpUbq6ES1P6M+SIW9lLzpJCIdoGY3nUbE7ZoQ=="
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Direct",
@@ -70,9 +70,9 @@
       },
       "NetVips": {
         "type": "Direct",
-        "requested": "[3.0.0, )",
-        "resolved": "3.0.0",
-        "contentHash": "yUgEF9Q/H6nlfKZdbsCNqFwHp774gKLuK4X0Qf/fbODN8BLBR2TapVy9OwBi4KnnTjxGSFUA7U1oCbOEgRKv6g=="
+        "requested": "[3.2.0, )",
+        "resolved": "3.2.0",
+        "contentHash": "ixVatHjsFBBvtKXYwH8jz8nF6OQIhl2e/P0N8ByGaZrlPu9VvcVQxX9zBQ13L8fUpMzKv1WXUybqW8wXZdFsCg=="
       },
       "NetVips.Native.win-x64": {
         "type": "Direct",
