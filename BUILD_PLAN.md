@@ -25,6 +25,7 @@ Icons: ✅ done · ⬜ open · ⚠️ optional once
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
+| AUTO-SBOM | Attach CycloneDX/Syft SBOM to GitHub Release assets (noted in regress v1.3.19) | AGENT | ⬜ |
 | TBD | Next scoped feature or fix | AGENT | ⬜ |
 
 ---
