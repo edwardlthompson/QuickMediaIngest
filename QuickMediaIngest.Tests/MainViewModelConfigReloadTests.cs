@@ -79,6 +79,46 @@ namespace QuickMediaIngest.Tests
             }
         }
 
+        [Fact]
+        public void LoadConfig_MigratesLegacyFtpPass_AndPurgesPlaintextFromDisk()
+        {
+            WpfTestHost.EnsureInitialized();
+            string? backup = BackupConfigIfPresent();
+
+            try
+            {
+                string folder = Path.GetDirectoryName(ConfigPath)!;
+                Directory.CreateDirectory(folder);
+
+                const string legacySecret = "legacy-ftp-secret-do-not-keep";
+                var saved = new AppConfig
+                {
+                    FtpHost = "10.0.0.23",
+                    FtpPort = 2221,
+                    FtpUser = "camera",
+                    FtpPass = legacySecret,
+                    FtpRemoteFolder = "/DCIM"
+                };
+                File.WriteAllText(ConfigPath, JsonSerializer.Serialize(saved));
+
+                MainViewModel vm = MainViewModelProofTests.CreateViewModel();
+                InvokeLoadConfig(vm);
+
+                Assert.Equal(legacySecret, vm.FtpPass);
+
+                string diskJson = File.ReadAllText(ConfigPath);
+                Assert.DoesNotContain(legacySecret, diskJson, StringComparison.Ordinal);
+
+                var reloaded = JsonSerializer.Deserialize<AppConfig>(diskJson);
+                Assert.NotNull(reloaded);
+                Assert.True(string.IsNullOrEmpty(reloaded!.FtpPass));
+            }
+            finally
+            {
+                RestoreConfig(backup);
+            }
+        }
+
         private static void InvokeLoadConfig(MainViewModel vm)
         {
             MethodInfo? load = typeof(MainViewModel).GetMethod("LoadConfig", BindingFlags.Instance | BindingFlags.NonPublic);

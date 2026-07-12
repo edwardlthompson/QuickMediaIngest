@@ -1,13 +1,12 @@
 #nullable enable
 using System;
 using System.IO;
-using System.Threading;
 using System.Windows;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core;
 
-namespace QuickMediaIngest.Core
+namespace QuickMediaIngest.Thumbnails.Wpf
 {
     public partial class ThumbnailService : IThumbnailService
     {
@@ -18,9 +17,9 @@ namespace QuickMediaIngest.Core
             _logger = logger;
         }
 
-        public BitmapSource? GetThumbnail(string filePath) => GetThumbnail(filePath, null);
+        public DecodedThumbnail? GetThumbnail(string filePath) => GetThumbnail(filePath, null);
 
-        public BitmapSource? GetThumbnail(string filePath, ThumbnailHints? hints)
+        public DecodedThumbnail? GetThumbnail(string filePath, ThumbnailHints? hints)
         {
             if (!File.Exists(filePath))
             {
@@ -30,7 +29,7 @@ namespace QuickMediaIngest.Core
             string cachePath = ThumbnailDiskCache.GetCachePath(filePath);
             try
             {
-                BitmapSource? cached = ThumbnailDiskCache.TryLoad(cachePath);
+                DecodedThumbnail? cached = ThumbnailDiskCache.TryLoad(cachePath);
                 if (cached != null)
                 {
                     return cached;
@@ -49,7 +48,7 @@ namespace QuickMediaIngest.Core
             {
                 try
                 {
-                    BitmapSource? vipsThumb = VipsThumbnailDecoder.TryGetThumbnail(filePath, isRaw ? 320 : 240, _logger);
+                    DecodedThumbnail? vipsThumb = VipsThumbnailDecoder.TryGetThumbnail(filePath, isRaw ? 320 : 240, _logger);
                     if (vipsThumb != null)
                     {
                         TrySaveThumbnailCache(cachePath, vipsThumb);
@@ -63,7 +62,7 @@ namespace QuickMediaIngest.Core
 
                 try
                 {
-                    BitmapSource? magickThumb = TryGetMagickThumbnail(filePath, isRaw ? 320 : 240);
+                    DecodedThumbnail? magickThumb = TryGetMagickThumbnail(filePath, isRaw ? 320 : 240);
                     if (magickThumb != null)
                     {
                         TrySaveThumbnailCache(cachePath, magickThumb);

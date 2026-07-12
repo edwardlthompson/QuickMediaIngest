@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using ImageMagick;
 using QuickMediaIngest.Core;
+using QuickMediaIngest.Thumbnails.Wpf;
 using Microsoft.Extensions.Logging.Abstractions;
 
 class P {
@@ -15,6 +16,6 @@ class P {
     } catch (Exception ex) { Console.WriteLine("Magick FAIL: " + ex.Message); }
     var svc = new ThumbnailService(NullLogger<ThumbnailService>.Instance);
     var thumb = svc.GetThumbnail(path);
-    Console.WriteLine("ThumbnailService: null=" + (thumb==null) + (thumb!=null ? (" size="+thumb.PixelWidth+"x"+thumb.PixelHeight+" frozen="+thumb.IsFrozen) : ""));
+    Console.WriteLine("ThumbnailService: null=" + (thumb==null) + (thumb!=null ? (" size="+thumb.Width+"x"+thumb.Height+" bytes="+thumb.JpegBytes.Length) : ""));
   }
 }

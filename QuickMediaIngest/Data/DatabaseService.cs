@@ -5,6 +5,7 @@ namespace QuickMediaIngest.Data
     using System.Data.SQLite;
     using System.IO;
     using Microsoft.Extensions.Logging;
+    using QuickMediaIngest.Core.Logging;
 
     /// <summary>
     /// SQLite maintenance only. App config, history, and whitelist persist via JSON under AppData.
@@ -55,7 +56,7 @@ namespace QuickMediaIngest.Data
             if (!File.Exists(_dbPath))
             {
                 SQLiteConnection.CreateFile(_dbPath);
-                _logger.LogInformation("Created SQLite file at {DatabasePath} for periodic maintenance.", _dbPath);
+                _logger.LogInformation("Created SQLite file at {DatabasePath} for periodic maintenance.", LogPathSanitizer.AppData(_dbPath));
             }
         }
 
@@ -90,7 +91,7 @@ namespace QuickMediaIngest.Data
                 }
 
                 File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
-                _logger.LogInformation("SQLite VACUUM completed at {Path}.", _dbPath);
+                _logger.LogInformation("SQLite VACUUM completed at {Path}.", LogPathSanitizer.AppData(_dbPath));
             }
             catch (Exception ex)
             {

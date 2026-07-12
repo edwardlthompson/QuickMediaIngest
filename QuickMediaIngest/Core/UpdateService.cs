@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 
 namespace QuickMediaIngest.Core
 {
@@ -137,7 +138,7 @@ namespace QuickMediaIngest.Core
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not write last update check cache: {Path}.", _cacheFile);
+                _logger.LogWarning(ex, "Could not write last update check cache: {Path}.", LogPathSanitizer.AppData(_cacheFile));
             }
         }
     }

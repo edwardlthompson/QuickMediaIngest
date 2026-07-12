@@ -12,6 +12,7 @@ using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
 using QuickMediaIngest.Localization;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Thumbnails;
 
 namespace QuickMediaIngest.ViewModels
 {
@@ -113,7 +114,8 @@ namespace QuickMediaIngest.ViewModels
                     object? thumb = null;
                     try
                     {
-                        thumb = _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints());
+                        thumb = WpfThumbnailBridge.ToBitmapSource(
+                            _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
                     }
                     catch (Exception ex)
                     {

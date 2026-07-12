@@ -282,7 +282,7 @@
 - [x] [AGENT] Extract shared media-extension constants — `Core/MediaExtensions.cs` (`IsRawExtension`, extended video list)
 - [-] [AGENT] Unify FTP stacks — deferred to backlog
 - [-] [AGENT] Decouple `ShootFilterService` from ViewModels — deferred to backlog
-- [-] [AGENT] Remove WPF `BitmapSource` from Core contracts — deferred to backlog
+- [x] [AGENT] Remove WPF `BitmapSource` from Core contracts — done as R2-D1 / F-002 (2026-07-12)
 
 ---
 
@@ -294,7 +294,7 @@
 - [x] [AGENT] Rename `Filters` → `FtpWorkflow`, `Updates` → `SourceLoad`; moved `BuildUpdateHandoffScript` to `Import.partial.cs`
 - [x] [AGENT] Add `ViewModels/GlobalUsings.cs` (non-conflicting project globals)
 - [x] [AGENT] Overlay decouple (partial): `PreferencesOverlay`, `ScanExclusionsOverlay`, `ImportHistoryOverlay` bind to VM commands; code-behind emptied
-- [ ] [AGENT] `DialogOverlaysView` + remaining MainWindow handlers — see `BUILD_PLAN.md`
+- [x] [AGENT] `DialogOverlaysView` + remaining MainWindow handlers — complete (see P2 / § DialogOverlaysView below)
 
 ---
 
@@ -521,3 +521,36 @@ Full report: `CODE_REVIEW.md` (gitignored, local only).
 
 - [ ] [HUMAN] F-004 — `gh auth refresh -s security_events` (local Dependabot strict only; CI uses `GITHUB_TOKEN`)
 - [ ] [HUMAN] Optional live UI glance — headless sign-off tests cover bindings
+
+---
+
+## Audit Sprint R2 — 2026-07-12
+
+Full report: `CODE_REVIEW.md` (gitignored, local only).
+
+### Completed
+
+- [x] [AGENT] F-001/F-010 — Purge legacy `FtpPass` from `config.json` after Credential Manager migrate; WPF + persistence tests
+- [x] [AGENT] F-003 — Document Win32 `LocalMachine` = per-user persistent (no `LocalUser` in Meziantou enum)
+- [x] [AGENT] F-004 — Crash dump reads `config.json` and redacts `FtpPass`
+- [x] [AGENT] F-005 — Collapse `..` / `.` in `FtpPathNormalizer` + `FtpListingParser`; unit tests
+- [x] [AGENT] F-013–F-016 — Docs: AGENT_MEMORY versions, MODULE checklist, README callouts, COMPLETED_TASKS DialogOverlays row
+- [x] [AUTO] Gates — bootstrap, feature-gate (9 stages), watch-agent-gates; **127** Release tests
+- [x] [AGENT] F-002 / R2-D1 — Remove WPF `BitmapSource` from Core thumbnail contracts; `DecodedThumbnail` + `WpfThumbnailBridge`; WPF orchestration under `Thumbnails/Wpf/`; **144** Release tests green
+- [x] [AGENT] F-006 / R2-D2 — `LogPathSanitizer` + Tier-1 Information/Error logs (scan, ingest, FTP, AppData)
+- [x] [AGENT] F-008 / R2-D3 — Unit tests: MetadataKeywordWriter, IngestItemProcessor, UpdateService, LogPathSanitizer
+
+### Human follow-ups (completed 2026-07-12)
+
+- [x] [AGENT] F-011 — Merged Dependabot PRs [#10](https://github.com/edwardlthompson/QuickMediaIngest/pull/10) (NuGet), [#7](https://github.com/edwardlthompson/QuickMediaIngest/pull/7) (Actions)
+- [x] [AGENT] F-012 — Scorecard root cause: workflow-level `security-events`/`id-token` write rejected by `publish_results`; fixed in `14bdfcb`; verified [run 29203183074](https://github.com/edwardlthompson/QuickMediaIngest/actions/runs/29203183074)
+
+---
+
+## Audit R2 Backlog D1–D3 — 2026-07-12
+
+- [x] R2-D1 — Core thumbnail pipeline WPF-free (`DecodedThumbnail`)
+- [x] R2-D2 — Log path sanitization
+- [x] R2-D3 — Core coverage tests (UpdateService / IngestItemProcessor / MetadataKeywordWriter)
+
+**Deferred (still open, low priority):** `FtpScanner` live-FTP tests, `DeviceWatcher` WMI tests, separate `QuickMediaIngest.Core` class library.

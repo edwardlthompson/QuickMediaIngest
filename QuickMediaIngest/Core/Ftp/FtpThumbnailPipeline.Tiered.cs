@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
@@ -12,7 +11,7 @@ namespace QuickMediaIngest.Core
 {
     internal sealed partial class FtpThumbnailPipeline
     {
-        private async Task<BitmapSource?> TryTieredDownloadAndDecodeAsync(
+        private async Task<DecodedThumbnail?> TryTieredDownloadAndDecodeAsync(
             FtpEndpoint endpoint,
             string remotePath,
             string fileName,
@@ -72,7 +71,7 @@ namespace QuickMediaIngest.Core
                 await decodeGate.WaitAsync(cancellationToken);
                 try
                 {
-                    BitmapSource? thumb = _tieredLoader.TryDecodeDownloaded(
+                    DecodedThumbnail? thumb = _tieredLoader.TryDecodeDownloaded(
                         fileName,
                         tempPath,
                         hints,

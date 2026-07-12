@@ -229,3 +229,57 @@
 **Release:** [v1.3.18](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.18) — portable EXE, ZIP, MSI via `workflow_dispatch`.
 
 **Validation:** CI + Security Scan + CodeQL green on `0221d2c`; 113 tests; zero open Critical/High Dependabot alerts.
+
+---
+
+## 2026-07-12 — Audit Sprint R2 (security + docs hygiene)
+
+**Decision:** Address High/Medium audit findings that are agent-fixable without a Core/WPF refactor; leave Dependabot merges and Scorecard triage to `[HUMAN]`.
+
+**Changes:**
+- Purge legacy `FtpPass` from `config.json` immediately after Credential Manager migrate (`LoadConfig` → `SaveConfig`)
+- Crash dumps read `config.json` and redact `FtpPass`
+- FTP path normalizers collapse `.` / `..` without climbing above root
+- Document Win32 `CredentialPersistence.LocalMachine` as per-user persistent
+- Docs: AGENT_MEMORY package versions, MODULE checklist, README version callouts, COMPLETED_TASKS DialogOverlays row
+
+**Validation:** `watch-agent-gates` 9 stages OK; **127** Release tests; Dependabot/CodeQL open alerts = 0.
+
+**Deferred (superseded):** See R2-D1 / R2-D2 / R2-D3 entries below — completed 2026-07-12.
+
+---
+
+## 2026-07-12 — Dependabot merges + Scorecard workflow fix
+
+**Decision:** Squash-merge Dependabot PRs #10 (NuGet) and #7 (Actions). Fix Scorecard publish failure by moving write permissions to job scope (`permissions: read-all` at workflow level), matching [ossf/scorecard-action workflow restrictions](https://github.com/ossf/scorecard-action#workflow-restrictions). Also upload SARIF to code scanning.
+
+**Root cause:** `publish_results: true` rejected the workflow because top-level `security-events: write` / `id-token: write` violate Scorecard API integrity checks.
+
+**Validation:** Scorecard [run 29203183074](https://github.com/edwardlthompson/QuickMediaIngest/actions/runs/29203183074) success; `check-scorecard-sarif.sh` OK (no error/warning findings).
+
+---
+
+## 2026-07-12 — Release v1.3.19
+
+**Decision:** Ship Audit R2 security fixes + backlog D1–D3 (DecodedThumbnail, LogPathSanitizer, Core coverage tests) as v1.3.19.
+
+**Validation:** feature-gate 9 stages; 144 Release tests; CI/Security/CodeQL green on prior HEAD; Dependabot open Critical/High = 0 (API); Scorecard green after permission fix.
+
+---
+
+## 2026-07-12 — R2-D1: DecodedThumbnail replaces BitmapSource in Core
+
+**Decision:** Core thumbnail public APIs and decode/cache paths use `DecodedThumbnail` (JPEG bytes + WxH). WPF shell/STA/BitmapSource orchestration lives under `QuickMediaIngest/Thumbnails/Wpf/`. ViewModels convert via `WpfThumbnailBridge.ToBitmapSource`.
+
+**Rationale:** Keeps `Core/` free of WPF types (CODE_REVIEW F-002) while preserving shell/COM decode on an STA thread outside Core.
+
+**Validation:** `dotnet test QuickMediaIngest-1.sln -c Release` — **144** passed; all `Core/**/*.cs` ≤ 200 lines; no `BitmapSource` / `System.Windows` usings under Core (doc cref only in `IShootFilterService`).
+
+---
+
+## 2026-07-12 — R2-D2/D3: log path sanitization + Core coverage tests
+
+**Decision:** Add `LogPathSanitizer` for Information/Error logs (local / AppData / FTP). Expand unit tests for MetadataKeywordWriter, IngestItemProcessor, UpdateService (mock HttpClient), and the sanitizer.
+
+**Validation:** **144** Release tests green.
+

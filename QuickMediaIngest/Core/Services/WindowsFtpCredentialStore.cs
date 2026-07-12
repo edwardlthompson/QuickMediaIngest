@@ -97,6 +97,8 @@ namespace QuickMediaIngest.Core.Services
                 userName: string.IsNullOrWhiteSpace(userName) ? "FTP" : userName,
                 secret: password ?? string.Empty,
                 comment: "QuickMediaIngest FTP password",
+                // CRED_PERSIST_LOCAL_MACHINE: persists across logons for this Windows user only
+                // (not shared with other local accounts). Session would drop the password on logoff.
                 persistence: CredentialPersistence.LocalMachine);
         }
 

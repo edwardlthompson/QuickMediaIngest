@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
+using QuickMediaIngest.Thumbnails.Wpf;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,7 +60,7 @@ namespace QuickMediaIngest.Tests
                 _output.WriteLine($"loaded={result.LoadedCount} skipped={result.SkippedCount}");
                 foreach (var item in result.Items)
                 {
-                    _output.WriteLine($"{item.ItemKey.Split('|')[^1]} status={item.Status} thumb={(item.Thumbnail != null ? item.Thumbnail.PixelWidth + "x" + item.Thumbnail.PixelHeight : "null")}");
+                    _output.WriteLine($"{item.ItemKey.Split('|')[^1]} status={item.Status} thumb={(item.Thumbnail != null ? item.Thumbnail.Width + "x" + item.Thumbnail.Height : "null")}");
                 }
 
                 Assert.Equal(2, result.LoadedCount);

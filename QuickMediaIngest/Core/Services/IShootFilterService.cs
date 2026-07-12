@@ -6,7 +6,7 @@ namespace QuickMediaIngest.Core.Services
 {
     public interface IShootFilterService
     {
-        /// <summary>Date, file type, and filename keyword rules (used by <see cref="System.Windows.Data.CollectionViewSource"/> and shoot cards).</summary>
+        /// <summary>Date, file type, and filename keyword rules (used by shoot list filters and shoot cards).</summary>
         bool PassesToolbarRules(ImportItem item, ShootFilterCriteria criteria);
 
         /// <summary>AND-combines <see cref="PassesToolbarRules"/> with existing <see cref="ImportItem.IsPreviewVisible"/> (after stack layout).</summary>

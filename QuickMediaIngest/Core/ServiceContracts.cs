@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Data.Models;
 
@@ -57,8 +56,8 @@ namespace QuickMediaIngest.Core
     /// </summary>
     public interface IThumbnailService
     {
-        BitmapSource? GetThumbnail(string filePath);
-        BitmapSource? GetThumbnail(string filePath, ThumbnailHints? hints);
+        DecodedThumbnail? GetThumbnail(string filePath);
+        DecodedThumbnail? GetThumbnail(string filePath, ThumbnailHints? hints);
     }
 
     /// <summary>

@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.IO;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
@@ -11,7 +10,7 @@ namespace QuickMediaIngest.Core
     {
         private static bool? _isAvailable;
 
-        public static BitmapSource? TryGetThumbnail(string filePath, int decodePixelWidth, ILogger? logger = null)
+        public static DecodedThumbnail? TryGetThumbnail(string filePath, int decodePixelWidth, ILogger? logger = null)
         {
             if (!IsAvailable())
             {
@@ -23,15 +22,14 @@ namespace QuickMediaIngest.Core
                 using var image = NetVips.Image.Thumbnail(filePath, Math.Max(120, decodePixelWidth));
                 using var memoryStream = new MemoryStream();
                 image.WriteToStream(memoryStream, ".jpg");
-                memoryStream.Position = 0;
+                byte[] jpegBytes = memoryStream.ToArray();
+                if (jpegBytes.Length == 0)
+                {
+                    return null;
+                }
 
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = memoryStream;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return ThumbnailPreviewValidator.IsAcceptable(bitmap) ? bitmap : null;
+                var thumb = new DecodedThumbnail(jpegBytes, image.Width, image.Height);
+                return ThumbnailPreviewValidator.IsAcceptable(thumb) ? thumb : null;
             }
             catch (Exception ex)
             {

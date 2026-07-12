@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentFTP;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 
 namespace QuickMediaIngest.Core
 {
@@ -146,7 +147,7 @@ namespace QuickMediaIngest.Core
                     _logger.LogInformation("Connected FTP file provider to {Host}:{Port} for delete operation.", _host, _port);
                 }
 
-                _logger.LogInformation("Deleting FTP source file {SourcePath}.", srcPath);
+                _logger.LogInformation("Deleting FTP source file {SourcePath}.", LogPathSanitizer.FtpRemote(srcPath));
                 await _client.DeleteFile(srcPath, token);
             }
             finally

@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
@@ -72,12 +71,12 @@ namespace QuickMediaIngest.Core
 
                     try
                     {
-                        BitmapSource? cached = ThumbnailDiskCache.TryLoadFtp(
+                        DecodedThumbnail? cached = ThumbnailDiskCache.TryLoadFtp(
                             endpoint.Host,
                             endpoint.Port,
                             workItem.RemotePath,
                             workItem.FileSize);
-                        BitmapSource? thumb = cached;
+                        DecodedThumbnail? thumb = cached;
 
                         if (thumb == null)
                         {

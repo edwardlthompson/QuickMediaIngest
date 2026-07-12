@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Services;
+using QuickMediaIngest.Thumbnails.Wpf;
 using Xunit;
 using Xunit.Abstractions;
 

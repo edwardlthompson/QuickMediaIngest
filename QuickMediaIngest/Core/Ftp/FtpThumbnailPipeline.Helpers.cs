@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
 
@@ -11,7 +10,7 @@ namespace QuickMediaIngest.Core
 {
     internal sealed partial class FtpThumbnailPipeline
     {
-        private async Task<BitmapSource?> TryLoadSiblingPreviewAsync(
+        private async Task<DecodedThumbnail?> TryLoadSiblingPreviewAsync(
             FtpEndpoint endpoint,
             FtpThumbnailWorkItem workItem,
             string tempPath,
@@ -22,7 +21,7 @@ namespace QuickMediaIngest.Core
         {
             foreach (string siblingPath in GetRenderedSiblingRemotePaths(workItem.RemotePath, workItem.FileName))
             {
-                BitmapSource? thumb = await TryTieredDownloadAndDecodeAsync(
+                DecodedThumbnail? thumb = await TryTieredDownloadAndDecodeAsync(
                     endpoint,
                     siblingPath,
                     Path.GetFileName(siblingPath),

@@ -18,8 +18,8 @@
 - [x] xUnit tests for ingest engine, filters, grouping
 - [x] CI runs `dotnet build` + `dotnet test`
 - [x] Theme QA checklist for UI changes
-- [ ] File size remediation (Sprint 1): split oversized XAML/ViewModels
-- [ ] `dotnet format` gate in CI
+- [x] File size remediation (Sprint 1): split oversized XAML/ViewModels
+- [x] `dotnet format` gate in CI
 
 ## Build Commands
 

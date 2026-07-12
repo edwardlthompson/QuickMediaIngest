@@ -3,8 +3,6 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace QuickMediaIngest.Core
 {
@@ -32,27 +30,38 @@ namespace QuickMediaIngest.Core
             return Path.Combine(GetCacheDirectory(), GetFtpCacheKey(host, port, remotePath, fileSize) + ".jpg");
         }
 
-        public static BitmapSource? TryLoad(string cachePath)
+        public static DecodedThumbnail? TryLoad(string cachePath)
         {
             if (!File.Exists(cachePath))
             {
                 return null;
             }
 
-            var bitmap = new BitmapImage();
-            using var stream = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(cachePath);
+                if (bytes.Length == 0)
+                {
+                    return null;
+                }
+
+                if (!JpegSofDimensionParser.TryGetDimensions(bytes, out int width, out int height))
+                {
+                    return null;
+                }
+
+                return new DecodedThumbnail(bytes, width, height);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
-        public static BitmapSource? TryLoadFtp(string host, int port, string remotePath, long fileSize)
+        public static DecodedThumbnail? TryLoadFtp(string host, int port, string remotePath, long fileSize)
         {
             string cachePath = GetFtpCachePath(host, port, remotePath, fileSize);
-            BitmapSource? thumb = TryLoad(cachePath);
+            DecodedThumbnail? thumb = TryLoad(cachePath);
             if (thumb == null)
             {
                 return null;
@@ -78,15 +87,17 @@ namespace QuickMediaIngest.Core
             return null;
         }
 
-        public static void TrySave(BitmapSource thumb, string cachePath)
+        public static void TrySave(DecodedThumbnail thumb, string cachePath)
         {
-            var encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(thumb));
-            using var fs = new FileStream(cachePath, FileMode.Create, FileAccess.Write, FileShare.None);
-            encoder.Save(fs);
+            File.WriteAllBytes(cachePath, thumb.JpegBytes);
         }
 
-        public static void TrySaveFtp(BitmapSource thumb, string host, int port, string remotePath, long fileSize)
+        public static void TrySave(byte[] jpegBytes, string cachePath)
+        {
+            File.WriteAllBytes(cachePath, jpegBytes);
+        }
+
+        public static void TrySaveFtp(DecodedThumbnail thumb, string host, int port, string remotePath, long fileSize)
         {
             if (!ThumbnailPreviewValidator.IsAcceptable(thumb))
             {

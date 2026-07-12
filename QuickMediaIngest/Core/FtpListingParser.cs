@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using QuickMediaIngest.Core.Services;
 
 namespace QuickMediaIngest.Core
 {
@@ -95,36 +96,23 @@ namespace QuickMediaIngest.Core
 
         public static string CombineRemotePath(string parent, string child)
         {
-            string normalizedParent = NormalizeRemotePath(parent).TrimEnd('/');
+            string normalizedParent = NormalizeRemotePath(parent);
             string normalizedChild = child.Replace("\\", "/").Trim('/');
             if (string.IsNullOrEmpty(normalizedChild))
             {
                 return normalizedParent;
             }
 
-            if (string.IsNullOrEmpty(normalizedParent) || normalizedParent == "/")
-            {
-                return "/" + normalizedChild;
-            }
+            string combined = normalizedParent == "/"
+                ? "/" + normalizedChild
+                : normalizedParent.TrimEnd('/') + "/" + normalizedChild;
 
-            return normalizedParent + "/" + normalizedChild;
+            // Collapse "." / ".." so malicious listing names cannot escape the remote root.
+            return NormalizeRemotePath(combined);
         }
 
-        public static string NormalizeRemotePath(string remotePath)
-        {
-            if (string.IsNullOrWhiteSpace(remotePath))
-            {
-                return "/";
-            }
-
-            string normalized = remotePath.Trim().Replace("\\", "/");
-            if (!normalized.StartsWith("/", StringComparison.Ordinal))
-            {
-                normalized = "/" + normalized;
-            }
-
-            return normalized;
-        }
+        public static string NormalizeRemotePath(string remotePath) =>
+            FtpPathNormalizer.Normalize(remotePath);
 
         private static DateTime ParseUnixModified(string month, string day, string timeOrYear)
         {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 
 namespace QuickMediaIngest.Core
 {
@@ -58,7 +59,7 @@ namespace QuickMediaIngest.Core
             token.ThrowIfCancellationRequested();
             if (File.Exists(srcPath))
             {
-                _logger.LogInformation("Deleting local source file {SourcePath}.", srcPath);
+                _logger.LogInformation("Deleting local source file {SourcePath}.", LogPathSanitizer.Local(srcPath));
                 File.Delete(srcPath);
             }
 

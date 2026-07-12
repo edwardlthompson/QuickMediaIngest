@@ -4,12 +4,13 @@ using System.IO;
 using System.Threading;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core;
 
-namespace QuickMediaIngest.Core
+namespace QuickMediaIngest.Thumbnails.Wpf
 {
     public partial class ThumbnailService
     {
-        private BitmapSource? GetThumbnailCore(
+        private DecodedThumbnail? GetThumbnailCore(
             string filePath,
             ThumbnailHints? hints,
             string cachePath,
@@ -18,7 +19,7 @@ namespace QuickMediaIngest.Core
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             bool isRaw = MediaExtensions.IsRawExtension(ext);
             bool isVideo = MediaExtensions.IsVideoExtension(ext);
-            BitmapSource? thumb = null;
+            DecodedThumbnail? thumb = null;
 
             if (ext is ".jpg" or ".jpeg")
             {
@@ -59,7 +60,8 @@ namespace QuickMediaIngest.Core
 
                 try
                 {
-                    thumb = ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false);
+                    thumb = EncodeToDecodedThumbnail(
+                        ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false));
                 }
                 catch (Exception ex)
                 {
@@ -75,7 +77,7 @@ namespace QuickMediaIngest.Core
                     var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
                     if (decoder.Frames.Count > 0)
                     {
-                        thumb = CreateResizedThumbnail(decoder.Frames[0], 240);
+                        thumb = EncodeToDecodedThumbnail(CreateResizedThumbnail(decoder.Frames[0], 240));
                     }
                 }
                 catch (Exception ex)
@@ -88,11 +90,14 @@ namespace QuickMediaIngest.Core
             {
                 try
                 {
-                    thumb = ShellThumbnailInterop.TryGetShellImage(filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
-                    if (thumb == null && isVideo)
+                    BitmapSource? shell = ShellThumbnailInterop.TryGetShellImage(
+                        filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
+                    if (shell == null && isVideo)
                     {
-                        thumb = ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false);
+                        shell = ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false);
                     }
+
+                    thumb = EncodeToDecodedThumbnail(shell);
                 }
                 catch (Exception ex)
                 {
@@ -122,7 +127,7 @@ namespace QuickMediaIngest.Core
             return null;
         }
 
-        private static void TrySaveThumbnailCache(string cachePath, BitmapSource thumb)
+        private static void TrySaveThumbnailCache(string cachePath, DecodedThumbnail thumb)
         {
             try
             {
@@ -134,8 +139,39 @@ namespace QuickMediaIngest.Core
             }
         }
 
-        private static BitmapSource? TryGetMagickThumbnail(string filePath, int decodePixelWidth) =>
+        private static DecodedThumbnail? TryGetMagickThumbnail(string filePath, int decodePixelWidth) =>
             MagickThumbnailDecoder.TryGetThumbnail(filePath, decodePixelWidth);
+
+        private static DecodedThumbnail? EncodeToDecodedThumbnail(BitmapSource? source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var encoder = new JpegBitmapEncoder { QualityLevel = 90 };
+                encoder.Frames.Add(BitmapFrame.Create(source));
+                using var ms = new MemoryStream();
+                encoder.Save(ms);
+                byte[] bytes = ms.ToArray();
+                int width = source.PixelWidth;
+                int height = source.PixelHeight;
+                if (JpegSofDimensionParser.TryGetDimensions(bytes, out int jw, out int jh))
+                {
+                    width = jw;
+                    height = jh;
+                }
+
+                var decoded = new DecodedThumbnail(bytes, width, height);
+                return ThumbnailPreviewValidator.IsAcceptable(decoded) ? decoded : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private static bool TryGetSiblingRenderedPath(string rawPath, out string siblingPath)
         {

@@ -22,6 +22,7 @@ namespace QuickMediaIngest.ViewModels
                     var config = System.Text.Json.JsonSerializer.Deserialize<QuickMediaIngest.AppConfig>(json);
                     if (config != null)
                     {
+                        bool purgePlaintextFtpPass = false;
                         _loadingConfig = true;
                         try
                         {
@@ -60,6 +61,12 @@ namespace QuickMediaIngest.ViewModels
                                 {
                                     _logger.LogWarning(ex, "Could not migrate FTP credential key to normalized host.");
                                 }
+
+                                // Vault already holds the secret — strip any leftover plaintext from disk.
+                                if (!string.IsNullOrEmpty(config.FtpPass))
+                                {
+                                    purgePlaintextFtpPass = true;
+                                }
                             }
                             else if (!string.IsNullOrEmpty(config.FtpPass))
                             {
@@ -67,6 +74,7 @@ namespace QuickMediaIngest.ViewModels
                                 try
                                 {
                                     _ftpCredentialStore.WritePassword(FtpHost, FtpPort, FtpUser, config.FtpPass);
+                                    purgePlaintextFtpPass = true;
                                 }
                                 catch (Exception ex)
                                 {
@@ -210,6 +218,11 @@ namespace QuickMediaIngest.ViewModels
                         finally
                         {
                             _loadingConfig = false;
+                        }
+
+                        if (purgePlaintextFtpPass)
+                        {
+                            SaveConfig();
                         }
                     }
                 }

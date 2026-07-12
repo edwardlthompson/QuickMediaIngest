@@ -8,13 +8,13 @@
 | Layer | Technology | Version | Notes |
 |-------|-----------|---------|-------|
 | Runtime | .NET | 8.0 | `net8.0-windows` |
-| UI | WPF + MaterialDesignThemes | 4.9.0 | Dark/light theme |
+| UI | WPF + MaterialDesignThemes | 5.3.2 | Dark/light theme |
 | MVVM | CommunityToolkit.Mvvm | 8.4.2 | Partial ViewModels |
-| DI | Microsoft.Extensions.DependencyInjection | 8.0.1 | Registered in `App.xaml.cs` |
-| FTP | FluentFTP | 50.0.1 | Thread-safe connections |
-| Images | Magick.NET-Q16-AnyCPU | 14.13.0 | Thumbnails, RAW sidecars |
-| Metadata | MetadataExtractor | 2.8.1 | EXIF read/write |
-| Storage | System.Data.SQLite.Core | 1.0.118 | Config/history; single-file extract required |
+| DI | Microsoft.Extensions.DependencyInjection | 10.0.9 | Registered in `App.xaml.cs` |
+| FTP | FluentFTP | 54.2.0 | Thread-safe connections |
+| Images | Magick.NET-Q16-AnyCPU | 14.14.0 | Thumbnails, RAW sidecars |
+| Metadata | MetadataExtractor | 2.9.3 | EXIF read/write |
+| Storage | System.Data.SQLite.Core | 1.0.119 | VACUUM maintenance; single-file extract required |
 | Testing | xUnit + Moq | 2.5.0 / 4.20.70 | `QuickMediaIngest.Tests/` |
 | Installer | WiX Toolset | 4.0.4 | MSI via GitHub Actions |
 | License | MIT | — | Pure FOSS |
@@ -59,6 +59,8 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-06-20 | Template v0.11.0 migration | Phased bootstrap sync; slash commands + gate loop; WPF feature-gate | Confirm `/` menu in Cursor UI; push + CI green |
 | 2026-06-21 | Release v1.3.17 | Human sign-off automation; P2–P8 backlog; MSI/libvips CI fixes | SBOM in build.yml; local `gh auth refresh -s security_events` for strict Dependabot gate |
 | 2026-06-21 | Release v1.3.18 | Byte-weighted import progress + ETA (F-002) | LAN FTP smoke tests flaky offline |
+| 2026-07-12 | Audit Sprint R2 | FtpPass purge + path collapse + crash redact; 127 tests; gates green | HUMAN: Dependabot #10/#7 merge; Scorecard failure |
+| 2026-07-12 | R2 backlog D1–D3 | DecodedThumbnail Core; LogPathSanitizer; Update/Ingest/Keyword tests (144) | Separate Core csproj; FtpScanner/DeviceWatcher live tests |
 
 ## Template Provenance
 

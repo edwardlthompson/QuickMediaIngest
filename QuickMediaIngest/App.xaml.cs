@@ -15,6 +15,7 @@ using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
 using QuickMediaIngest.Services;
+using QuickMediaIngest.Thumbnails.Wpf;
 using QuickMediaIngest.ViewModels;
 
 namespace QuickMediaIngest
@@ -83,9 +84,25 @@ namespace QuickMediaIngest
         {
             try
             {
-                return File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
-                    ? File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest", "appconfig.json"))
-                    : "(No config file found)";
+                string configPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "QuickMediaIngest",
+                    "config.json");
+                if (!File.Exists(configPath))
+                {
+                    return "(No config file found)";
+                }
+
+                string json = File.ReadAllText(configPath);
+                var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(json);
+                if (config == null)
+                {
+                    return "(Failed to parse config.json)";
+                }
+
+                // Never write FTP secrets into crash artifacts.
+                config.FtpPass = string.Empty;
+                return System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             }
             catch { return "(Failed to read AppConfig)"; }
         }

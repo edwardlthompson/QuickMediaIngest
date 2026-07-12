@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core.Services
@@ -26,7 +25,7 @@ namespace QuickMediaIngest.Core.Services
     public sealed class FtpThumbnailItemResult
     {
         public string ItemKey { get; init; } = string.Empty;
-        public BitmapSource? Thumbnail { get; init; }
+        public DecodedThumbnail? Thumbnail { get; init; }
         public ThumbnailPreviewStatus Status { get; init; }
     }
 

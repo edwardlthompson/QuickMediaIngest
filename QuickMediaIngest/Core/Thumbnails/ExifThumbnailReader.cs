@@ -1,14 +1,13 @@
 #nullable enable
 using System;
 using System.IO;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
 {
     internal static class ExifThumbnailReader
     {
-        public static BitmapSource? TryGetExifThumbnail(string filePath, ILogger? logger = null)
+        public static DecodedThumbnail? TryGetExifThumbnail(string filePath, ILogger? logger = null)
         {
             try
             {
@@ -65,7 +64,7 @@ namespace QuickMediaIngest.Core
             return null;
         }
 
-        private static BitmapSource? TryReadThumbnailFromExifSegment(Stream fs, BinaryReader br, long tiffStart)
+        private static DecodedThumbnail? TryReadThumbnailFromExifSegment(Stream fs, BinaryReader br, long tiffStart)
         {
             fs.Position = tiffStart;
 
@@ -147,14 +146,7 @@ namespace QuickMediaIngest.Core
                 byte[] thumbBytes = br.ReadBytes(thumbLen);
                 if (thumbBytes.Length >= 2 && thumbBytes[0] == 0xFF && thumbBytes[1] == 0xD8)
                 {
-                    using var ms = new MemoryStream(thumbBytes);
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.StreamSource = ms;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    return bitmap;
+                    return JpegSofDimensionParser.TryCreate(thumbBytes);
                 }
             }
 

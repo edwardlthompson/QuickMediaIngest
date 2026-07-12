@@ -171,13 +171,13 @@
       },
       "NetVips": {
         "type": "Transitive",
-        "resolved": "3.0.0",
-        "contentHash": "yUgEF9Q/H6nlfKZdbsCNqFwHp774gKLuK4X0Qf/fbODN8BLBR2TapVy9OwBi4KnnTjxGSFUA7U1oCbOEgRKv6g=="
+        "resolved": "3.2.0",
+        "contentHash": "ixVatHjsFBBvtKXYwH8jz8nF6OQIhl2e/P0N8ByGaZrlPu9VvcVQxX9zBQ13L8fUpMzKv1WXUybqW8wXZdFsCg=="
       },
       "NetVips.Native.win-x64": {
         "type": "Transitive",
-        "resolved": "8.18.3",
-        "contentHash": "i12TaFaoWO86pBTGLJAUBef2Zln/1oTnzgnUmlfpee6nIwJFMdqpnfvs6FIKt+TCieaBfysdVxBmddeUsrM4cw=="
+        "resolved": "8.18.4",
+        "contentHash": "k6IpFlsf6Od0A0OQP+x7hoY7fWr7lldGOudXLIsxm3JRwnkR8qwm9krJZySbTXJPHXqVgN1P3QcAAgjfWTBGjQ=="
       },
       "Newtonsoft.Json": {
         "type": "Transitive",
@@ -289,8 +289,8 @@
           "Meziantou.Framework.Win32.CredentialManager": "[2.0.2, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.9, )",
           "Microsoft.Extensions.Logging": "[10.0.9, )",
-          "NetVips": "[3.0.0, )",
-          "NetVips.Native.win-x64": "[8.18.3, )",
+          "NetVips": "[3.2.0, )",
+          "NetVips.Native.win-x64": "[8.18.4, )",
           "System.Data.SQLite.Core": "[1.0.119, )",
           "System.Management": "[10.0.9, )"
         }

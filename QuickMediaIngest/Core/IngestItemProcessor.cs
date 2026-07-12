@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
@@ -80,7 +81,7 @@ namespace QuickMediaIngest.Core
                             await provider.DeleteAsync(item.SourcePath, cancellationToken);
                             logger.LogInformation(
                                 "Deleted source file {SourcePath} after successful import and verification.",
-                                item.SourcePath);
+                                LogPathSanitizer.Local(item.SourcePath));
                         }
                         else
                         {
@@ -92,7 +93,7 @@ namespace QuickMediaIngest.Core
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", item.SourcePath);
+                        logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", LogPathSanitizer.Local(item.SourcePath));
                     }
                 }
             }
@@ -103,8 +104,8 @@ namespace QuickMediaIngest.Core
                     ex,
                     "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.",
                     item.FileName,
-                    item.SourcePath,
-                    destPath);
+                    LogPathSanitizer.Local(item.SourcePath),
+                    LogPathSanitizer.Local(destPath));
             }
 
             tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);

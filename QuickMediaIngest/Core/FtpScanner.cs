@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
@@ -47,7 +48,7 @@ namespace QuickMediaIngest.Core
             CancellationToken cancellationToken = default)
         {
             string normalizedPath = FtpListingParser.NormalizeRemotePath(remotePath);
-            _logger.LogInformation("Listing FTP directories for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
+            _logger.LogInformation("Listing FTP directories for {Host}:{Port}{RemotePath}.", host, port, LogPathSanitizer.FtpRemote(normalizedPath));
             var entries = await FtpDirectoryClient.ListDirectoryEntriesAsync(
                 host,
                 port,
@@ -74,7 +75,7 @@ namespace QuickMediaIngest.Core
             CancellationToken cancellationToken = default)
         {
             string normalizedPath = FtpListingParser.NormalizeRemotePath(remotePath);
-            _logger.LogInformation("Testing FTP connection to {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
+            _logger.LogInformation("Testing FTP connection to {Host}:{Port}{RemotePath}.", host, port, LogPathSanitizer.FtpRemote(normalizedPath));
 
             try
             {
@@ -91,12 +92,12 @@ namespace QuickMediaIngest.Core
             }
             catch (OperationCanceledException)
             {
-                _logger.LogError("FTP connection test canceled for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
+                _logger.LogError("FTP connection test canceled for {Host}:{Port}{RemotePath}.", host, port, LogPathSanitizer.FtpRemote(normalizedPath));
                 return (false, "Connection was canceled.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "FTP connection test failed for {Host}:{Port}{RemotePath}.", host, port, normalizedPath);
+                _logger.LogError(ex, "FTP connection test failed for {Host}:{Port}{RemotePath}.", host, port, LogPathSanitizer.FtpRemote(normalizedPath));
                 return (false, ex.Message);
             }
         }
@@ -114,7 +115,7 @@ namespace QuickMediaIngest.Core
         {
             var items = new List<ImportItem>();
             string normalizedPath = FtpListingParser.NormalizeRemotePath(remotePath);
-            _logger.LogInformation("Starting FTP scan for {Host}:{Port}{RemotePath}. IncludeSubfolders={IncludeSubfolders}", host, port, normalizedPath, includeSubfolders);
+            _logger.LogInformation("Starting FTP scan for {Host}:{Port}{RemotePath}. IncludeSubfolders={IncludeSubfolders}", host, port, LogPathSanitizer.FtpRemote(normalizedPath), includeSubfolders);
 
             List<FtpFolderScanPlan> plans = await FtpScanPlanner.BuildScanPlanAsync(
                 host,
@@ -188,7 +189,7 @@ namespace QuickMediaIngest.Core
                 });
             }
 
-            _logger.LogInformation("Completed FTP scan for {Host}:{Port}{RemotePath}. Files={FileCount}, Folders={FolderCount}, SkippedFolders={SkippedFolders}", host, port, normalizedPath, items.Count, totalFolders, skippedFolders);
+            _logger.LogInformation("Completed FTP scan for {Host}:{Port}{RemotePath}. Files={FileCount}, Folders={FolderCount}, SkippedFolders={SkippedFolders}", host, port, LogPathSanitizer.FtpRemote(normalizedPath), items.Count, totalFolders, skippedFolders);
             return items;
         }
     }

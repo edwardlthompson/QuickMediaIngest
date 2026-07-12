@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.IO;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
@@ -9,7 +8,7 @@ namespace QuickMediaIngest.Core
     /// <summary>Extract embedded JPEG segments from partial HEIC/HEIF buffers before full decode.</summary>
     internal static class HeicEmbeddedPreviewReader
     {
-        public static BitmapSource? TryExtractFromFile(string filePath, ILogger? logger = null)
+        public static DecodedThumbnail? TryExtractFromFile(string filePath, ILogger? logger = null)
         {
             try
             {
@@ -28,7 +27,7 @@ namespace QuickMediaIngest.Core
             }
         }
 
-        internal static BitmapSource? TryExtractJpegSegment(byte[] data, ILogger? logger = null)
+        internal static DecodedThumbnail? TryExtractJpegSegment(byte[] data, ILogger? logger = null)
         {
             if (data.Length < 4)
             {
@@ -66,14 +65,9 @@ namespace QuickMediaIngest.Core
 
             try
             {
-                using var ms = new MemoryStream(data, bestStart, bestLength, writable: false);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = ms;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return ThumbnailPreviewValidator.IsAcceptable(bitmap) ? bitmap : null;
+                byte[] jpegBytes = new byte[bestLength];
+                Buffer.BlockCopy(data, bestStart, jpegBytes, 0, bestLength);
+                return JpegSofDimensionParser.TryCreate(jpegBytes);
             }
             catch (Exception ex)
             {

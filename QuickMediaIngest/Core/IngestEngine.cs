@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
@@ -64,7 +65,7 @@ namespace QuickMediaIngest.Core
                 "Starting ingest for group {GroupTitle} with {FileCount} selected files into {DestinationRoot}.",
                 group.Title,
                 total,
-                destinationRoot);
+                LogPathSanitizer.Local(destinationRoot));
 
             var wall = Stopwatch.StartNew();
             int parallelImports = options.MaxConcurrentFileCopies > 0

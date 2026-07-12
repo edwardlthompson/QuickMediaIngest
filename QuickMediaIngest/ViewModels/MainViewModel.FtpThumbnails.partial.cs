@@ -25,6 +25,7 @@ using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
 using QuickMediaIngest;
+using QuickMediaIngest.Thumbnails;
 
 
 namespace QuickMediaIngest.ViewModels
@@ -60,7 +61,8 @@ namespace QuickMediaIngest.ViewModels
                 if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb))
                 {
                     if (cachedThumb is System.Windows.Media.Imaging.BitmapSource cachedBitmap
-                        && FtpThumbnailCache.IsAcceptable(cachedBitmap))
+                        && cachedBitmap.PixelWidth >= ThumbnailPreviewValidator.MinPixelEdge
+                        && cachedBitmap.PixelHeight >= ThumbnailPreviewValidator.MinPixelEdge)
                     {
                         loadedFromCache++;
                         await Application.Current.Dispatcher.InvokeAsync(() =>
@@ -82,24 +84,27 @@ namespace QuickMediaIngest.ViewModels
                 var diskThumb = FtpThumbnailCache.TryLoad(ftp.Host, ftp.Port, item.SourcePath, item.FileSize);
                 if (diskThumb != null)
                 {
-                    loadedFromCache++;
-                    _thumbnailByItemKey[itemKey] = diskThumb;
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    var bitmap = WpfThumbnailBridge.ToBitmapSource(diskThumb);
+                    if (bitmap != null)
                     {
-                        item.Thumbnail = diskThumb;
-                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                    }, System.Windows.Threading.DispatcherPriority.Background, cancellationToken);
+                        loadedFromCache++;
+                        _thumbnailByItemKey[itemKey] = bitmap;
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Thumbnail = bitmap;
+                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                        }, System.Windows.Threading.DispatcherPriority.Background, cancellationToken);
+                        continue;
+                    }
                 }
-                else
+
+                workItems.Add(new FtpThumbnailWorkItem
                 {
-                    workItems.Add(new FtpThumbnailWorkItem
-                    {
-                        ItemKey = itemKey,
-                        RemotePath = item.SourcePath,
-                        FileName = item.FileName,
-                        FileSize = item.FileSize
-                    });
-                }
+                    ItemKey = itemKey,
+                    RemotePath = item.SourcePath,
+                    FileName = item.FileName,
+                    FileSize = item.FileSize
+                });
             }
 
             int loadedCount = loadedFromCache;
@@ -160,85 +165,6 @@ namespace QuickMediaIngest.ViewModels
             }, System.Windows.Threading.DispatcherPriority.Background);
 
             return loadedCount;
-        }
-
-        private async Task ApplyFtpThumbnailResultAsync(
-            FtpThumbnailItemResult result,
-            IReadOnlyDictionary<string, ImportItem> itemByKey)
-        {
-            if (!itemByKey.TryGetValue(result.ItemKey, out var item))
-            {
-                return;
-            }
-
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                if (result.Thumbnail != null && FtpThumbnailCache.IsAcceptable(result.Thumbnail))
-                {
-                    item.Thumbnail = result.Thumbnail;
-                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                    _thumbnailByItemKey[result.ItemKey] = result.Thumbnail;
-                }
-                else
-                {
-                    item.Thumbnail = null;
-                    item.ThumbnailPreviewStatus = result.Thumbnail != null
-                        ? ThumbnailPreviewStatus.Failed
-                        : result.Status;
-                }
-            }, System.Windows.Threading.DispatcherPriority.Background);
-        }
-
-        private async Task ApplyRenderedSiblingThumbnailsAsync(IReadOnlyList<ImportItem> items)
-        {
-            if (!GroupRawAndRenderedPairs)
-            {
-                return;
-            }
-
-            var byStem = items
-                .GroupBy(i => Path.GetFileNameWithoutExtension(i.FileName), StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            foreach (var group in byStem)
-            {
-                ImportItem? rendered = group.FirstOrDefault(i =>
-                {
-                    string ext = Path.GetExtension(i.FileName).ToLowerInvariant();
-                    return ext is ".heic" or ".heif" or ".jpg" or ".jpeg"
-                        && i.Thumbnail is System.Windows.Media.Imaging.BitmapSource renderedBitmap
-                        && FtpThumbnailCache.IsAcceptable(renderedBitmap);
-                });
-
-                if (rendered == null)
-                {
-                    continue;
-                }
-
-                foreach (ImportItem raw in group.Where(i =>
-                    MediaExtensions.IsRawExtension(Path.GetExtension(i.FileName))
-                    && !(i.Thumbnail is System.Windows.Media.Imaging.BitmapSource rawBitmap
-                         && FtpThumbnailCache.IsAcceptable(rawBitmap))))
-                {
-                    string rawKey = BuildItemKey(raw);
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        raw.Thumbnail = rendered.Thumbnail;
-                        raw.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                        _thumbnailByItemKey[rawKey] = rendered.Thumbnail;
-                    }, System.Windows.Threading.DispatcherPriority.Background);
-                }
-            }
-        }
-
-        private async Task ApplyFtpThumbnailBatchResultsAsync(
-            IReadOnlyList<FtpThumbnailItemResult> results,
-            IReadOnlyDictionary<string, ImportItem> itemByKey)
-        {
-            foreach (var result in results)
-            {
-                await ApplyFtpThumbnailResultAsync(result, itemByKey);
-            }
         }
 
         [RelayCommand]
@@ -355,42 +281,6 @@ namespace QuickMediaIngest.ViewModels
             {
                 ShowScanProgressDialog = false;
             }
-        }
-
-        private bool ShouldSkipFtpThumbnailWorkItem(ImportItem item, IReadOnlyList<ImportItem> batchItems)
-        {
-            if (!GroupRawAndRenderedPairs)
-            {
-                return false;
-            }
-
-            string ext = Path.GetExtension(item.FileName);
-            if (!MediaExtensions.IsRawExtension(ext))
-            {
-                return false;
-            }
-
-            string stem = Path.GetFileNameWithoutExtension(item.FileName);
-            foreach (var other in batchItems)
-            {
-                if (ReferenceEquals(other, item))
-                {
-                    continue;
-                }
-
-                if (!string.Equals(Path.GetFileNameWithoutExtension(other.FileName), stem, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                string otherExt = Path.GetExtension(other.FileName).ToLowerInvariant();
-                if (otherExt is ".heic" or ".heif" or ".jpg" or ".jpeg")
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

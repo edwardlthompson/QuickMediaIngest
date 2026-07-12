@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Services;
 
@@ -61,7 +60,7 @@ namespace QuickMediaIngest.Core
                     continue;
                 }
 
-                BitmapSource? thumb = TryDecodeDownloaded(fileName, tempPath, hints: null, FtpPreviewDecodeMode.TieredPartial);
+                DecodedThumbnail? thumb = TryDecodeDownloaded(fileName, tempPath, hints: null, FtpPreviewDecodeMode.TieredPartial);
                 if (thumb != null)
                 {
                     _logger.LogDebug(
@@ -76,7 +75,7 @@ namespace QuickMediaIngest.Core
             return (false, 0, -1);
         }
 
-        public async Task<BitmapSource?> TryLoadPreviewAsync(
+        public async Task<DecodedThumbnail?> TryLoadPreviewAsync(
             FtpEndpoint endpoint,
             string remotePath,
             string fileName,
@@ -103,7 +102,7 @@ namespace QuickMediaIngest.Core
             return TryDecodeDownloaded(fileName, tempPath, hints, FtpPreviewDecodeMode.TieredPartial);
         }
 
-        public BitmapSource? TryDecodeDownloaded(
+        public DecodedThumbnail? TryDecodeDownloaded(
             string fileName,
             string tempPath,
             ThumbnailHints? hints,

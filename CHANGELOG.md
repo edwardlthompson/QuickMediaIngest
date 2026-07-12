@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [1.3.19] — 2026-07-12
+
+### Added
+
+- **DecodedThumbnail**: Core thumbnail pipeline uses JPEG payload + dimensions instead of WPF `BitmapSource`.
+- **WpfThumbnailBridge**: UI-layer conversion from Core payloads to bindable bitmaps; WPF/STA/shell under `Thumbnails/Wpf/`.
+- **LogPathSanitizer**: Redacts sensitive path prefixes in Information/Error logs (local, AppData, FTP).
+- **Tests**: FtpPass purge on migrate, FTP path traversal collapse, LogPathSanitizer, MetadataKeywordWriter, IngestItemProcessor, UpdateService (mock HTTP).
+
+### Changed
+
+- **Dependabot**: Merged NuGet and GitHub Actions dependency bumps (#10, #7).
+- **Scorecard**: Job-scoped write permissions for `publish_results`; SARIF upload to code scanning.
+- **Docs**: AGENT_MEMORY package versions, MODULE checklist, README version callouts.
+
+### Fixed
+
+- **Legacy FTP passwords**: Purge plaintext `FtpPass` from `config.json` immediately after Credential Manager migration.
+- **Crash dumps**: Read live `config.json` and redact `FtpPass`.
+- **FTP paths**: Collapse `.` / `..` without climbing above the remote root.
+
+---
+
 ## [1.3.18] — 2026-06-21
 
 ### Added

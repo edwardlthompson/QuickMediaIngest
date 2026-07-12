@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Logging;
 using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
@@ -35,7 +36,7 @@ namespace QuickMediaIngest.Core
         {
             var items = new List<ImportItem>();
 
-            _logger.LogInformation("Starting local scan for {SourcePath}. IncludeSubfolders={IncludeSubfolders}", sourcePath, includeSubfolders);
+            _logger.LogInformation("Starting local scan for {SourcePath}. IncludeSubfolders={IncludeSubfolders}", LogPathSanitizer.Local(sourcePath), includeSubfolders);
 
             if (!Directory.Exists(sourcePath))
             {
@@ -95,7 +96,7 @@ namespace QuickMediaIngest.Core
                 folderProgressCallback?.Invoke(scannedFolders, totalFolders);
             }
 
-            _logger.LogInformation("Completed local scan for {SourcePath}. MediaFiles={FileCount}", sourcePath, items.Count);
+            _logger.LogInformation("Completed local scan for {SourcePath}. MediaFiles={FileCount}", LogPathSanitizer.Local(sourcePath), items.Count);
             return items;
         }
 

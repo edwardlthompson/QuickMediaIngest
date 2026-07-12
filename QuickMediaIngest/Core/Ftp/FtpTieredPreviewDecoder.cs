@@ -1,6 +1,5 @@
 #nullable enable
 using System.IO;
-using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Services;
 
@@ -9,7 +8,7 @@ namespace QuickMediaIngest.Core
     /// <summary>Decode paths for tiered FTP preview byte budgets.</summary>
     internal static class FtpTieredPreviewDecoder
     {
-        internal static BitmapSource? TryDecodeDownloaded(
+        internal static DecodedThumbnail? TryDecodeDownloaded(
             string fileName,
             string tempPath,
             ThumbnailHints? hints,
@@ -21,7 +20,7 @@ namespace QuickMediaIngest.Core
 
             if (ext is ".jpg" or ".jpeg")
             {
-                BitmapSource? exif = Accept(ExifThumbnailReader.TryGetExifThumbnail(tempPath, logger));
+                DecodedThumbnail? exif = Accept(ExifThumbnailReader.TryGetExifThumbnail(tempPath, logger));
                 if (exif != null)
                 {
                     return exif;
@@ -30,7 +29,7 @@ namespace QuickMediaIngest.Core
 
             if (ext is ".heic" or ".heif")
             {
-                BitmapSource? embedded = Accept(HeicEmbeddedPreviewReader.TryExtractFromFile(tempPath, logger));
+                DecodedThumbnail? embedded = Accept(HeicEmbeddedPreviewReader.TryExtractFromFile(tempPath, logger));
                 if (embedded != null)
                 {
                     return embedded;
@@ -42,7 +41,7 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            BitmapSource? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
+            DecodedThumbnail? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
             if (magick != null)
             {
                 return magick;
@@ -53,7 +52,7 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            BitmapSource? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 240, logger));
+            DecodedThumbnail? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 240, logger));
             if (vips != null)
             {
                 return vips;
@@ -62,7 +61,7 @@ namespace QuickMediaIngest.Core
             return Accept(thumbnailService.GetThumbnail(tempPath, hints));
         }
 
-        private static BitmapSource? Accept(BitmapSource? thumb) =>
+        private static DecodedThumbnail? Accept(DecodedThumbnail? thumb) =>
             ThumbnailPreviewValidator.IsAcceptable(thumb) ? thumb : null;
     }
 }

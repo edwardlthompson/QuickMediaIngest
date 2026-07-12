@@ -78,6 +78,28 @@ namespace QuickMediaIngest.Tests
             }
         }
 
+        [Fact]
+        public void AppConfig_SerializedForDisk_MustNotRetainFtpPass()
+        {
+            var config = new AppConfig
+            {
+                FtpHost = "10.0.0.23",
+                FtpPort = 2221,
+                FtpUser = "camera",
+                FtpPass = "should-never-appear-on-disk",
+                FtpRemoteFolder = "/DCIM"
+            };
+
+            // SaveConfig always empties FtpPass before write — mirror that contract here.
+            config.FtpPass = string.Empty;
+            string json = JsonSerializer.Serialize(config);
+
+            Assert.DoesNotContain("should-never-appear-on-disk", json, StringComparison.Ordinal);
+            var roundTrip = JsonSerializer.Deserialize<AppConfig>(json);
+            Assert.NotNull(roundTrip);
+            Assert.True(string.IsNullOrEmpty(roundTrip!.FtpPass));
+        }
+
         private static void TryDeleteDirectory(string path)
         {
             try

@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Windows;
 
-namespace QuickMediaIngest.Core
+namespace QuickMediaIngest.Thumbnails.Wpf
 {
     /// <summary>Runs work on a dedicated STA thread for Shell/COM thumbnail extraction.</summary>
     internal static class StaRunner

@@ -38,6 +38,7 @@ _b/
 ## Agent ephemeral state (gitignored progress tracking)
 .cursor/agent-progress.json
 CODE_REVIEW.md
+RELEASE_NOTES.md
 build_errors.md
 
 ## Test output

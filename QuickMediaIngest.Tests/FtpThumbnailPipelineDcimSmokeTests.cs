@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
+using QuickMediaIngest.Thumbnails.Wpf;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -85,7 +86,7 @@ namespace QuickMediaIngest.Tests
                 if (item.Thumbnail != null)
                 {
                     _output.WriteLine(
-                        $"{name} status={item.Status} {item.Thumbnail.PixelWidth}x{item.Thumbnail.PixelHeight}");
+                        $"{name} status={item.Status} {item.Thumbnail.Width}x{item.Thumbnail.Height}");
                 }
                 else
                 {
@@ -94,7 +95,7 @@ namespace QuickMediaIngest.Tests
             }
 
             Assert.True(result.LoadedCount >= heicFiles.Length - 1, $"Expected nearly all HEIC loaded; got {result.LoadedCount}/{heicFiles.Length}");
-            Assert.All(result.Items.Where(i => i.Thumbnail != null), i => Assert.True(i.Thumbnail!.PixelWidth >= 32));
+            Assert.All(result.Items.Where(i => i.Thumbnail != null), i => Assert.True(i.Thumbnail!.Width >= 32));
         }
 
         [Fact]
@@ -158,7 +159,7 @@ namespace QuickMediaIngest.Tests
                 if (item.Thumbnail != null)
                 {
                     _output.WriteLine(
-                        $"{name} status={item.Status} {item.Thumbnail.PixelWidth}x{item.Thumbnail.PixelHeight} fmt={item.Thumbnail.Format}");
+                        $"{name} status={item.Status} {item.Thumbnail.Width}x{item.Thumbnail.Height} bytes={item.Thumbnail.JpegBytes.Length}");
                 }
                 else
                 {
@@ -169,8 +170,8 @@ namespace QuickMediaIngest.Tests
             Assert.Equal(heicFiles.Length, result.LoadedCount);
             Assert.Equal(0, result.SkippedCount);
             Assert.All(result.Items, i => Assert.NotNull(i.Thumbnail));
-            Assert.All(result.Items, i => Assert.True(i.Thumbnail!.PixelWidth >= 32));
-            Assert.All(result.Items, i => Assert.True(i.Thumbnail!.PixelHeight >= 32));
+            Assert.All(result.Items, i => Assert.True(i.Thumbnail!.Width >= 32));
+            Assert.All(result.Items, i => Assert.True(i.Thumbnail!.Height >= 32));
         }
 
     }
