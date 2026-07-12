@@ -25,7 +25,6 @@ Icons: ✅ done · ⬜ open · ⚠️ optional once
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| AUTO-SBOM | Attach CycloneDX/Syft SBOM to GitHub Release assets (noted in regress v1.3.19) | AGENT | ⬜ |
 | TBD | Next scoped feature or fix | AGENT | ⬜ |
 
 ---
@@ -53,6 +52,7 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 
 | Sprint | Location |
 |--------|----------|
+| AUTO-SBOM | `COMPLETED_TASKS.md` § AUTO-SBOM |
 | Audit R2 backlog (D1–D3) | `COMPLETED_TASKS.md` § Audit R2 Backlog D1–D3 |
 | Audit R2 | `COMPLETED_TASKS.md` § Audit Sprint R2 |
 | Import progress + ETA (F-002) | `COMPLETED_TASKS.md` § Import Progress + ETA |

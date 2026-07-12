@@ -61,7 +61,7 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-06-21 | Release v1.3.18 | Byte-weighted import progress + ETA (F-002) | LAN FTP smoke tests flaky offline |
 | 2026-07-12 | Audit Sprint R2 | FtpPass purge + path collapse + crash redact; 127 tests; gates green | HUMAN: Dependabot #10/#7 merge; Scorecard failure |
 | 2026-07-12 | R2 backlog D1–D3 | DecodedThumbnail Core; LogPathSanitizer; Update/Ingest/Keyword tests (144) | Separate Core csproj; FtpScanner/DeviceWatcher live tests |
-| 2026-07-12 | Release v1.3.19 | Audit R2 + backlog shipped; CI green; build workflow_dispatch | SBOM still not in build.yml |
+| 2026-07-12 | Release v1.3.19 | Audit R2 + backlog shipped; CI green; build workflow_dispatch | SBOM in build.yml (AUTO-SBOM) |
 
 ## Template Provenance
 

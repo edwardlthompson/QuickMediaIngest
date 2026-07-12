@@ -15,6 +15,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      actions: read
 
     steps:
     - name: Checkout Code
@@ -72,6 +73,16 @@ jobs:
       run: |
         Compress-Archive -Path ./publish/portable/* -DestinationPath ./publish/QuickMediaIngest-Portable.zip
 
+    - name: Generate SBOM (CycloneDX via Syft)
+      uses: anchore/sbom-action@v0.24.0
+      with:
+        path: ./publish/portable
+        format: cyclonedx-json
+        artifact-name: QuickMediaIngest-${{ env.VERSION }}.cyclonedx.json
+        output-file: ./publish/QuickMediaIngest-${{ env.VERSION }}.cyclonedx.json
+        upload-artifact: true
+        upload-release-assets: false
+
     - name: Install WiX Toolset
       run: dotnet tool install --global wix --version 4.0.4
 
@@ -120,6 +131,7 @@ jobs:
           ./publish/portable/QuickMediaIngest.exe
           ./publish/QuickMediaIngest-Portable.zip
           ./publish/QuickMediaIngest.msi
+          ./publish/QuickMediaIngest-${{ env.VERSION }}.cyclonedx.json
 
     - name: Ensure Release Exists
       if: github.event_name == 'workflow_dispatch'
@@ -149,8 +161,21 @@ jobs:
       run: |
         $tag = "${{ env.RELEASE_TAG }}"
         $repo = "$env:GITHUB_REPOSITORY"
+        $sbom = "./publish/QuickMediaIngest-${{ env.VERSION }}.cyclonedx.json"
 
-        gh release upload $tag ./publish/portable/QuickMediaIngest.exe ./publish/QuickMediaIngest-Portable.zip ./publish/QuickMediaIngest.msi --repo $repo --clobber
+        $assets = @(
+          "./publish/portable/QuickMediaIngest.exe",
+          "./publish/QuickMediaIngest-Portable.zip",
+          "./publish/QuickMediaIngest.msi"
+        )
+        if (Test-Path $sbom) {
+          $assets += $sbom
+        }
+        else {
+          throw "SBOM missing at $sbom"
+        }
+
+        gh release upload $tag @assets --repo $repo --clobber
         if ($LASTEXITCODE -ne 0) {
           throw "Failed to upload release assets for $tag"
         }

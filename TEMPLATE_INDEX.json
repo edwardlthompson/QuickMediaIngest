@@ -448,6 +448,13 @@
       "owner": "maintainer"
     },
     {
+      "path": "scripts/generate-sbom.sh",
+      "purpose": "Local CycloneDX SBOM via Syft for publish/portable (CI uses anchore/sbom-action)",
+      "read_when": "release",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
       "path": "scripts/init-project.sh",
       "purpose": "Post-clone init with --reference and dotnet-wpf stack",
       "read_when": "bootstrap_session_start",

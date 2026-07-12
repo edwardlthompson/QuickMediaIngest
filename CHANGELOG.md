@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Release SBOM**: CycloneDX JSON via Syft (`anchore/sbom-action`) on Build and Release; attached to CI artifacts and GitHub Release assets. Local helper: `scripts/generate-sbom.sh`.
+
 ## [1.3.19] — 2026-07-12
 
 ### Added

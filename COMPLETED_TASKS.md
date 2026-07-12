@@ -554,3 +554,11 @@ Full report: `CODE_REVIEW.md` (gitignored, local only).
 - [x] R2-D3 — Core coverage tests (UpdateService / IngestItemProcessor / MetadataKeywordWriter)
 
 **Deferred (still open, low priority):** `FtpScanner` live-FTP tests, `DeviceWatcher` WMI tests, separate `QuickMediaIngest.Core` class library.
+
+---
+
+## AUTO-SBOM — 2026-07-12
+
+- [x] [AGENT] CycloneDX SBOM via `anchore/sbom-action@v0.24.0` (Syft) on `./publish/portable` in `.github/workflows/build.yml`
+- [x] [AGENT] Upload `QuickMediaIngest-<version>.cyclonedx.json` as CI artifact and GitHub Release asset on `workflow_dispatch`
+- [x] [AGENT] Local helper `scripts/generate-sbom.sh` + `TEMPLATE_INDEX.json` entry

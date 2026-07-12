@@ -283,3 +283,11 @@
 
 **Validation:** **144** Release tests green.
 
+---
+
+## 2026-07-12 — AUTO-SBOM: CycloneDX on Build and Release
+
+**Decision:** Generate CycloneDX JSON via Syft (`anchore/sbom-action@v0.24.0`) against `./publish/portable` after publish; attach to workflow artifacts and to GitHub Releases on `workflow_dispatch`. Local optional path: `scripts/generate-sbom.sh`.
+
+**Rationale:** Closes regress gap from v1.3.19 (INITIALIZATION_PROMPT `[AUTO]` SBOM requirement).
+
