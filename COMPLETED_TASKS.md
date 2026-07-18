@@ -4,6 +4,16 @@
 
 ---
 
+## Release v1.3.20 — SD/USB stall + SBOM (2026-07-17)
+
+- [x] [AGENT] `RemovableDriveIo` + preview cancel on import + StaRunner Shell fallback + cancel propagation
+- [x] [AGENT] Fix `count-critical-high-dependabot.sh` (`--paginate`, no `page=`)
+- [x] [AGENT] Ship v1.3.20 (`chore(release)` + Build workflow_dispatch); 151 Release tests
+- [x] [AUTO] CI / Security Scan / CodeQL green on `ae84019`; SBOM asset on GitHub Release
+- [x] [HUMAN] Optional: validate SD card preview+import with portable v1.3.20
+
+---
+
 ## Sprint 0 — Bootstrap Parity (2026-06-13)
 
 ### Sequential

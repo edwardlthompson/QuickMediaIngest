@@ -301,3 +301,15 @@
 
 **Validation:** `pre-release-gate.sh` passed; feature-gate 9 stages; **151** Release tests; zero open Critical/High Dependabot alerts.
 
+---
+
+## 2026-07-17 — Regress v1.3.20
+
+**Checks:** Post-tag `pre-release-gate.sh` green on `ae84019`; CI / Security Scan / CodeQL green; Dependabot Critical/High = 0.
+
+**Release assets:** `QuickMediaIngest.exe`, `QuickMediaIngest-Portable.zip`, `QuickMediaIngest.msi`, `QuickMediaIngest-1.3.20.cyclonedx.json` on [v1.3.20](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.20).
+
+**N/A:** GitHub Pages (WPF app); `simulate-template-upgrade.sh` not present in child repo.
+
+**Follow-up [HUMAN]:** Confirm SD/USB preview+import on a real card with v1.3.20 portable build.
+
