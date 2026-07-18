@@ -190,5 +190,65 @@ namespace QuickMediaIngest.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task IngestGroupAsync_WhenCopyCanceled_PropagatesOperationCanceledException()
+        {
+            string tempRoot = Path.Combine(Path.GetTempPath(), "qmi_ingest_cancel_" + Guid.NewGuid());
+            Directory.CreateDirectory(tempRoot);
+            try
+            {
+                var provider = new Mock<IFileProvider>();
+                provider.Setup(p =>
+                        p.CopyAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<string>(),
+                            It.IsAny<CancellationToken>(),
+                            It.IsAny<IProgress<long>>()))
+                    .Returns<string, string, CancellationToken, IProgress<long>>((_, _, ct, _) =>
+                        Task.FromCanceled(ct));
+
+                var logger = new Mock<ILogger<IngestEngine>>();
+                var engine = new IngestEngine(provider.Object, logger.Object);
+                var item = new ImportItem
+                {
+                    SourcePath = "C:/src/photo.jpg",
+                    FileName = "photo.jpg",
+                    FileSize = 100,
+                    IsSelected = true,
+                    DateTaken = new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Utc),
+                };
+
+                var group = new ItemGroup
+                {
+                    Title = "Shoot",
+                    StartDate = item.DateTaken.Date,
+                    EndDate = item.DateTaken.Date,
+                    Items = new List<ImportItem> { item },
+                };
+
+                using var cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                    engine.IngestGroupAsync(
+                        group,
+                        tempRoot,
+                        "[Original]",
+                        cts.Token,
+                        new IngestOptions { MaxConcurrentFileCopies = 1 }));
+            }
+            finally
+            {
+                try
+                {
+                    Directory.Delete(tempRoot, true);
+                }
+                catch
+                {
+                    // Ignore test cleanup failures.
+                }
+            }
+        }
     }
 }

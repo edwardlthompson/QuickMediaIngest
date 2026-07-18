@@ -65,7 +65,7 @@ namespace QuickMediaIngest.ViewModels
         {
             if (source is UnifiedSourceItem)
             {
-                await LoadUnifiedThumbnailsAsync(groups, sourceLabel);
+                await LoadUnifiedThumbnailsAsync(groups, sourceLabel, cancellationToken);
                 return;
             }
 
@@ -75,74 +75,90 @@ namespace QuickMediaIngest.ViewModels
                 return;
             }
 
-            await Task.Run(() =>
+            try
             {
-                var allItems = ThumbnailPreviewOrdering.OrderItemsForLocalPreviews(groups);
-                int total = allItems.Count;
-
-                if (total == 0)
+                await Task.Run(() =>
                 {
-                    return;
-                }
+                    var allItems = ThumbnailPreviewOrdering.OrderItemsForLocalPreviews(groups);
+                    int total = allItems.Count;
 
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TotalFilesToScan = total;
-                    ScanProgressPercent = 0;
-                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", 0, total);
-                });
-
-                int current = 0;
-                int workers = GetThumbnailWorkerCount();
-                Parallel.ForEach(allItems, new ParallelOptions { MaxDegreeOfParallelism = workers }, item =>
-                {
-                    string itemKey = BuildItemKey(item);
-                    if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
+                    if (total == 0)
                     {
-                        int cCached = Interlocked.Increment(ref current);
-                        Application.Current.Dispatcher.InvokeAsync(() =>
-                        {
-                            item.Thumbnail = cachedThumb;
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                            ScannedFiles = cCached;
-                            ScanProgressPercent = total > 0 ? (cCached * 100) / total : 0;
-                            ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", cCached, total);
-                        });
                         return;
                     }
 
-                    object? thumb = null;
-                    try
-                    {
-                        thumb = WpfThumbnailBridge.ToBitmapSource(
-                            _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Thumbnail generation failed for local item {SourcePath}.", item.SourcePath);
-                    }
-                    int c = Interlocked.Increment(ref current);
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    Application.Current.Dispatcher.InvokeAsync(() =>
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (thumb != null)
-                        {
-                            item.Thumbnail = thumb;
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                            _thumbnailByItemKey[itemKey] = thumb;
-                        }
-                        else
-                        {
-                            item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                        }
-                        ScannedFiles = c;
-                        ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
-                        ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", c, total);
+                        TotalFilesToScan = total;
+                        ScanProgressPercent = 0;
+                        ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", 0, total);
                     });
-                });
 
-                Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
-            });
+                    int current = 0;
+                    string? samplePath = allItems[0].SourcePath;
+                    int workers = GetThumbnailWorkerCount(samplePath);
+                    Parallel.ForEach(
+                        allItems,
+                        new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = cancellationToken },
+                        item =>
+                        {
+                            string itemKey = BuildItemKey(item);
+                            if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
+                            {
+                                int cCached = Interlocked.Increment(ref current);
+                                Application.Current.Dispatcher.InvokeAsync(() =>
+                                {
+                                    item.Thumbnail = cachedThumb;
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                                    ScannedFiles = cCached;
+                                    ScanProgressPercent = total > 0 ? (cCached * 100) / total : 0;
+                                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", cCached, total);
+                                });
+                                return;
+                            }
+
+                            object? thumb = null;
+                            try
+                            {
+                                thumb = WpfThumbnailBridge.ToBitmapSource(
+                                    _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "Thumbnail generation failed for local item {SourcePath}.", item.SourcePath);
+                            }
+                            int c = Interlocked.Increment(ref current);
+
+                            Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                if (thumb != null)
+                                {
+                                    item.Thumbnail = thumb;
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                                    _thumbnailByItemKey[itemKey] = thumb;
+                                }
+                                else
+                                {
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                                }
+                                ScannedFiles = c;
+                                ScanProgressPercent = total > 0 ? (c * 100) / total : 0;
+                                ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", c, total);
+                            });
+                        });
+
+                    Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
+                }, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Local preview load canceled for {SourceLabel}.", sourceLabel);
+                StatusMessage = AppLocalizer.Get("Vm_Status_PreviewLoadCanceled");
+                FtpThumbnailPhaseDetail = string.Empty;
+                return;
+            }
 
             StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_LoadedPreviewsAuto", sourceLabel);
             FtpThumbnailPhaseDetail = string.Empty;

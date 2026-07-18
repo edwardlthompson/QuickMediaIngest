@@ -382,6 +382,7 @@ Puede volver a ver esta visita en Configuración &gt; Acerca de.</value></data>
   <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>No se pudo vincular la regla de exclusión a una fuente. Inténtelo cuando termine de cargar la lista.</value></data>
   <data name="Vm_SkippedFoldersReportTitle" xml:space="preserve"><value>Análisis FTP: carpetas omitidas</value></data>
   <data name="Vm_Status_PreviewBuildFailed" xml:space="preserve"><value>Error al generar vistas previas: {0}</value></data>
+  <data name="Vm_Status_PreviewLoadCanceled" xml:space="preserve"><value>Carga de vistas previas cancelada.</value></data>
   <data name="Vm_Status_ScanPathNotFound" xml:space="preserve"><value>Ruta de análisis no encontrada: {0}</value></data>
   <data name="Vm_Status_ScanningFtp" xml:space="preserve"><value>Analizando FTP: {0}…</value></data>
   <data name="Vm_Status_ScanningLocal" xml:space="preserve"><value>Analizando: {0}…</value></data>

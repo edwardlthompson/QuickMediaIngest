@@ -143,7 +143,8 @@ namespace QuickMediaIngest.ViewModels
             {
                 await Task.Run(() =>
                 {
-                    Parallel.ForEach(failedLocal, new ParallelOptions { MaxDegreeOfParallelism = GetThumbnailWorkerCount() }, item =>
+                    string? samplePath = failedLocal[0].SourcePath;
+                    Parallel.ForEach(failedLocal, new ParallelOptions { MaxDegreeOfParallelism = GetThumbnailWorkerCount(samplePath) }, item =>
                     {
                         string key = BuildItemKey(item);
                         object? thumb = null;

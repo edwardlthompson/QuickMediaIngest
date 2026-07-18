@@ -97,6 +97,11 @@ namespace QuickMediaIngest.Core
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success: false);
+                throw;
+            }
             catch (Exception ex)
             {
                 errorMessage = ex.Message;

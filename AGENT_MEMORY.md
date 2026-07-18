@@ -62,6 +62,7 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-07-12 | Audit Sprint R2 | FtpPass purge + path collapse + crash redact; 127 tests; gates green | HUMAN: Dependabot #10/#7 merge; Scorecard failure |
 | 2026-07-12 | R2 backlog D1–D3 | DecodedThumbnail Core; LogPathSanitizer; Update/Ingest/Keyword tests (144) | Separate Core csproj; FtpScanner/DeviceWatcher live tests |
 | 2026-07-12 | Release v1.3.19 | Audit R2 + backlog shipped; CI green; build workflow_dispatch | SBOM in build.yml (AUTO-SBOM) |
+| 2026-07-17 | Release v1.3.20 | SD/USB preview+import stall fix; RemovableDriveIo; Dependabot count script | Confirm removable throttle on real SD card; keep `scripts/*.sh` as LF |
 
 ## Template Provenance
 

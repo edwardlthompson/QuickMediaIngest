@@ -75,17 +75,12 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 }
             }
 
+            // Run Shell/WPF fallback on a dedicated STA thread — never marshal onto the UI
+            // dispatcher from Parallel.ForEach workers (that freezes progress and can stall import).
             Dispatcher? dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher != null)
+            if (dispatcher != null && dispatcher.CheckAccess())
             {
-                if (dispatcher.CheckAccess())
-                {
-                    return GetThumbnailCore(filePath, hints, cachePath, skipMagick: true);
-                }
-
-                return dispatcher.Invoke(
-                    () => GetThumbnailCore(filePath, hints, cachePath, skipMagick: true),
-                    DispatcherPriority.Background);
+                return GetThumbnailCore(filePath, hints, cachePath, skipMagick: true);
             }
 
             return StaRunner.Run(() => GetThumbnailCore(filePath, hints, cachePath, skipMagick: true));

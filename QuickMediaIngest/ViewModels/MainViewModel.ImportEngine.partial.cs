@@ -83,6 +83,19 @@ namespace QuickMediaIngest.ViewModels
             }
 
             IsImporting = true;
+            // Stop preview I/O so SD/USB bandwidth is not shared with parallel decode workers.
+            try
+            {
+                _ftpThumbnailCts?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore — a new source load may have already replaced the CTS.
+            }
+
+            _ftpThumbnailCts?.Dispose();
+            _ftpThumbnailCts = new CancellationTokenSource();
+
             SavePendingImportPlan(selectedGroups);
             _logger.LogInformation("Import started. SelectedGroups={GroupCount}, SelectedFiles={FileCount}", selectedGroups.Count, totalFiles);
             TotalFilesForImport = totalFiles;

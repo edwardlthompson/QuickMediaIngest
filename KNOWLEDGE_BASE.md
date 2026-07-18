@@ -26,3 +26,9 @@ Workflow-level `security-events: write` / `id-token: write` causes Scorecard API
 ## Dependabot alert count script pagination
 
 `scripts/count-critical-high-dependabot.sh` can fail with HTTP 400 when using `page=` on Dependabot alerts API. Prefer unpaginated `gh api .../dependabot/alerts?state=open` or refresh `gh` scopes; treat zero Critical/High from a successful API query as release-ready when `--strict` count script errors.
+
+## SD card / USB preview + import stall
+
+High `Parallel.ForEach` preview workers + Shell decode via `Dispatcher.Invoke` + concurrent import copies thrash removable media and can freeze the UI.
+
+**Fix:** `RemovableDriveIo` caps preview workers (≤2) and import copies (1) on removable drives; local preview `ParallelOptions` honor cancel; import start cancels preview CTS; Shell/WPF fallback uses `StaRunner` (not UI dispatcher); `IngestItemProcessor` rethrows `OperationCanceledException`.

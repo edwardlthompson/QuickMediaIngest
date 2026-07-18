@@ -395,6 +395,7 @@ You can revisit this tour from Settings &gt; About.</value></data>
   <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>Could not attach skip rule to a source. Try again after the list finishes loading.</value></data>
   <data name="Vm_SkippedFoldersReportTitle" xml:space="preserve"><value>FTP scan: skipped folders</value></data>
   <data name="Vm_Status_PreviewBuildFailed" xml:space="preserve"><value>Preview build failed: {0}</value></data>
+  <data name="Vm_Status_PreviewLoadCanceled" xml:space="preserve"><value>Preview loading canceled.</value></data>
   <data name="Vm_Status_ScanPathNotFound" xml:space="preserve"><value>Scan path not found: {0}</value></data>
   <data name="Vm_Status_ScanningFtp" xml:space="preserve"><value>Scanning FTP: {0}…</value></data>
   <data name="Vm_Status_ScanningLocal" xml:space="preserve"><value>Scanning: {0}…</value></data>

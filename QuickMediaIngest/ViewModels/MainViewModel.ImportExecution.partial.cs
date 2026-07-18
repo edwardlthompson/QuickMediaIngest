@@ -84,6 +84,10 @@ namespace QuickMediaIngest.ViewModels
             bool applyKeywords = EmbedKeywordsOnImport && keywords.Count > 0;
 
             int maxCopy = ImportSingleThreaded ? 1 : 0;
+            string? localSamplePath = group.Items
+                .FirstOrDefault(i => i.IsSelected && !i.IsFtpSource)
+                ?.SourcePath;
+            maxCopy = RemovableDriveIo.CapConcurrentCopies(maxCopy, localSamplePath);
             int delayMs = Math.Max(0, ImportCooldownBetweenFilesMs);
 
             return new IngestOptions

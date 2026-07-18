@@ -34,9 +34,11 @@ namespace QuickMediaIngest.Core
         public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
         {
             _logger.LogDebug("Copying local file from {SourcePath} to {DestinationPath}.", srcPath, destPath);
+            token.ThrowIfCancellationRequested();
             const int bufferSize = 1024 * 1024;
             var options = FileOptions.Asynchronous | FileOptions.SequentialScan;
             await using var sourceStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, options);
+            token.ThrowIfCancellationRequested();
             await using var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, options);
             byte[] buffer = new byte[bufferSize];
             long copied = 0;

@@ -385,6 +385,7 @@ Vous pouvez revoir cette visite depuis Paramètres &gt; À propos.</value></data
   <data name="Vm_Status_SkipRuleAttachFailed" xml:space="preserve"><value>Impossible d’associer la règle d’exclusion à une source. Réessayez une fois la liste chargée.</value></data>
   <data name="Vm_SkippedFoldersReportTitle" xml:space="preserve"><value>Analyse FTP : dossiers ignorés</value></data>
   <data name="Vm_Status_PreviewBuildFailed" xml:space="preserve"><value>Échec de la génération des aperçus : {0}</value></data>
+  <data name="Vm_Status_PreviewLoadCanceled" xml:space="preserve"><value>Chargement des aperçus annulé.</value></data>
   <data name="Vm_Status_ScanPathNotFound" xml:space="preserve"><value>Chemin d’analyse introuvable : {0}</value></data>
   <data name="Vm_Status_ScanningFtp" xml:space="preserve"><value>Analyse FTP : {0}…</value></data>
   <data name="Vm_Status_ScanningLocal" xml:space="preserve"><value>Analyse : {0}…</value></data>

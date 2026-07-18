@@ -33,7 +33,7 @@ namespace QuickMediaIngest.ViewModels
     public partial class MainViewModel : ObservableObject
     {
 
-        private async Task LoadUnifiedThumbnailsAsync(List<ItemGroup> groups, string sourceLabel)
+        private async Task LoadUnifiedThumbnailsAsync(List<ItemGroup> groups, string sourceLabel, CancellationToken cancellationToken = default)
         {
             var allItems = groups
                 .SelectMany(g => g.Items)
@@ -93,12 +93,13 @@ namespace QuickMediaIngest.ViewModels
                 }
             }
 
-            int localWorkers = GetThumbnailWorkerCount();
+            string? localSamplePath = needLocal.Count > 0 ? needLocal[0].SourcePath : null;
+            int localWorkers = GetThumbnailWorkerCount(localSamplePath);
 
             void BumpProgress()
             {
                 int c = Interlocked.Increment(ref processedAtomic);
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     ScannedFiles = Math.Max(ScannedFiles, c);
                     int shown = ScannedFiles;
@@ -108,93 +109,103 @@ namespace QuickMediaIngest.ViewModels
                 });
             }
 
-            Task localTask = Task.Run(() =>
+            try
             {
-                Parallel.ForEach(
-                    needLocal,
-                    new ParallelOptions { MaxDegreeOfParallelism = localWorkers },
-                    item =>
-                    {
-                        string itemKey = BuildItemKey(item);
-                        object? thumb = null;
-                        try
-                        {
-                            thumb = WpfThumbnailBridge.ToBitmapSource(
-                                _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogDebug(ex, "Unified thumbnail failed for local {Path}.", item.SourcePath);
-                        }
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (thumb != null)
-                            {
-                                item.Thumbnail = thumb;
-                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                                _thumbnailByItemKey[itemKey] = thumb;
-                            }
-                            else
-                            {
-                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                            }
-                        });
-                        BumpProgress();
-                    });
-            });
-
-            Task ftpTask = Task.Run(async () =>
-            {
-                var ftpGroups = needFtp.GroupBy(i => i.SourceId, StringComparer.OrdinalIgnoreCase);
-                foreach (var group in ftpGroups)
+                Task localTask = Task.Run(() =>
                 {
-                    if (!ftpSourcesByKey.TryGetValue(group.Key, out var ftp))
-                    {
-                        foreach (var item in group)
+                    Parallel.ForEach(
+                        needLocal,
+                        new ParallelOptions { MaxDegreeOfParallelism = localWorkers, CancellationToken = cancellationToken },
+                        item =>
                         {
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
-                                item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
+                            string itemKey = BuildItemKey(item);
+                            object? thumb = null;
+                            try
+                            {
+                                thumb = WpfThumbnailBridge.ToBitmapSource(
+                                    _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "Unified thumbnail failed for local {Path}.", item.SourcePath);
+                            }
+
+                            Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                if (thumb != null)
+                                {
+                                    item.Thumbnail = thumb;
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
+                                    _thumbnailByItemKey[itemKey] = thumb;
+                                }
+                                else
+                                {
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
+                                }
+                            });
                             BumpProgress();
+                        });
+                }, cancellationToken);
+
+                Task ftpTask = Task.Run(async () =>
+                {
+                    var ftpGroups = needFtp.GroupBy(i => i.SourceId, StringComparer.OrdinalIgnoreCase);
+                    foreach (var group in ftpGroups)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (!ftpSourcesByKey.TryGetValue(group.Key, out var ftp))
+                        {
+                            foreach (var item in group)
+                            {
+                                await Application.Current.Dispatcher.InvokeAsync(() =>
+                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
+                                BumpProgress();
+                            }
+
+                            continue;
                         }
 
-                        continue;
+                        var groupItems = group.ToList();
+                        var itemByKey = groupItems.ToDictionary(BuildItemKey, i => i, StringComparer.OrdinalIgnoreCase);
+                        var workItems = groupItems
+                            .Where(item => !ShouldSkipFtpThumbnailWorkItem(item, groupItems))
+                            .Select(item => new FtpThumbnailWorkItem
+                            {
+                                ItemKey = BuildItemKey(item),
+                                RemotePath = item.SourcePath,
+                                FileName = item.FileName,
+                                FileSize = item.FileSize
+                            })
+                            .ToList();
+
+                        FtpThumbnailBatchResult batch = await _ftpThumbnailService.LoadBatchAsync(
+                            ToFtpEndpoint(ftp),
+                            workItems,
+                            BuildThumbnailHints(),
+                            BuildFtpThumbnailLoadOptions(),
+                            _ =>
+                            {
+                                BumpProgress();
+                                return Task.CompletedTask;
+                            },
+                            async result =>
+                            {
+                                await ApplyFtpThumbnailResultAsync(result, itemByKey);
+                            },
+                            cancellationToken);
+
+                        await ApplyFtpThumbnailBatchResultsAsync(batch.Items, itemByKey);
                     }
+                }, cancellationToken);
 
-                    var groupItems = group.ToList();
-                    var itemByKey = groupItems.ToDictionary(BuildItemKey, i => i, StringComparer.OrdinalIgnoreCase);
-                    var workItems = groupItems
-                        .Where(item => !ShouldSkipFtpThumbnailWorkItem(item, groupItems))
-                        .Select(item => new FtpThumbnailWorkItem
-                        {
-                            ItemKey = BuildItemKey(item),
-                            RemotePath = item.SourcePath,
-                            FileName = item.FileName,
-                            FileSize = item.FileSize
-                        })
-                        .ToList();
-
-                    FtpThumbnailBatchResult batch = await _ftpThumbnailService.LoadBatchAsync(
-                        ToFtpEndpoint(ftp),
-                        workItems,
-                        BuildThumbnailHints(),
-                        BuildFtpThumbnailLoadOptions(),
-                        _ =>
-                        {
-                            BumpProgress();
-                            return Task.CompletedTask;
-                        },
-                        async result =>
-                        {
-                            await ApplyFtpThumbnailResultAsync(result, itemByKey);
-                        },
-                        CancellationToken.None);
-
-                    await ApplyFtpThumbnailBatchResultsAsync(batch.Items, itemByKey);
-                }
-            });
-
-            await Task.WhenAll(localTask, ftpTask).ConfigureAwait(false);
+                await Task.WhenAll(localTask, ftpTask).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Unified preview load canceled for {SourceLabel}.", sourceLabel);
+                StatusMessage = AppLocalizer.Get("Vm_Status_PreviewLoadCanceled");
+                return;
+            }
 
             Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
             StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_UnifiedPreviews", sourceLabel);
@@ -237,16 +248,17 @@ namespace QuickMediaIngest.ViewModels
             return $"{sourceId}|{item.SourcePath}";
         }
 
-        private int GetThumbnailWorkerCount()
+        private int GetThumbnailWorkerCount(string? samplePath = null)
         {
             int cpu = Math.Max(2, Environment.ProcessorCount);
-            return ThumbnailPerformanceMode switch
+            int workers = ThumbnailPerformanceMode switch
             {
                 "Low" => 2,
                 "Max" => Math.Clamp(cpu, 6, 16),
                 "Ultra" => Math.Clamp(cpu * 2, 12, 32),
                 _ => Math.Clamp(Math.Max(3, cpu / 2), 3, 12)
             };
+            return RemovableDriveIo.CapPreviewWorkers(workers, samplePath);
         }
 
         private int GetFtpThumbnailWorkerCount()

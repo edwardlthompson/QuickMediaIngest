@@ -2,9 +2,19 @@
 
 ## [Unreleased]
 
+## [1.3.20] — 2026-07-17
+
 ### Added
 
+- **RemovableDriveIo**: Caps preview workers (≤2) and import copies (1) when the source path is on a removable drive.
 - **Release SBOM**: CycloneDX JSON via Syft (`anchore/sbom-action`) on Build and Release; attached to CI artifacts and GitHub Release assets. Local helper: `scripts/generate-sbom.sh`.
+- **Tests**: `RemovableDriveIoTests`; ingest cancel propagates `OperationCanceledException`.
+
+### Fixed
+
+- **SD card / USB stall**: High-parallelism preview decode no longer fights import I/O; import start cancels in-flight previews; Shell/WPF thumbnail fallback uses `StaRunner` instead of blocking the UI dispatcher; `IngestItemProcessor` rethrows cancel instead of treating it as a failed file.
+- **Dependabot alert count**: `count-critical-high-dependabot.sh` no longer uses unsupported `page=` pagination (HTTP 400).
+- **Shell scripts**: Normalized `scripts/*.sh` to LF to match `.gitattributes` (Windows bash `pipefail` breakage).
 
 ## [1.3.19] — 2026-07-12
 

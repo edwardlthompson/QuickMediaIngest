@@ -291,3 +291,13 @@
 
 **Rationale:** Closes regress gap from v1.3.19 (INITIALIZATION_PROMPT `[AUTO]` SBOM requirement).
 
+---
+
+## 2026-07-17 — Release v1.3.20 (SD/USB I/O stall)
+
+**Decision:** Cap removable-drive preview/import parallelism (`RemovableDriveIo`), cancel preview CTS when import starts, run Shell/WPF thumbnail fallback on `StaRunner` (not UI dispatcher), and rethrow `OperationCanceledException` from `IngestItemProcessor`. Also fix Dependabot alert counting (`--paginate`, no `page=`) and normalize `scripts/*.sh` to LF.
+
+**Rationale:** Concurrent sync preview workers + UI-marshaled Shell decode + parallel copies thrash SD/USB and freeze the UI until force-close.
+
+**Validation:** `pre-release-gate.sh` passed; feature-gate 9 stages; **151** Release tests; zero open Critical/High Dependabot alerts.
+
