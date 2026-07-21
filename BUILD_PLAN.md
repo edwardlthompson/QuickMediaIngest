@@ -2,7 +2,7 @@
 
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 
-**Release:** v1.3.20 · **Template:** v0.11.0 · **Tests:** 151 (Release)
+**Release:** v1.3.21 · **Template:** v0.11.0 · **Tests:** 151 (Release)
 
 **Active lane:** Maintenance — `[AGENT]` adds next scoped task to Backlog before release.
 

@@ -32,3 +32,9 @@ Workflow-level `security-events: write` / `id-token: write` causes Scorecard API
 High `Parallel.ForEach` preview workers + Shell decode via `Dispatcher.Invoke` + concurrent import copies thrash removable media and can freeze the UI.
 
 **Fix:** `RemovableDriveIo` caps preview workers (≤2) and import copies (1) on removable drives; local preview `ParallelOptions` honor cancel; import start cancels preview CTS; Shell/WPF fallback uses `StaRunner` (not UI dispatcher); `IngestItemProcessor` rethrows `OperationCanceledException`.
+
+## Import freeze mid-copy (Dispatcher.Invoke progress)
+
+`ImportByteProgressTracker.ReportBytes` fires on every 1MB buffer. Wiring used sync `Dispatcher.Invoke` for byte progress and `ItemProcessed`, so copy threads blocked on the UI queue and the import appeared frozen (no new log lines / dest writes) while the process still burned CPU.
+
+**Fix:** Post import UI updates with `BeginInvoke` + coalesce pending byte snapshots. Keep **Delete after import** off until a card finishes cleanly.

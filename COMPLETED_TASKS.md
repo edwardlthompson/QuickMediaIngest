@@ -4,6 +4,14 @@
 
 ---
 
+## Release v1.3.21 — Import progress UI freeze (2026-07-21)
+
+- [x] [AGENT] Non-blocking import progress (`BeginInvoke` + coalesce byte snapshots)
+- [x] [AGENT] Ship v1.3.21; document mid-card hang in `KNOWLEDGE_BASE.md`
+- [x] [HUMAN] Confirmed recovered import folder; card cleanup after verify
+
+---
+
 ## Release v1.3.20 — SD/USB stall + SBOM (2026-07-17)
 
 - [x] [AGENT] `RemovableDriveIo` + preview cancel on import + StaRunner Shell fallback + cancel propagation

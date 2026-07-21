@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.3.21] — 2026-07-21
+
+### Fixed
+
+- **Import freeze mid-card**: Progress updates no longer use sync `Dispatcher.Invoke` on every 1MB copy buffer (and `ItemProcessed`). Copy threads post coalesced UI updates via `BeginInvoke`, so imports cannot deadlock the UI while still burning CPU with no dest growth.
+
 ## [1.3.20] — 2026-07-17
 
 ### Added

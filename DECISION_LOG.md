@@ -313,3 +313,13 @@
 
 **Follow-up [HUMAN]:** Confirm SD/USB preview+import on a real card with v1.3.20 portable build.
 
+---
+
+## 2026-07-21 — Release v1.3.21 (import Dispatcher freeze)
+
+**Decision:** Replace sync `Dispatcher.Invoke` on import byte/`ItemProcessed` progress with `BeginInvoke` + coalesced byte snapshots.
+
+**Rationale:** `ImportByteProgressTracker.ReportBytes` publishes every 1MB; sync UI marshaling blocked copy threads and froze the app mid-SD import (no log/dest growth; CPU still active). Observed after 42/132 files on a Canon exFAT card.
+
+**Validation:** Local recovery copied remaining 90 with size checks; feature-gate green; **151** Release tests; `pre-release-gate.sh` green before ship.
+

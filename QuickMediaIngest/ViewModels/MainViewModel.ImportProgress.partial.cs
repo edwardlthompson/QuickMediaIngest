@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Threading;
 using Application = System.Windows.Application;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
@@ -14,6 +15,9 @@ namespace QuickMediaIngest.ViewModels
     {
         private ImportByteProgressTracker? _importByteProgressTracker;
         private Stopwatch? _importProgressStopwatch;
+        private readonly object _importUiProgressGate = new();
+        private ImportByteProgressSnapshot? _pendingByteProgressSnapshot;
+        private bool _importByteProgressUiScheduled;
 
         private void BeginImportByteProgressTracking(List<ItemGroup> selectedGroups, int totalFiles, Stopwatch stopwatch)
         {
@@ -35,29 +39,71 @@ namespace QuickMediaIngest.ViewModels
             }
 
             _importProgressStopwatch = null;
+            lock (_importUiProgressGate)
+            {
+                _pendingByteProgressSnapshot = null;
+                _importByteProgressUiScheduled = false;
+            }
         }
 
+        /// <summary>
+        /// Never use sync Dispatcher.Invoke from copy threads — every 1MB buffer used to block
+        /// workers on the UI thread and freeze imports mid-card.
+        /// </summary>
         private void OnImportByteProgressChanged(ImportByteProgressSnapshot snapshot)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Dispatcher? dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                return;
+            }
+
+            if (dispatcher.CheckAccess())
             {
                 ApplyImportByteProgress(snapshot, null);
-            });
+                return;
+            }
+
+            lock (_importUiProgressGate)
+            {
+                _pendingByteProgressSnapshot = snapshot;
+                if (_importByteProgressUiScheduled)
+                {
+                    return;
+                }
+
+                _importByteProgressUiScheduled = true;
+            }
+
+            dispatcher.BeginInvoke(
+                () =>
+                {
+                    ImportByteProgressSnapshot? latest;
+                    lock (_importUiProgressGate)
+                    {
+                        latest = _pendingByteProgressSnapshot;
+                        _pendingByteProgressSnapshot = null;
+                        _importByteProgressUiScheduled = false;
+                    }
+
+                    if (latest != null)
+                    {
+                        ApplyImportByteProgress(latest, null);
+                    }
+                },
+                DispatcherPriority.Background);
         }
 
         private void WireIngestEngineProgress(IngestEngine engine)
         {
             engine.ProgressChanged += (_, msg) =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    StatusMessage = msg;
-                });
+                PostImportUi(() => StatusMessage = msg);
             };
 
             engine.ItemProcessed += progress =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                PostImportUi(() =>
                 {
                     ImportByteProgressSnapshot snapshot = _importByteProgressTracker?.GetSnapshot()
                         ?? new ImportByteProgressSnapshot
@@ -71,6 +117,23 @@ namespace QuickMediaIngest.ViewModels
                     ApplyImportByteProgress(snapshot, progress);
                 });
             };
+        }
+
+        private static void PostImportUi(Action action)
+        {
+            Dispatcher? dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                return;
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            dispatcher.BeginInvoke(action, DispatcherPriority.Background);
         }
 
         private void RegisterManualImportFailure(ImportItem item, string errorMessage)
