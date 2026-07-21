@@ -323,3 +323,13 @@
 
 **Validation:** Local recovery copied remaining 90 with size checks; feature-gate green; **151** Release tests; `pre-release-gate.sh` green before ship.
 
+---
+
+## 2026-07-21 — Regress v1.3.21
+
+**Checks:** Post-tag `pre-release-gate.sh` green on `ecb9d04`; CI / Security Scan / CodeQL green; Dependabot Critical/High = 0.
+
+**Release assets:** `QuickMediaIngest.exe`, `QuickMediaIngest-Portable.zip`, `QuickMediaIngest.msi`, `QuickMediaIngest-1.3.21.cyclonedx.json` on [v1.3.21](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.21).
+
+**N/A:** GitHub Pages; template upgrade simulation script.
+
