@@ -4,7 +4,7 @@
 
 ## What is this?
 
-**Quick Media Ingest** is a FOSS .NET 8 WPF desktop app for ingesting photos and videos from SD cards, local drives, and FTP into dated shoot-based folders. This repo was bootstrapped from [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap).
+**Quick Media Ingest** is a FOSS .NET 8 WPF desktop app for ingesting photos and videos from SD cards, local drives, and FTP into dated shoot-based folders. This repo was bootstrapped from [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) (process aligned to template **v0.15.1**; see `docs/BOOTSTRAP_ALIGNMENT.md`).
 
 ## Which mode are you in?
 
@@ -33,16 +33,16 @@ This repo is in **Reference mode** — the application already exists at v1.3.x.
 
 ## Slash Commands
 
-Type `/` in Cursor Agent chat. Full registry: `docs/BATCH_COMMANDS.md` (agents) and `docs/help/BATCH_COMMANDS.md` (humans). Super-commands: `/gates`, `/feature`, `/ci`, `/prerelease`.
+Type `/` in Cursor Agent chat. Full registry: `docs/BATCH_COMMANDS.md` (agents) and `docs/help/BATCH_COMMANDS.md` (humans). Supers: `/bootstrap`, `/verify`, `/build`, `/ship`, `/maintain`. Also `/cleanup`.
 
 ## Do Not Read Yet
 
-- `KNOWLEDGE_BASE.md` (empty until bugs are resolved)
-- `docs/MAINTAINING_THE_TEMPLATE.md` (template maintainers only)
+- `KNOWLEDGE_BASE.md` (until bugs are resolved)
+- Upstream-only maintainer docs (this repo is a **child product**, not the template)
 
 ## BUILD_PLAN Labels
 
-`AGENT` | `HUMAN` | `ADB` | `AUTO` — filter with `grep '\[AGENT\]' BUILD_PLAN.md`
+`[AGENT]` | `[HUMAN]` | `[ADB]` | `[AUTO]` — status: 🔲 open · ✅ done · ❌ blocked
 
 ## Security
 

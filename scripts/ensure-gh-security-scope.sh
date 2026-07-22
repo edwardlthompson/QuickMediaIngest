@@ -6,6 +6,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=scripts/lib/resolve-gh.sh
+. "$ROOT/scripts/lib/resolve-gh.sh"
+
 STRICT=false
 REFRESH=false
 while [ $# -gt 0 ]; do
@@ -16,7 +19,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if ! command -v gh >/dev/null 2>&1; then
+if ! qmi_gh_available; then
   echo "SKIP: gh CLI not installed"
   [ "$STRICT" = true ] && exit 1 || exit 0
 fi
@@ -28,7 +31,8 @@ if [ -z "$REPO" ]; then
 fi
 
 probe_dependabot_api() {
-  gh api "repos/${REPO}/dependabot/alerts" -f state=open -f per_page=1 >/dev/null 2>&1
+  # Must be GET query params — `-f` sends form fields and 404s on this endpoint.
+  gh api "repos/${REPO}/dependabot/alerts?state=open&per_page=1" >/dev/null 2>&1
 }
 
 if probe_dependabot_api; then

@@ -11,9 +11,10 @@ globs:
 
 ## Coverage Budgets
 
-- Python: `pytest --cov-fail-under=90` (enforced in CI)
-- Web unit: Vitest coverage via `npm test`
+- Python: `pytest --cov-fail-under=90` with `-n auto` (pytest-xdist; uses local CPU cores)
+- Web unit: Vitest coverage via `npm test` (Vitest parallelizes by default)
 - E2E: Playwright visual snapshots use `maxDiffPixelRatio: 0.02`
+- Android: `./gradlew test --parallel`
 
 ## When to Add Tests
 
@@ -24,11 +25,11 @@ globs:
 ## Per-feature smoke gate (test pyramid)
 
 - **Unit (many):** required for every new feature's pure logic
-- **Smoke (one):** `bash scripts/feature-gate.sh` after each AGENT step
+- **Smoke (one):** `python3 scripts/agent-run.py feature-gate` after each AGENT step
 - **E2E (few):** Playwright/Lighthouse at milestone gates, not every feature
 
 ```bash
-bash scripts/watch-agent-gates.sh --once --autofix
+python3 scripts/agent-run.py watch-agent-gates --once --autofix
 ```
 
 Do not start feature B until feature A passes gates and `[HUMAN]` approves.

@@ -4,6 +4,20 @@
 
 ---
 
+## Bootstrap alignment 0.11 → 0.15.1 (2026-07-22)
+
+- ✅ [AGENT] Write `docs/BOOTSTRAP_ALIGNMENT.md` + DECISION_LOG ADR
+- ✅ [AGENT] Sync agent docs/rules/commands + Cursor FOSS pack; seed `HUMAN_BACKLOG.md`
+- ✅ [AGENT] Hooks dry-run (`check-cursor-hooks` + `validate-local` + feature-gate)
+- ✅ [AGENT] Merge validate-bootstrap; cherry-pick allowlisted scripts
+- ✅ [AGENT] Update `modules/dotnet-wpf` links + TEMPLATE_INDEX additive paths
+- ✅ [AGENT] Restructure BUILD_PLAN + README agent section + AGENT_MEMORY provenance
+- ✅ [AGENT] S5 validate; bump `.template-version` to 0.15.1
+- ✅ [AGENT] Automate Align HUMAN_BACKLOG (stale/weekly/automerge; decline release-please/pages)
+- ✅ [HUMAN] Dependabot alerts API verified; WPF sign-off for Align cycle
+
+---
+
 ## Release v1.3.21 — Import progress UI freeze (2026-07-21)
 
 - [x] [AGENT] Non-blocking import progress (`BeginInvoke` + coalesce byte snapshots)

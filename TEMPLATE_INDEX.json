@@ -1,9 +1,13 @@
 {
-  "template_version": "0.11.0",
+  "template_version": "0.15.1",
   "entry_points": {
     "bootstrap": "docs/START_HERE.md",
     "reference": "docs/FOR_AGENTS.md",
-    "initialization_prompt": "docs/INITIALIZATION_PROMPT.md"
+    "initialization_prompt": "docs/INITIALIZATION_PROMPT.md",
+    "cursor_modes": "docs/CURSOR_MODES.md",
+    "batch_commands_help": "docs/help/BATCH_COMMANDS.md",
+    "batch_commands_catalog": "docs/BATCH_COMMANDS.md",
+    "alignment": "docs/BOOTSTRAP_ALIGNMENT.md"
   },
   "files": [
     {
@@ -474,13 +478,126 @@
       "read_when": "session_start",
       "update_when": "milestone_boundary",
       "owner": "agent+human"
+    },
+    {
+      "path": "docs/BOOTSTRAP_ALIGNMENT.md",
+      "purpose": "Gap analysis and migration notes for template alignment",
+      "read_when": "template_upgrade",
+      "update_when": "template_upgrade",
+      "owner": "agent+human"
+    },
+    {
+      "path": "docs/REPO_HYGIENE.md",
+      "purpose": "What to track vs ignore; hygiene automation map",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/FEATURE_MODULES.md",
+      "purpose": "Feature vertical-slice guidance",
+      "read_when": "feature_work",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/PARALLEL_AGENT_SCOPES.md",
+      "purpose": "Parallel agent scope map and dispatch rules",
+      "read_when": "parallel_dispatch",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/CURSOR_INTEGRATIONS.md",
+      "purpose": "Cursor FOSS integrations inventory",
+      "read_when": "session_start",
+      "update_when": "template_upgrade",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/CURSOR_FEATURE_RADAR.md",
+      "purpose": "Cursor feature radar notes",
+      "read_when": "template_upgrade",
+      "update_when": "template_upgrade",
+      "owner": "maintainer"
+    },
+    {
+      "path": "HUMAN_BACKLOG.md",
+      "purpose": "Deferred human/policy items from /build automation",
+      "read_when": "session_start",
+      "update_when": "task_completion",
+      "owner": "agent+human"
+    },
+    {
+      "path": ".cursor-session-state.example.json",
+      "purpose": "Example session state for chat restore",
+      "read_when": "context_bloat",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/hooks.json",
+      "purpose": "Cursor hooks registration",
+      "read_when": "session_start",
+      "update_when": "template_upgrade",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/rules/local-compute.mdc",
+      "purpose": "Prefer local parallel compute over Cloud",
+      "read_when": "session_start",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/cleanup.md",
+      "purpose": "Slash command cleanup after sprint/gates",
+      "read_when": "slash_command",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".release-please-manifest.json",
+      "purpose": "Template version manifest sync with .template-version",
+      "read_when": "template_upgrade",
+      "update_when": "template_upgrade",
+      "owner": "agent"
     }
   ],
   "modules": {
     "dotnet-wpf": {
       "guide": "modules/dotnet-wpf/MODULE.md",
-      "example": null,
-      "activate_when": "stack includes .NET WPF desktop application"
+      "active": true
     }
+  },
+  "roadmap": {
+    "batch_commands": [
+      ".cursor/commands/audit.md",
+      ".cursor/commands/cleanup.md",
+      ".cursor/commands/debug.md",
+      ".cursor/commands/gates.md",
+      ".cursor/commands/triage.md",
+      ".cursor/commands/dependabot.md",
+      ".cursor/commands/push.md",
+      ".cursor/commands/prerelease.md",
+      ".cursor/commands/regress.md",
+      ".cursor/commands/feature.md",
+      ".cursor/commands/fix.md",
+      ".cursor/commands/init.md",
+      ".cursor/commands/prune.md",
+      ".cursor/commands/ci.md",
+      ".cursor/commands/docs.md",
+      ".cursor/commands/upgrade.md",
+      ".cursor/commands/setup.md",
+      ".cursor/commands/plan.md",
+      ".cursor/commands/restore.md",
+      ".cursor/commands/compact.md",
+      ".cursor/commands/scope.md",
+      ".cursor/commands/bootstrap.md",
+      ".cursor/commands/verify.md",
+      ".cursor/commands/build.md",
+      ".cursor/commands/ship.md",
+      ".cursor/commands/maintain.md"
+    ]
   }
 }

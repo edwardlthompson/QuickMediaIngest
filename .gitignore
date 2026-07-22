@@ -37,9 +37,14 @@ _b/
 
 ## Agent ephemeral state (gitignored progress tracking)
 .cursor/agent-progress.json
+.cursor-session-state
+.cursor/mcp.json
+.cursor/mcp-audit.log
+.cursor/parallel-scope-lock.json
 CODE_REVIEW.md
 RELEASE_NOTES.md
 build_errors.md
+
 
 ## Test output
 TestResults/

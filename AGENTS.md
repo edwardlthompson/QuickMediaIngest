@@ -4,9 +4,11 @@
 2. **Cursor modes:** `docs/CURSOR_MODES.md` (Ask / Plan / Agent / Debug)
 3. **Bootstrap mode:** `docs/INITIALIZATION_PROMPT.md`
 4. **Reference mode:** `docs/FOR_AGENTS.md` + `TEMPLATE_INDEX.json`
-5. **Task board:** `BUILD_PLAN.md` (Sequential before Parallel)
-6. **Slash commands:** type `/` in Agent chat — see `docs/help/BATCH_COMMANDS.md`
-7. **Living memory:** update `AGENT_MEMORY.md` only at milestone boundaries
+5. **Task board:** `BUILD_PLAN.md` (Sequential before Parallel) — status: 🔲 open · ✅ done · ❌ blocked
+6. **Parallel / `/build`:** `/build` automates HUMAN/ADB first; failures → `HUMAN_BACKLOG.md` — see `docs/PARALLEL_AGENT_SCOPES.md`
+7. **Slash commands:** type `/` in Agent chat — see `docs/help/BATCH_COMMANDS.md`
+8. **Living memory:** update `AGENT_MEMORY.md` only at milestone boundaries
+9. **Alignment notes:** `docs/BOOTSTRAP_ALIGNMENT.md`
 
 > Legacy `.cursorrules` is deprecated. Use `.cursor/rules/*.mdc` and this file instead.
 
@@ -59,13 +61,28 @@ On exit **2**: halt (3-strike or environment block). See `.cursor/agent-progress
 - On 3-strike failure: halt and escalate to human
 - On context bloat: write `.cursor-session-state`, ask human to clear chat
 - Destructive operations require `[HUMAN]` approval (see `.cursor/rules/destructive-ops.mdc`)
+- Repo hygiene: track source only; run `scripts/check-repo-hygiene.sh` before push (see `docs/REPO_HYGIENE.md`)
 - Log significant agent actions in `DECISION_LOG.md` at milestone boundaries
 
 ## Module Activation
 
 Active stack: **`modules/dotnet-wpf/MODULE.md`** only.
 
+## Cursor FOSS integrations
+
+See `docs/CURSOR_INTEGRATIONS.md`:
+
+- **Hooks** — `.cursor/hooks.json` (destructive-ops + UTF-8; fail-open)
+- **Skills (7)** — `.cursor/skills/`
+- **Subagents (3)** — `.cursor/agents/` (verifier, gate-fixer, explorer)
+- **Local compute first** — `.cursor/rules/local-compute.mdc`
+- **Worktrees** — `.cursor/worktrees.json`
+- **Auto-review** — `.cursor/permissions.json`
+- **Plugin pack** — `.cursor-plugin/` (optional)
+
+Validate after changes: `bash scripts/check-cursor-hooks.sh` (or via `agent-run.py` when present).
+
 ## Ecosystem-Specific Rules
 
 - **.NET/WPF:** MVVM separation, xUnit for Core, MaterialDesignThemes for UI, theme QA via `docs/THEME_QA_CHECKLIST.md`
-- **Distribution:** portable EXE + WiX MSI via `.github/workflows/build.yml`
+- **Distribution:** portable EXE + WiX MSI via `.github/workflows/build.yml` (not release-please)

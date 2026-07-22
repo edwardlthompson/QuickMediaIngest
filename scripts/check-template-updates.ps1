@@ -69,9 +69,9 @@ function Compare-Version($a, $b) {
 if ((Compare-Version $latest $current) -gt 0) {
     Write-Host "========================================="
     Write-Host " NEW TEMPLATE VERSION AVAILABLE"
-    Write-Host " Current: $current"
-    Write-Host " Latest:  $latest"
-    Write-Host " Release: $($response.html_url)"
+    Write-Host " Current:  $current"
+    Write-Host " Latest:   $latest"
+    Write-Host " Release:  $($response.html_url)"
     Write-Host " See docs/UPGRADING_FROM_TEMPLATE.md"
     Write-Host "========================================="
 } elseif ($Verbose) {

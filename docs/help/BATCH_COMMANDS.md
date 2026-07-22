@@ -17,7 +17,7 @@ Bookmark this page for when you come back after a break.
 |---------|-------------|
 | `/bootstrap` | Brand-new project — Sprint 0 setup end to end |
 | `/verify` | After your changes, before opening a pull request |
-| `/build` | Start a new feature (plans first, then implements) |
+| `/build` | Run BUILD_PLAN end-to-end — automates HUMAN/ADB via scripts, backlogs failures, chains sprints until done |
 | `/ship` | Publish a release to GitHub (runs checks, push, post-release) |
 | `/maintain` | Weekly health pass — security, dependencies, full review |
 
@@ -29,7 +29,7 @@ Grouped by life moment (not every command — use `/` menu for the full list).
 
 **Getting started:** `/init` · `/setup` · `/prune` · `/gates`
 
-**Building:** `/plan` · `/feature` · `/fix` (gates failed after `/build`) · `/scope` (parallel agents)
+**Building:** `/plan` · `/feature` · `/fix` (gates failed after `/build`) · `/cleanup` (archive finished BUILD_PLAN rows) · `/scope` (parallel manifest + auto Task dispatch)
 
 **Docs & checks:** `/docs` · `/ci` (CI poll only) · `/gates` (full local validation)
 

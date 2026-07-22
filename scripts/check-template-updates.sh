@@ -61,7 +61,10 @@ except ValueError:
     sys.exit(0)
 now = datetime.datetime.now(datetime.timezone.utc)
 deltas = {"daily": 1, "weekly": 7, "monthly": 30, "on_session": 0}
-days = deltas.get(interval, 7)
+if interval not in deltas and interval != "off":
+    days = 7
+else:
+    days = deltas.get(interval, 7)
 if interval == "on_session":
     sys.exit(0)
 if (now - dt).days < days:
@@ -110,9 +113,9 @@ PY
 if version_gt "$LATEST" "$CURRENT"; then
   echo "========================================="
   echo " NEW TEMPLATE VERSION AVAILABLE"
-  echo " Current: $CURRENT"
-  echo " Latest:  $LATEST"
-  echo " Release: $HTML_URL"
+  echo " Current:  $CURRENT"
+  echo " Latest:   $LATEST"
+  echo " Release:  $HTML_URL"
   echo " See docs/UPGRADING_FROM_TEMPLATE.md"
   echo "========================================="
 else

@@ -109,7 +109,15 @@ Before large UI changes, see **`docs/THEME_QA_CHECKLIST.md`**.
 
 ## Agent / Cursor quick start
 
-This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) scaffolding (Reference mode, template **v0.11.0**).
+### How agents should work in this repo
+
+1. Read [`docs/START_HERE.md`](docs/START_HERE.md) → pick Cursor mode via [`docs/CURSOR_MODES.md`](docs/CURSOR_MODES.md).
+2. Follow [`AGENTS.md`](AGENTS.md) router; active stack is **`modules/dotnet-wpf` only**.
+3. Work [`BUILD_PLAN.md`](BUILD_PLAN.md) **Sequential** before Parallel; status: 🔲 / ✅ / ❌.
+4. After `[AGENT]` steps: `.\scripts\validate-local.ps1 -QuickBootstrap` or `bash scripts/watch-agent-gates.sh --once --autofix`.
+5. Deferred human/CI policy items live in [`HUMAN_BACKLOG.md`](HUMAN_BACKLOG.md). Alignment notes: [`docs/BOOTSTRAP_ALIGNMENT.md`](docs/BOOTSTRAP_ALIGNMENT.md).
+
+This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) scaffolding (Reference mode; process target **v0.15.1**).
 
 ```
 Read @docs/START_HERE.md, @docs/CURSOR_MODES.md, and @docs/FOR_AGENTS.md.

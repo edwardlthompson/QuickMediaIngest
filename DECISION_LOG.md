@@ -2,6 +2,41 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-07-22 — Automate Align-0.15 HUMAN_BACKLOG (keep release-please/pages off)
+
+**Status:** Accepted  
+**Context:** HUMAN_BACKLOG deferred enabling several upstream workflows after template alignment.
+
+**Decision:**
+- Enable `stale.yml`, WPF-adapted `weekly-health-check.yml`, and `dependabot-automerge.yml`.
+- Permanently decline `release-please*` and `pages.yml` (csproj + `build.yml` owns release).
+- Add `scripts/automate-human-backlog.{sh,ps1}`, `scripts/lib/resolve-gh.sh`, and wire `AUTOMERGE_TOKEN` setup.
+- Leave interactive `gh auth refresh -s security_events` as the only Align-0.15 human auth step.
+
+**Validation:** `.\scripts\automate-human-backlog.ps1 -SetupAutomergeToken` (secret set); workflows present; `HUMAN_BACKLOG.md` regenerated.
+
+---
+
+## 2026-07-21 — Align process tooling with agent-project-bootstrap v0.15.1
+
+**Status:** Accepted  
+**Context:** Repo was on template `0.11.0`; upstream tip is `0.15.1` (Cursor FOSS pack, parallel BUILD_PLAN, expanded scripts/CI). This is a live WPF product, not a fresh bootstrap.
+
+**Decision:**
+- Cherry-pick agent surface, Cursor FOSS pack, allowlisted scripts, and BUILD_PLAN markers to process level `0.15.1`.
+- Preserve `modules/dotnet-wpf`, WPF file limits (800/400/200), and csproj-driven `build.yml` release.
+- **Hard defer** new workflows: release-please, pages, dependabot-automerge, stale, weekly-health-check → `HUMAN_BACKLOG.md`.
+- Merge (never overwrite) `validate-bootstrap.sh` / `TEMPLATE_INDEX.json`; bump `.template-version` only after local gates pass.
+- Hooks go live only after dry-run of `validate-local.ps1 -QuickBootstrap` and `feature-gate.sh --stack dotnet-wpf`.
+
+**Alternatives rejected:** Full template replace; enabling release-please; adopting upstream 300/150 file caps; copying inactive modules/examples.
+
+**Validation:** `docs/BOOTSTRAP_ALIGNMENT.md`; encoding/hygiene/validate-bootstrap/batch-commands/validate-local; `dotnet test`.
+
+**See:** `docs/BOOTSTRAP_ALIGNMENT.md`
+
+---
+
 ## 2026-06-13 — SQLite provider: retain System.Data.SQLite.Core
 
 **Decision:** Keep `System.Data.SQLite.Core` (1.0.119); do not migrate to `Microsoft.Data.Sqlite` in this release cycle.

@@ -59,3 +59,11 @@ Grandfathered files are listed in `scripts/check-file-limits.sh` until Sprint 1 
 | `dotnet test`, encoding, bootstrap validation | `AUTO` |
 
 After each `[AGENT]` step, run `bash scripts/watch-agent-gates.sh --once --autofix` (or `.\scripts\validate-local.ps1`). On exit **2**, halt per 3-strike rule.
+
+## Cross-links (template process)
+
+- Cursor modes: `docs/CURSOR_MODES.md`
+- Parallel scopes: `docs/PARALLEL_AGENT_SCOPES.md` (WPF paths only under `QuickMediaIngest/**`)
+- Feature slices: `docs/FEATURE_MODULES.md`
+- Alignment / deferred CI: `docs/BOOTSTRAP_ALIGNMENT.md`, `HUMAN_BACKLOG.md`
+- FOSS Cursor pack: `docs/CURSOR_INTEGRATIONS.md`

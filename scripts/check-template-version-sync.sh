@@ -5,26 +5,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if [ ! -f .template-version ]; then
-  echo "MISSING: .template-version"
+if [ ! -f .release-please-manifest.json ] || [ ! -f .template-version ]; then
+  echo "MISSING: version manifest or .template-version"
   exit 1
 fi
 
-VERSION="$(tr -d '[:space:]' < .template-version)"
-
-if [ ! -f .release-please-manifest.json ]; then
-  echo "SKIP: no .release-please-manifest.json (child repo — app version in .csproj)"
-  if [ -f TEMPLATE_INDEX.json ]; then
-    IDX="$(python3 -c "import json; print(json.load(open('TEMPLATE_INDEX.json')).get('template_version',''))" 2>/dev/null || echo "")"
-    if [ -n "$IDX" ] && [ "$IDX" != "$VERSION" ]; then
-      echo "WARN: TEMPLATE_INDEX template_version ($IDX) != .template-version ($VERSION) — sync in Phase 4"
-    fi
-  fi
-  echo "Template version present ($VERSION)"
-  exit 0
-fi
-
 MANIFEST="$(python3 -c "import json; print(json.load(open('.release-please-manifest.json'))['.'].strip())")"
+VERSION="$(tr -d '[:space:]' < .template-version)"
 
 if [ "$MANIFEST" != "$VERSION" ]; then
   echo "FAIL: .template-version ($VERSION) != manifest ($MANIFEST)"

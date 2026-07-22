@@ -4,11 +4,11 @@ Child repos do not auto-sync with the upstream template. Use this guide when the
 
 ## Step 1: Read the Notification
 
-Run `scripts/check-template-updates.sh` or `pwsh scripts/check-template-updates.ps1`.
+Run `scripts/check-template-updates.sh` or check the devcontainer postStart output.
 
 ## Step 2: Review CHANGELOG
 
-Read the upstream release notes at [github.com/edwardlthompson/agent-project-bootstrap/releases](https://github.com/edwardlthompson/agent-project-bootstrap/releases).
+Read the upstream release notes at `github.com/edwardlthompson/agent-project-bootstrap/releases`.
 
 ## Step 3: Cherry-Pick by Area
 
@@ -16,11 +16,26 @@ Read the upstream release notes at [github.com/edwardlthompson/agent-project-boo
 |-------------|----------|-------|
 | `.github/workflows/` | Cherry-pick or manual merge | AGENT + HUMAN review |
 | `.cursor/rules/` | Copy new/changed `.mdc` files | AGENT |
+| `docs/CURSOR_MODES.md` | Copy; canonical Cursor mode router | AGENT |
+| `.cursor/rules/cursor-modes.mdc` | Copy with other rules | AGENT |
+| `.cursor/commands/` | Copy all slash command files | AGENT |
+| `.cursor/rules/batch-commands.mdc` | Copy with other rules | AGENT |
+| `docs/help/BATCH_COMMANDS.md` | Copy human cheat sheet | AGENT |
+| `docs/BATCH_COMMANDS.md` | Copy agent registry | AGENT |
+| `CODE_REVIEW.md.example` | Copy audit template | AGENT |
+| `RELEASE_NOTES.md.example` | Copy release draft template | AGENT |
+| `scripts/check-batch-commands.sh` | Copy with validate-bootstrap | AGENT |
 | `docs/INITIALIZATION_PROMPT.md` | Manual review; do not blind overwrite | HUMAN |
 | `scripts/` | Copy updated scripts | AGENT |
-| `scripts/check-file-encoding.sh` | Copy + verify CI/pre-commit gate | AGENT |
-| `scripts/validate-bootstrap.sh` | Merge new required artifacts | AGENT |
+| `scripts/check-file-encoding.sh` | Copy + add CI/pre-commit gate | AGENT |
+| `scripts/validate-bootstrap.sh` | Copy expanded validation | AGENT |
+| `scripts/check-changelog-unreleased.sh` | Copy with validate-bootstrap | AGENT |
+| `scripts/check-license-compliance.sh` | Copy strict license gate | AGENT |
+| `.github/workflows/dependency-review.yml` | Cherry-pick workflow | AGENT + HUMAN review |
+| `.cursor/rules/destructive-ops.mdc` | Copy new rule file | AGENT |
 | `.env.example` | Merge new vars; never overwrite local `.env` | AGENT |
+| `LICENSE` | Verify MIT still applies | HUMAN |
+| `examples/` | Reference only unless adopting new stack | HUMAN decision |
 | `TEMPLATE_INDEX.json` | Run validate script after merge | AGENT |
 
 ## Version Compatibility
@@ -40,5 +55,8 @@ Read the upstream release notes at [github.com/edwardlthompson/agent-project-boo
 ## QuickMediaIngest-Specific Notes
 
 - Do not copy `examples/web`, `examples/python`, or `examples/android` — not applicable
-- Preserve `modules/dotnet-wpf/MODULE.md` customizations when merging
+- Preserve `modules/dotnet-wpf/MODULE.md` and WPF file limits (800 / 400 / 200)
+- Do not replace `.github/workflows/build.yml` with release-please; see `HUMAN_BACKLOG.md` for deferred workflows
+- Keep `wpf-mvvm.mdc` when syncing `.cursor/rules/`
 - Re-run `scripts/validate-bootstrap.sh` and `dotnet test` after any merge
+- Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`

@@ -1,0 +1,66 @@
+name: Weekly Health Check
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  security-events: read
+
+jobs:
+  health-ubuntu:
+    name: Weekly workflow health (ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify CI + Security Scan + CodeQL green on HEAD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --dispatch-if-missing covers Dependabot merges that used GITHUB_TOKEN
+          # (those push events do not start CI/Security/CodeQL).
+          bash scripts/check-github-ci.sh "$(git rev-parse HEAD)" --wait 600 --dispatch-if-missing
+
+      - name: Bootstrap artifacts (quick)
+        run: bash scripts/validate-bootstrap.sh --quick
+
+      - name: Cursor feature radar (non-blocking)
+        continue-on-error: true
+        run: bash scripts/cursor-feature-radar.sh
+
+      - name: Upload radar report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: cursor-radar-report
+          path: CURSOR_RADAR_REPORT.md
+          if-no-files-found: warn
+
+  health-windows:
+    name: Weekly .NET / WPF health
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.422"
+          global-json-file: global.json
+
+      - name: Restore + build + test
+        shell: bash
+        run: |
+          dotnet restore QuickMediaIngest-1.sln
+          dotnet build QuickMediaIngest-1.sln -c Release --no-restore
+          dotnet test QuickMediaIngest-1.sln -c Release --no-build --verbosity minimal
+
+      - name: Vulnerable packages
+        run: dotnet list QuickMediaIngest-1.sln package --vulnerable --include-transitive
+
+      - name: Feature gate
+        shell: bash
+        run: bash scripts/feature-gate.sh --stack dotnet-wpf

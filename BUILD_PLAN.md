@@ -1,10 +1,11 @@
 # Build Plan
 
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
+> Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.21 · **Template:** v0.11.0 · **Tests:** 151 (Release)
+**Release:** v1.3.21 · **Template:** v0.15.1 · **Tests:** 151 (Release)
 
-**Active lane:** Maintenance — `[AGENT]` adds next scoped task to Backlog before release.
+> **Bootstrap alignment 0.11 → 0.15.1** archived in COMPLETED_TASKS.md.
 
 ---
 
@@ -12,20 +13,38 @@
 
 | Label | Owner |
 |-------|-------|
-| `AGENT` | Cursor Agent — code, docs, tests, CI |
-| `HUMAN` | Human — OAuth, optional UI glance, push approval |
-| `ADB` | Human — Android device/emulator testing |
-| `AUTO` | CI, Dependabot, gate scripts |
+| `[AGENT]` | Cursor Agent — code, docs, tests, CI |
+| `[HUMAN]` | Human — OAuth, optional UI glance, push approval, deferred CI policy |
+| `[ADB]` | Human — Android device/emulator testing (N/A for this product) |
+| `[AUTO]` | CI, Dependabot, gate scripts |
 
-Icons: ✅ done · ⬜ open · ⚠️ optional once
+Status markers (emoji only — never GitHub `- [ ]` checkboxes):
+
+| Marker | Meaning |
+|--------|---------|
+| 🔲 | Open |
+| ✅ | Done |
+| ❌ | Blocked |
+
+Format: `🔲 [OWNER] Description`
 
 ---
 
-## Backlog
+## Sequential lane
 
-| ID | Task | Owner | Status |
-|----|------|-------|--------|
-| TBD | Next scoped feature or fix | AGENT | ⬜ |
+🔲 `[AGENT]` Next scoped feature or fix (add concrete task before release work)
+
+---
+
+## Parallel lane
+
+_(none)_
+
+---
+
+## Human & device (after automation)
+
+🔲 `[HUMAN]` WPF UI sign-off via `.\scripts\run-human-signoffs.ps1` when shipping product changes  
 
 ---
 
@@ -43,8 +62,7 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 | LAN FTP smoke (optional) | `.\scripts\smoke-human-verification.ps1` |
 | WPF feature gates | `bash scripts/feature-gate.sh --stack dotnet-wpf` |
 | Pre-release | `bash scripts/pre-release-gate.sh` |
-
-**Optional once:** `gh auth refresh -s security_events` for local Dependabot strict gate (CI does not need this).
+| Human backlog automation | `.\scripts\automate-human-backlog.ps1` |
 
 ---
 
@@ -52,6 +70,7 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 
 | Sprint | Location |
 |--------|----------|
+| Bootstrap alignment 0.15.1 | `COMPLETED_TASKS.md` § Bootstrap alignment 0.11 → 0.15.1 |
 | AUTO-SBOM | `COMPLETED_TASKS.md` § AUTO-SBOM |
 | Audit R2 backlog (D1–D3) | `COMPLETED_TASKS.md` § Audit R2 Backlog D1–D3 |
 | Audit R2 | `COMPLETED_TASKS.md` § Audit Sprint R2 |

@@ -1,9 +1,35 @@
 {
+  "distribution_tier": "foss",
   "stack": "dotnet-wpf",
   "pruned": false,
   "active_modules": [
     "dotnet-wpf"
   ],
-  "parallel_scope_note": "Sprint 1 Parallel: WPF scope only (`QuickMediaIngest/**`, `QuickMediaIngest.Tests/**`)",
-  "selected_at": "2026-06-20T13:26:46+00:00"
+  "parallel_scope_note": "WPF scope only (`QuickMediaIngest/**`, `QuickMediaIngest.Tests/**`)",
+  "selected_at": "2026-06-20T13:26:46+00:00",
+  "cursor_features_enabled": [
+    "rules",
+    "commands",
+    "hooks",
+    "skills",
+    "subagents",
+    "modes",
+    "worktrees",
+    "permissions",
+    "parallel_scope",
+    "build_automation",
+    "feature_radar",
+    "plugin_pack",
+    "cli_example",
+    "mcp_foss_example"
+  ],
+  "cursor_features_hidden": [
+    "cloud_agents",
+    "bugbot",
+    "automations",
+    "approval_agents",
+    "mcp_commercial_example",
+    "android_commercial_patterns"
+  ],
+  "cursor_features_synced_at": "2026-07-22T04:31:52+00:00"
 }

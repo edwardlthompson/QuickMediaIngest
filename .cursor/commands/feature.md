@@ -1,15 +1,19 @@
 # Feature vertical slice step
 
-Execute the active BUILD_PLAN feature row only (one feature per task). Scope: `QuickMediaIngest/**` and `QuickMediaIngest.Tests/**` per `modules/dotnet-wpf/MODULE.md`.
+> Skill: `.cursor/skills/feature-vertical-slice/`
+
+Execute the active BUILD_PLAN feature row only (one feature per task). See @docs/FEATURE_MODULES.md.
+
+When invoked from @.cursor/commands/build.md: execute all open rows for the active feature without stopping; no user prompts.
 
 After each AGENT step:
 
 ```bash
-bash scripts/watch-agent-gates.sh --once --autofix --step scaffold
+python3 scripts/agent-run.py watch-agent-gates --once --autofix --step scaffold
 ```
 
-Use `--step tests` or `--step wire` when appropriate.
+Use `--step tests` or `--step wire` when appropriate. On exit 2, use `/debug` or escalate.
 
-**3-strike halt:** On exit **2**, `watch-agent-gates.sh` has hit environment block or 3 consecutive gate failures (`agent-progress.json` strikes ≥ 3). **Stop looping** — switch to `/debug` or escalate to `[HUMAN]`.
+When the active feature block is fully ✅ and gates pass, read @.cursor/commands/cleanup.md — execute fully.
 
 Begin now.

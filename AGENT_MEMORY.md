@@ -64,9 +64,11 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-07-12 | Release v1.3.19 | Audit R2 + backlog shipped; CI green; build workflow_dispatch | SBOM in build.yml (AUTO-SBOM) |
 | 2026-07-17 | Release v1.3.20 | SD/USB preview+import stall fix; RemovableDriveIo; Dependabot count script | Confirm removable throttle on real SD card; keep `scripts/*.sh` as LF |
 | 2026-07-21 | Release v1.3.21 | Import progress `BeginInvoke` coalesce (mid-card freeze) | Keep Delete-after-import off until full pass; watch large MP4 imports |
+| 2026-07-21 | Template align → 0.15.1 | FOSS Cursor pack + BUILD_PLAN markers; kept WPF module/`build.yml` | HUMAN: deferred CI (release-please/pages/automerge) |
 
 ## Template Provenance
 
 - **Source template:** `edwardlthompson/agent-project-bootstrap`
-- **Template version:** `0.11.0` (see `.template-version`)
+- **Template version:** `0.15.1` (see `.template-version`)
+- **Alignment:** `docs/BOOTSTRAP_ALIGNMENT.md`
 - **Last update check:** See `.template-update.json`

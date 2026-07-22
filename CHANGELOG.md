@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Template alignment v0.15.1**: Cursor FOSS pack (hooks, skills, agents), `/cleanup`, `HUMAN_BACKLOG.md`, parallel-dispatch helpers, `docs/BOOTSTRAP_ALIGNMENT.md`.
+- **CI**: `stale.yml`, WPF-adapted `weekly-health-check.yml`, `dependabot-automerge.yml` (release-please/pages remain declined).
+- **Scripts**: `automate-human-backlog.{ps1,sh}`, `setup-automerge-token`, `resolve-gh.sh`, Dependabot alerts GET probe fix.
+
+### Changed
+
+- **BUILD_PLAN**: Official emoji status markers (🔲/✅/❌) and Sequential / Parallel / Human lanes.
+- **Agent docs**: START_HERE, AGENTS, FOR_AGENTS, batch commands registry synced to template process level 0.15.1 (WPF module and `build.yml` preserved).
+
 ## [1.3.21] — 2026-07-21
 
 ### Fixed
