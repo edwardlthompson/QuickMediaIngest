@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.14.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.15.0" />
     <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="2.0.2" />
     <PackageReference Include="NetVips.Native.win-x64" Version="8.18.4" />
     <Resource Include="QuickMediaIngest.ico" />
