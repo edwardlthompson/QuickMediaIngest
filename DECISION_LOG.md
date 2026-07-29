@@ -376,3 +376,11 @@
 
 **Validation:** Feature-gate + pre-release-gate green; **154** Release tests; zero Critical/High Dependabot alerts.
 
+## 2026-07-28 — Regress v1.3.22
+
+**Checks:** Post-tag pre-release-gate.sh green on fb067c; CI / Security Scan / CodeQL green; Dependabot Critical/High = 0.
+
+**Release assets:** QuickMediaIngest.exe, QuickMediaIngest-Portable.zip, QuickMediaIngest.msi, QuickMediaIngest-1.3.22.cyclonedx.json on [v1.3.22](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.22).
+
+**N/A:** GitHub Pages; release-please (declined for this product).
+
