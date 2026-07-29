@@ -4,6 +4,15 @@
 
 ---
 
+## Release v1.3.22 — Settings persistence (2026-07-28)
+
+- ✅ [AGENT] Fix destination + naming prefs wiped on restart (load guards, Custom coerce, destination combo restore)
+- ✅ [AGENT] Split `MainViewModel.Naming.partial.cs`; destination/naming config round-trip tests
+- ✅ [AGENT] Fix `check-github-ci.sh` per-workflow poll (Dependabot Updates hid CI)
+- ✅ [AGENT] Ship v1.3.22; document in KNOWLEDGE_BASE / DECISION_LOG
+
+---
+
 ## Bootstrap alignment 0.11 → 0.15.1 (2026-07-22)
 
 - ✅ [AGENT] Write `docs/BOOTSTRAP_ALIGNMENT.md` + DECISION_LOG ADR

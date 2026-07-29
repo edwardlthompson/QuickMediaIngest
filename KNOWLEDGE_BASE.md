@@ -38,3 +38,9 @@ High `Parallel.ForEach` preview workers + Shell decode via `Dispatcher.Invoke` +
 `ImportByteProgressTracker.ReportBytes` fires on every 1MB buffer. Wiring used sync `Dispatcher.Invoke` for byte progress and `ItemProcessed`, so copy threads blocked on the UI queue and the import appeared frozen (no new log lines / dest writes) while the process still burned CPU.
 
 **Fix:** Post import UI updates with `BeginInvoke` + coalesce pending byte snapshots. Keep **Delete after import** off until a card finishes cleanly.
+## Settings reset on restart (naming preset + destination combo)
+
+Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear forgotten when (1) `OnNamingPresetChanged` re-applies Recommended during/after load over a diverged `NamingTemplate`, or (2) `RefreshDestinationPresetLabels` clears the combo and WPF nulls `DestinationPreset`.
+
+**Fix (v1.3.22):** Skip naming rebuild while `_loadingConfig`; coerce preset to Custom when template diverges; re-assign destination preset after options rebuild. Checkbox edits that diverge from a named preset set Custom immediately.
+

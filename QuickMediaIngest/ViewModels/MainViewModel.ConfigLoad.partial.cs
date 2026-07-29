@@ -30,14 +30,16 @@ namespace QuickMediaIngest.ViewModels
                             if (!string.IsNullOrEmpty(config.DestinationRoot)) DestinationRoot = config.DestinationRoot;
                             DeleteAfterImport = config.DeleteAfterImport;
                             DeleteAfterImportPromptDismissed = config.DeleteAfterImportPromptDismissed;
-                            if (!string.IsNullOrEmpty(config.NamingTemplate)) NamingTemplate = config.NamingTemplate;
-                            if (!string.IsNullOrWhiteSpace(config.NamingPreset)) NamingPreset = config.NamingPreset;
+                            // Restore formats/flags before template/preset so change handlers cannot
+                            // rebuild NamingTemplate from stale defaults during load.
                             if (!string.IsNullOrWhiteSpace(config.NamingDateFormat)) NamingDateFormat = config.NamingDateFormat;
                             if (!string.IsNullOrWhiteSpace(config.NamingTimeFormat)) NamingTimeFormat = config.NamingTimeFormat;
                             if (!string.IsNullOrWhiteSpace(config.NamingSeparator)) NamingSeparator = config.NamingSeparator;
                             NamingIncludeSequence = config.NamingIncludeSequence;
                             if (!string.IsNullOrWhiteSpace(config.NamingShootNameSample)) NamingShootNameSample = config.NamingShootNameSample;
                             NamingLowercase = config.NamingLowercase;
+                            if (!string.IsNullOrEmpty(config.NamingTemplate)) NamingTemplate = config.NamingTemplate;
+                            if (!string.IsNullOrWhiteSpace(config.NamingPreset)) NamingPreset = config.NamingPreset;
                             if (!string.IsNullOrWhiteSpace(config.ThumbnailPerformanceMode)) ThumbnailPerformanceMode = config.ThumbnailPerformanceMode;
                             GroupRawAndRenderedPairs = config.GroupRawAndRenderedPairs;
                             string legacyFtpHost = config.FtpHost ?? string.Empty;

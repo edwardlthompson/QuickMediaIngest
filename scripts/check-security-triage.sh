@@ -5,6 +5,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/lib/resolve-gh.sh
+. "$ROOT/scripts/lib/resolve-gh.sh"
 
 WAIT_CI=0
 STRICT=false
@@ -18,7 +20,7 @@ done
 
 ERRORS=0
 
-if ! command -v gh >/dev/null 2>&1; then
+if ! qmi_gh_available; then
   echo "WARN: gh CLI not available"
   if [ "$STRICT" = true ]; then
     echo "FAIL: gh required for --strict pre-release gate"

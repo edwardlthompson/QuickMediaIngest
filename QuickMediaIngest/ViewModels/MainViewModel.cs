@@ -139,12 +139,18 @@ namespace QuickMediaIngest.ViewModels
             _refreshingDestinationPresetLabels = true;
             try
             {
-                string selected = DestinationPreset;
+                string selected = string.IsNullOrWhiteSpace(DestinationPreset) ? "Custom" : DestinationPreset;
                 DestinationPresetOptions.Clear();
                 DestinationPresetOptions.Add(new DestinationPresetOption("Custom", AppLocalizer.Get("DestPreset_Custom")));
                 DestinationPresetOptions.Add(new DestinationPresetOption("Pictures", AppLocalizer.Get("DestPreset_Pictures")));
                 DestinationPresetOptions.Add(new DestinationPresetOption("LastSession", AppLocalizer.Get("DestPreset_LastSession")));
-                if (!DestinationPresetOptions.Any(o => string.Equals(o.Key, selected, StringComparison.OrdinalIgnoreCase)))
+                // Always re-assign after Clear(): WPF ComboBox SelectedValue binding can null the
+                // source when ItemsSource is emptied, which made destination look "reset" on reopen.
+                if (DestinationPresetOptions.Any(o => string.Equals(o.Key, selected, StringComparison.OrdinalIgnoreCase)))
+                {
+                    DestinationPreset = selected;
+                }
+                else
                 {
                     DestinationPreset = "Custom";
                 }

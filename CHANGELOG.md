@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [1.3.22] — 2026-07-28
+
+### Fixed
+
+- **Settings persistence**: Destination folder and file-naming preferences no longer reset on restart. Load no longer re-applies a mismatched naming preset over a custom template; checkbox edits coerce the preset to Custom; destination combo refresh restores the saved selection.
+- **CI status poll**: `check-github-ci.sh` queries each required workflow by name so Dependabot Updates runs cannot hide a green CI result.
+
+### Changed
+
+- **MainViewModel**: Split naming preferences into `MainViewModel.Naming.partial.cs` to stay within the 400-line ViewModel budget.
+
 ### Added
 
 - **Template alignment v0.15.1**: Cursor FOSS pack (hooks, skills, agents), `/cleanup`, `HUMAN_BACKLOG.md`, parallel-dispatch helpers, `docs/BOOTSTRAP_ALIGNMENT.md`.

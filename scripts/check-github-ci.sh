@@ -6,6 +6,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/lib/resolve-gh.sh
+. "$ROOT/scripts/lib/resolve-gh.sh"
 
 REF="HEAD"
 WAIT=0
@@ -31,7 +33,7 @@ fi
 
 REQUIRED=("CI" "Security Scan" "CodeQL")
 
-if ! command -v gh >/dev/null 2>&1; then
+if ! qmi_gh_available; then
   echo "ERROR: gh CLI required (https://cli.github.com/)"
   exit 1
 fi
@@ -46,9 +48,6 @@ echo "GitHub Actions status for ${REPO} @ ${REF:0:7}"
 
 deadline=$((SECONDS + WAIT))
 while true; do
-  mapfile -t RUNS < <(gh run list --repo "$REPO" --commit "$REF" \
-    --json workflowName,conclusion,status,url -q '.[] | [.workflowName,.status,.conclusion,.url] | @tsv')
-
   PENDING=0
   FAILED=0
 
@@ -56,20 +55,23 @@ while true; do
     if [ "$SKIP_WORKFLOWS" -eq 1 ]; then
       break
     fi
-    wf_lines="$(printf '%s\n' "${RUNS[@]}" | grep "^${wf}"$'\t' || true)"
-    if [ -z "$wf_lines" ]; then
+    # Query each workflow by name. A bare --commit list is dominated by
+    # Dependabot Updates / scheduled jobs and can hide the real CI run.
+    mapfile -t WF_RUNS < <(gh run list --repo "$REPO" --commit "$REF" --workflow "$wf" --limit 5 \
+      --json conclusion,status,url -q '.[] | [.status,.conclusion,.url] | @tsv' 2>/dev/null || true)
+    if [ "${#WF_RUNS[@]}" -eq 0 ] || [ -z "${WF_RUNS[0]:-}" ]; then
       echo "WAIT ${wf}: no run yet"
       PENDING=$((PENDING + 1))
       continue
     fi
-    line="$(printf '%s\n' "$wf_lines" | awk -F'\t' '$3=="success" {print; exit}')"
+    line="$(printf '%s\n' "${WF_RUNS[@]}" | awk -F'\t' '$2=="success" {print; exit}')"
     if [ -z "$line" ]; then
-      line="$(printf '%s\n' "$wf_lines" | awk -F'\t' '$2!="completed" {print; exit}')"
+      line="$(printf '%s\n' "${WF_RUNS[@]}" | awk -F'\t' '$1!="completed" {print; exit}')"
     fi
     if [ -z "$line" ]; then
-      line="$(printf '%s\n' "$wf_lines" | head -1)"
+      line="$(printf '%s\n' "${WF_RUNS[@]}" | head -1)"
     fi
-    IFS=$'\t' read -r _ status conclusion url <<<"$line"
+    IFS=$'\t' read -r status conclusion url <<<"$line"
     case "$conclusion" in
       success) echo "OK   ${wf}: ${url}" ;;
       failure|cancelled|timed_out|action_required)

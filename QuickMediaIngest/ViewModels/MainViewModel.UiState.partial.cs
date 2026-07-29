@@ -153,6 +153,7 @@ namespace QuickMediaIngest.ViewModels
             }
             RepopulateLanguageOptions();
             SyncNamingOptionsFromTemplate();
+            CoerceNamingPresetToCustomIfTemplateDiverged();
             RefreshNamingPreviewExamples();
             LoadImportHistory();
             TryRestorePendingImportPlanNotice();
@@ -275,6 +276,7 @@ namespace QuickMediaIngest.ViewModels
         private readonly IDatabaseService _databaseService;
         private readonly ILogger<MainViewModel> _logger;
         private bool _loadingConfig = false;
+        private bool _applyingNamingPreset = false;
         private bool _refreshingDestinationPresetLabels = false;
         private bool _startupInitialized = false;
         private double _savedWindowWidth = 960;

@@ -195,7 +195,17 @@ namespace QuickMediaIngest.ViewModels
         }
         partial void OnNamingPresetChanged(string value)
         {
-            ApplyNamingPreset(value);
+            if (_loadingConfig)
+            {
+                return;
+            }
+
+            // "Custom" means keep the current checkbox/template state; do not rebuild.
+            if (!string.Equals(value, "Custom", StringComparison.Ordinal))
+            {
+                ApplyNamingPreset(value);
+            }
+
             SaveConfig();
         }
         partial void OnNamingIncludeDateChanged(bool value) => UpdateNamingTemplateFromOptions();

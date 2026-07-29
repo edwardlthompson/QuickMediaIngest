@@ -368,3 +368,11 @@
 
 **N/A:** GitHub Pages; template upgrade simulation script.
 
+## 2026-07-28 — Release v1.3.22 (settings persistence)
+
+**Decision:** Guard naming rebuild during `LoadConfig`; coerce mismatched presets to Custom; restore destination preset after combo refresh; query GitHub Actions per workflow name in `check-github-ci.sh`.
+
+**Rationale:** Custom naming templates were overwritten when a stale Recommended preset re-applied on load/UI bind; destination combo Clear() nullled selection. CI poll listed Dependabot Updates first and never saw the CI run.
+
+**Validation:** Feature-gate + pre-release-gate green; **154** Release tests; zero Critical/High Dependabot alerts.
+
