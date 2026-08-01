@@ -13,7 +13,7 @@
 - Process-local 60s FTP host cooldown + single-flight unified load with queued forceRefresh.
 - Do not cache empty FTP failures.
 
-**Validation:** Unit tests for soft-fail, budgets, cooldown; local preview WallTimeMs logging; gates + local portable build.
+**Validation:** Unit tests for soft-fail, budgets, cooldown; local preview WallTimeMs logging; gates + local portable build. Shipped as **v1.3.23** (CI green; `workflow_dispatch` release assets + SBOM).
 
 ---
 
