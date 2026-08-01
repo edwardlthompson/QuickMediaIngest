@@ -37,6 +37,8 @@ namespace QuickMediaIngest
         public string FtpPass { get; set; } = string.Empty;
         public string FtpRemoteFolder { get; set; } = "/DCIM";
         public bool AutoReconnectLastFtp { get; set; } = true;
+        /// <summary>When true and an ADB device exposes the FTP remote folder, imports use ADB pull instead of FTP.</summary>
+        public bool PreferAdbTransferWhenAvailable { get; set; } = true;
         public bool SettingsMenuExpanded { get; set; } = true;
         public string ScanPath { get; set; } = string.Empty;
         public bool SelectAll { get; set; } = true;
@@ -44,8 +46,8 @@ namespace QuickMediaIngest
         public double ThumbnailSize { get; set; } = 120;
         public bool ScanIncludeSubfolders { get; set; } = true;
         public int TimeBetweenShootsHours { get; set; } = 4;
-        public bool LimitFtpThumbnailLoad { get; set; }
-        public int FtpInitialThumbnailCount { get; set; }
+        public bool LimitFtpThumbnailLoad { get; set; } = true;
+        public int FtpInitialThumbnailCount { get; set; } = 48;
         public bool ExpandPreviewStacks { get; set; }
         public string DuplicatePolicy { get; set; } = "Suffix";
         public string VerificationMode { get; set; } = "Fast";

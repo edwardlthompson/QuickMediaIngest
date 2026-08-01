@@ -162,6 +162,15 @@
   <data name="Settings_PreviewExamples" xml:space="preserve"><value>Preview (examples)</value></data>
   <data name="Settings_ThumbnailPerformance" xml:space="preserve"><value>Thumbnail Performance</value></data>
   <data name="Settings_ThumbnailPerformanceHint" xml:space="preserve"><value>Ultra uses more parallel preview downloads and decoding on fast PCs. Low is safer for phone FTP servers that throttle many connections.</value></data>
+  <data name="Settings_LimitFtpThumbnails" xml:space="preserve"><value>Limit initial FTP thumbnails</value></data>
+  <data name="Settings_FtpInitialThumbnailCount" xml:space="preserve"><value>Initial FTP thumbnail count</value></data>
+  <data name="Settings_PreferAdbTransfer" xml:space="preserve"><value>Prefer ADB for browse, previews, and transfers when available</value></data>
+  <data name="Settings_PreferAdbTransferHint" xml:space="preserve"><value>When USB debugging is connected, FTP sources use ADB for scan, thumbnails, and import (FTP fallback if ADB fails).</value></data>
+  <data name="Vm_Adb_WillUseAdb" xml:space="preserve"><value>Browse, previews, and transfers will use ADB (serial …{0}).</value></data>
+  <data name="Vm_Adb_UnavailableUsingFtp" xml:space="preserve"><value>ADB unavailable — using FTP for browse and transfers.</value></data>
+  <data name="Vm_Adb_PathNotFoundUsingFtp" xml:space="preserve"><value>ADB path not found — using FTP for browse and transfers.</value></data>
+  <data name="Vm_Adb_PreferOffUsingFtp" xml:space="preserve"><value>ADB preference off — using FTP for browse and transfers.</value></data>
+  <data name="Vm_Scan_AdbListedFiles" xml:space="preserve"><value>ADB listed {0} media file(s).</value></data>
   <data name="Settings_GroupRawRendered" xml:space="preserve"><value>Group RAW + rendered files into a single preview stack</value></data>
   <data name="Settings_ExpandStacked" xml:space="preserve"><value>Expand stacked RAW/rendered previews side-by-side</value></data>
   <data name="Settings_DuplicateHandling" xml:space="preserve"><value>Duplicate Handling</value></data>
@@ -187,6 +196,7 @@
   <data name="Vm_Ftp_FolderSelected" xml:space="preserve"><value>FTP folder selected: {0}</value></data>
   <data name="Vm_Ftp_LastSourceUnreachable" xml:space="preserve"><value>Last FTP source not reachable: {0}:{1}{2}</value></data>
   <data name="Vm_Ftp_Reconnected" xml:space="preserve"><value>Reconnected FTP source: {0}:{1}{2}</value></data>
+  <data name="Vm_Ftp_PasswordMissingForHost" xml:space="preserve"><value>No saved FTP password for {0}:{1}. Enter the password once and save, or re-test the connection.</value></data>
   <data name="Vm_Status_SkippedFolderCopied" xml:space="preserve"><value>Skipped-folder report copied to clipboard.</value></data>
   <data name="Vm_SkippedScan_TitleExcludedOnly" xml:space="preserve"><value>Excluded folders ({0})</value></data>
   <data name="Vm_SkippedScan_TitleFtpOnly" xml:space="preserve"><value>FTP listing issues ({0})</value></data>
@@ -414,6 +424,8 @@ You can revisit this tour from Settings &gt; About.</value></data>
   <data name="Vm_Scan_LoadingUnifiedPreviewsProgress" xml:space="preserve"><value>Loading Unified previews: {0}/{1}</value></data>
   <data name="Vm_Status_ScanComplete_UnifiedPreviews" xml:space="preserve"><value>Scanning {0} complete. Loaded unified previews automatically.</value></data>
   <data name="Vm_Status_UnifiedLoadError" xml:space="preserve"><value>Error loading Unified sources: {0}</value></data>
+  <data name="Vm_Status_UnifiedFtpStillLoading" xml:space="preserve"><value>Local media ready. FTP still loading…</value></data>
+  <data name="Vm_Status_UnifiedFtpUnavailable" xml:space="preserve"><value>Local media ready. {0}</value></data>
   <data name="About_Update_Checking" xml:space="preserve"><value>Checking for updates…</value></data>
   <data name="Vm_Update_Available" xml:space="preserve"><value>Update available: {0}</value></data>
   <data name="Vm_Update_FoundGithub" xml:space="preserve"><value>Update found on GitHub: {0}</value></data>

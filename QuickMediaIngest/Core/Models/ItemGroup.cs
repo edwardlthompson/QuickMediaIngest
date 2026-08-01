@@ -16,7 +16,7 @@ namespace QuickMediaIngest.Core.Models
         private string _keywordsText = string.Empty;
         private bool _isSelected = true;
         private bool _expandStackedPairsInShoot;
-        private bool _isExpanded;
+        private bool _isExpanded = true;
 
         /// <summary>
         /// The title of the group (e.g., "Shoot 1").
@@ -99,7 +99,7 @@ namespace QuickMediaIngest.Core.Models
 
         /// <summary>
         /// Controls whether this shoot group is expanded in the UI.
-        /// Defaults to collapsed for faster scanning.
+        /// Defaults to expanded so loaded previews are visible without an extra click.
         /// </summary>
         public bool IsExpanded
         {

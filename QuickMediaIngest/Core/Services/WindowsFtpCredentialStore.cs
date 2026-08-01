@@ -102,6 +102,32 @@ namespace QuickMediaIngest.Core.Services
                 persistence: CredentialPersistence.LocalMachine);
         }
 
+        public bool TryMigratePassword(string oldHost, string newHost, int port, string userName)
+        {
+            string oldNormalized = FtpHostNormalizer.Normalize(oldHost);
+            string newNormalized = FtpHostNormalizer.Normalize(newHost);
+            if (string.IsNullOrWhiteSpace(oldNormalized) ||
+                string.IsNullOrWhiteSpace(newNormalized) ||
+                string.Equals(oldNormalized, newNormalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (TryReadPassword(newNormalized, port, out _))
+            {
+                return true;
+            }
+
+            if (!TryReadPasswordWithLegacyKeys(oldNormalized, port, oldHost, out string password) ||
+                string.IsNullOrEmpty(password))
+            {
+                return false;
+            }
+
+            WritePassword(newNormalized, port, userName, password);
+            return true;
+        }
+
         public void DeletePassword(string host, int port)
         {
             try

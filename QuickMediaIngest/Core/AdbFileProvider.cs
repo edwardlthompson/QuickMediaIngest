@@ -13,6 +13,8 @@ namespace QuickMediaIngest.Core
     /// </summary>
     public class AdbFileProvider : IFileProvider
     {
+        private static readonly TimeSpan PerFileWallTimeout = TimeSpan.FromMinutes(5);
+
         private readonly string _deviceSerial;
         private readonly ILogger<AdbFileProvider> _logger;
 
@@ -22,56 +24,84 @@ namespace QuickMediaIngest.Core
             _logger = logger;
         }
 
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
+        public Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null) =>
+            RunAdbAsync(
+                $"pull \"{srcPath}\" \"{destPath}\"",
+                $"ADB pull: {srcPath} -> {destPath}",
+                "ADB pull failed",
+                token,
+                afterSuccess: () =>
+                {
+                    if (bytesCopied != null && File.Exists(destPath))
+                    {
+                        bytesCopied.Report(new FileInfo(destPath).Length);
+                    }
+                });
+
+        public Task DeleteAsync(string srcPath, CancellationToken token) =>
+            RunAdbAsync(
+                $"shell rm \"{srcPath}\"",
+                $"ADB delete: {srcPath}",
+                "ADB delete failed",
+                token);
+
+        private async Task RunAdbAsync(
+            string adbArgumentsWithoutSerial,
+            string startLog,
+            string failurePrefix,
+            CancellationToken token,
+            Action? afterSuccess = null)
         {
-            // Use adb pull to copy file from device to local
             var psi = new ProcessStartInfo
             {
                 FileName = "adb",
-                Arguments = $"-s {_deviceSerial} pull \"{srcPath}\" \"{destPath}\"",
+                Arguments = $"-s {_deviceSerial} {adbArgumentsWithoutSerial}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            _logger.LogInformation("ADB pull: {SrcPath} -> {DestPath}", srcPath, destPath);
+            _logger.LogInformation("{StartLog}", startLog);
             using var process = Process.Start(psi);
             if (process == null)
-                throw new IOException("Failed to start adb process.");
-            await process.WaitForExitAsync(token);
-            if (process.ExitCode != 0)
             {
-                string error = await process.StandardError.ReadToEndAsync();
-                throw new IOException($"ADB pull failed: {error}");
+                throw new IOException("Failed to start adb process.");
             }
 
-            if (bytesCopied != null && File.Exists(destPath))
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
+            linked.CancelAfter(PerFileWallTimeout);
+            try
             {
-                bytesCopied.Report(new FileInfo(destPath).Length);
+                await process.WaitForExitAsync(linked.Token).ConfigureAwait(false);
             }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                token.ThrowIfCancellationRequested();
+                throw new TimeoutException($"{failurePrefix}: timed out after {PerFileWallTimeout.TotalMinutes:0} minutes.");
+            }
+
+            if (process.ExitCode != 0)
+            {
+                string error = await process.StandardError.ReadToEndAsync(token).ConfigureAwait(false);
+                throw new IOException($"{failurePrefix}: {error}");
+            }
+
+            afterSuccess?.Invoke();
         }
 
-        public async Task DeleteAsync(string srcPath, CancellationToken token)
+        private static void TryKill(Process process)
         {
-            // Use adb shell rm to delete file on device
-            var psi = new ProcessStartInfo
+            try
             {
-                FileName = "adb",
-                Arguments = $"-s {_deviceSerial} shell rm \"{srcPath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            _logger.LogInformation("ADB delete: {SrcPath}", srcPath);
-            using var process = Process.Start(psi);
-            if (process == null)
-                throw new IOException("Failed to start adb process.");
-            await process.WaitForExitAsync(token);
-            if (process.ExitCode != 0)
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch
             {
-                string error = await process.StandardError.ReadToEndAsync();
-                throw new IOException($"ADB delete failed: {error}");
+                // Best-effort kill on cancel/timeout.
             }
         }
     }

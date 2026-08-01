@@ -71,7 +71,12 @@ namespace QuickMediaIngest.ViewModels
 
             if (source is FtpSourceItem ftp)
             {
-                await LoadFtpThumbnailsAsync(groups, ftp, sourceLabel, preferBackgroundBatch: false, cancellationToken);
+                await LoadFtpThumbnailsAsync(
+                    groups,
+                    ftp,
+                    sourceLabel,
+                    preferBackgroundBatch: LimitFtpThumbnailLoad,
+                    cancellationToken);
                 return;
             }
 
@@ -99,6 +104,7 @@ namespace QuickMediaIngest.ViewModels
                     int current = 0;
                     string? samplePath = allItems[0].SourcePath;
                     int workers = GetThumbnailWorkerCount(samplePath);
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
                     Parallel.ForEach(
                         allItems,
                         new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = cancellationToken },
@@ -148,6 +154,14 @@ namespace QuickMediaIngest.ViewModels
                                 ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingPreviewsProgress", c, total);
                             });
                         });
+
+                    sw.Stop();
+                    _logger.LogInformation(
+                        "Local preview load finished for {SourceLabel}: Items={Count}, Workers={Workers}, WallTimeMs={WallTimeMs}.",
+                        sourceLabel,
+                        total,
+                        workers,
+                        sw.Elapsed.TotalMilliseconds);
 
                     Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
                 }, cancellationToken);

@@ -8,15 +8,18 @@ namespace QuickMediaIngest.Core
         private readonly ILogger<LocalFileProvider> _localLogger;
         private readonly ILogger<FtpFileProvider> _ftpLogger;
         private readonly ILogger<AdbFileProvider> _adbLogger;
+        private readonly IAdbPathProbe _adbPathProbe;
 
         public FileProviderFactory(
             ILogger<LocalFileProvider> localLogger,
             ILogger<FtpFileProvider> ftpLogger,
-            ILogger<AdbFileProvider> adbLogger)
+            ILogger<AdbFileProvider> adbLogger,
+            IAdbPathProbe adbPathProbe)
         {
             _localLogger = localLogger;
             _ftpLogger = ftpLogger;
             _adbLogger = adbLogger;
+            _adbPathProbe = adbPathProbe;
         }
 
         public IFileProvider CreateLocalProvider() => new LocalFileProvider(_localLogger);
@@ -26,5 +29,12 @@ namespace QuickMediaIngest.Core
 
         public IFileProvider CreateAdbProvider(string deviceSerial) =>
             new AdbFileProvider(deviceSerial, _adbLogger);
+
+        public IFileProvider CreateAdbRemappingProvider(string deviceSerial, string mediaRootPrefix) =>
+            new RemappingFileProvider(
+                CreateAdbProvider(deviceSerial),
+                mediaRootPrefix,
+                _adbPathProbe,
+                deviceSerial);
     }
 }

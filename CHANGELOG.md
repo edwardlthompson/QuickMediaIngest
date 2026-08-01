@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [1.3.23] — 2026-08-01
+
+### Fixed
+
+- **Unified browse**: Dead/slow FTP no longer blocks SD-card results. Local media paints as soon as the drive scan finishes; FTP uses an 8s connect probe + 45s listing budget with soft-fail, 60s cooldown, and single-flight refresh coalescing.
+- **HEIC / DNG previews**: Reject false embedded JPEG spans in HEIC BMFF; Magick-first CompleteFile HEIC; sibling HEIC→DNG thumb copy even when pairs are not stacked.
+- **MP4 PreferAdb previews**: Device MediaStore JPEG thumbs instead of truncated multi‑MB pulls; full-file Shell fallback only ≤256MB.
+
+### Added
+
+- **PreferAdb hybrid**: ADB list/pull for FTP remote folders when a device is attached, with FTP fallback.
+- **ADB video thumbnail fetcher**: MediaStore id → thumbnail JPEG pull for remote MP4 grid previews.
+- Optional ffmpeg CLI fallback for CompleteFile local video when Shell returns null.
+
+### Changed
+
+- **Local previews**: Log WallTimeMs / worker count after local thumbnail batches.
+- **Fetch tiers**: Skip useless truncated video tiers for large known sizes; single-shot HEIC when size known.
+- Thumbnail disk cache bumped to `ftp-thumb-v4`.
+
 ## [1.3.22] — 2026-07-28
 
 ### Fixed
@@ -24,17 +44,17 @@
 - **BUILD_PLAN**: Official emoji status markers (🔲/✅/❌) and Sequential / Parallel / Human lanes.
 - **Agent docs**: START_HERE, AGENTS, FOR_AGENTS, batch commands registry synced to template process level 0.15.1 (WPF module and `build.yml` preserved).
 
-## [1.3.21] — 2026-07-21
+## [1.3.21] ΓÇö 2026-07-21
 
 ### Fixed
 
 - **Import freeze mid-card**: Progress updates no longer use sync `Dispatcher.Invoke` on every 1MB copy buffer (and `ItemProcessed`). Copy threads post coalesced UI updates via `BeginInvoke`, so imports cannot deadlock the UI while still burning CPU with no dest growth.
 
-## [1.3.20] — 2026-07-17
+## [1.3.20] ΓÇö 2026-07-17
 
 ### Added
 
-- **RemovableDriveIo**: Caps preview workers (≤2) and import copies (1) when the source path is on a removable drive.
+- **RemovableDriveIo**: Caps preview workers (Γëñ2) and import copies (1) when the source path is on a removable drive.
 - **Release SBOM**: CycloneDX JSON via Syft (`anchore/sbom-action`) on Build and Release; attached to CI artifacts and GitHub Release assets. Local helper: `scripts/generate-sbom.sh`.
 - **Tests**: `RemovableDriveIoTests`; ingest cancel propagates `OperationCanceledException`.
 
@@ -44,7 +64,7 @@
 - **Dependabot alert count**: `count-critical-high-dependabot.sh` no longer uses unsupported `page=` pagination (HTTP 400).
 - **Shell scripts**: Normalized `scripts/*.sh` to LF to match `.gitattributes` (Windows bash `pipefail` breakage).
 
-## [1.3.19] — 2026-07-12
+## [1.3.19] ΓÇö 2026-07-12
 
 ### Added
 
@@ -67,7 +87,7 @@
 
 ---
 
-## [1.3.18] — 2026-06-21
+## [1.3.18] ΓÇö 2026-06-21
 
 ### Added
 
@@ -107,7 +127,7 @@
 
 ---
 
-## [1.3.16] — 2026-06-13
+## [1.3.16] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -117,7 +137,7 @@
 
 ---
 
-## [1.3.15] — 2026-06-13
+## [1.3.15] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -127,21 +147,21 @@
 
 ---
 
-## [1.3.14] — 2026-06-13
+## [1.3.14] ΓÇö 2026-06-13
 
 ### Fixed
 
 - **FTP thumbnail green/corrupt previews**: Tiered decode no longer accepts libvips output on partial HEIC buffers; early tiers use embedded-preview-only; Magick only at final cap tier.
 - **FTP thumbnail missing previews**: Reject undersized/corrupt decode results and escalate tiers; cap parallel full-file fallbacks to 2; log background batch failures.
-- **HEIC embedded reader**: Require ≥2 KB JPEG segment and validate decoded dimensions before accepting.
+- **HEIC embedded reader**: Require ΓëÑ2 KB JPEG segment and validate decoded dimensions before accepting.
 
 ---
 
-## [1.3.13] — 2026-06-13
+## [1.3.13] ΓÇö 2026-06-13
 
 ### Added
 
-- **Tiered FTP preview download**: Escalates 64 KB → 256 KB → 512 KB → type cap only when decode fails; HEIC cap lowered to 2 MB.
+- **Tiered FTP preview download**: Escalates 64 KB ΓåÆ 256 KB ΓåÆ 512 KB ΓåÆ type cap only when decode fails; HEIC cap lowered to 2 MB.
 - **HEIC embedded preview reader**: Scans partial downloads for JPEG segments before full Magick decode.
 - **FluentFTP streaming pool** (Max/Ultra): Reused connections for capped preview downloads with FtpWebRequest fallback.
 - **libvips decode path** (NetVips): Shrink-on-load thumbnails when native libs are available; Magick remains fallback.
@@ -150,7 +170,7 @@
 
 ### Fixed
 
-- **Thumbnail zoom persistence**: Ctrl+wheel and slider both use 50–300 range; `ThumbnailSize` clamped on save.
+- **Thumbnail zoom persistence**: Ctrl+wheel and slider both use 50ΓÇô300 range; `ThumbnailSize` clamped on save.
 
 ### Changed
 
@@ -158,7 +178,7 @@
 
 ---
 
-## [1.3.12] — 2026-06-13
+## [1.3.12] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -177,11 +197,11 @@
 
 ---
 
-## [1.3.5] — 2026-06-13
+## [1.3.5] ΓÇö 2026-06-13
 
 ### Changed
 
-- **Dependabot — full dependency refresh**: MaterialDesignThemes 5.3.2, Microsoft.Extensions 10.0.9, System.Management 10.0.9, test SDK/xunit/Moq updates. Clears all outstanding Dependabot PR #4 deferred bumps.
+- **Dependabot ΓÇö full dependency refresh**: MaterialDesignThemes 5.3.2, Microsoft.Extensions 10.0.9, System.Management 10.0.9, test SDK/xunit/Moq updates. Clears all outstanding Dependabot PR #4 deferred bumps.
 
 ### Fixed
 
@@ -189,7 +209,7 @@
 
 ---
 
-## [1.3.4] — 2026-06-13
+## [1.3.4] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -199,7 +219,7 @@
 
 ---
 
-## [1.3.3] — 2026-06-13
+## [1.3.3] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -208,8 +228,8 @@
 
 ### Changed
 
-- **Core architecture (Sprint 3)**: Split oversized Core files — `FtpScanner`, `IngestEngine`, `ThumbnailService`, `ServiceContracts` — into focused modules (`FtpDirectoryClient`, `IngestItemProcessor`, `ThumbnailDiskCache`, factories, etc.). All `Core/**/*.cs` now ≤ 200 lines; grandfather list cleared.
-- **MainViewModel partials**: Renamed `Part9–Part17` to semantic names (`Thumbnails`, `ImportEngine`, `DriveScan`, `FtpWorkflow`, `SourceLoad`, etc.).
+- **Core architecture (Sprint 3)**: Split oversized Core files ΓÇö `FtpScanner`, `IngestEngine`, `ThumbnailService`, `ServiceContracts` ΓÇö into focused modules (`FtpDirectoryClient`, `IngestItemProcessor`, `ThumbnailDiskCache`, factories, etc.). All `Core/**/*.cs` now Γëñ 200 lines; grandfather list cleared.
+- **MainViewModel partials**: Renamed `Part9ΓÇôPart17` to semantic names (`Thumbnails`, `ImportEngine`, `DriveScan`, `FtpWorkflow`, `SourceLoad`, etc.).
 - **ShootFilterService**: Decoupled from Localization; filter type IDs live in `Core/Models/FilterFileTypeIds`.
 - **FTP workflow strings**: Status messages moved to `Strings.resx` (`Vm_Ftp_*` keys).
 - **Dependencies**: FluentFTP 54.2.0, Meziantou.CredentialManager 2.0.0, MetadataExtractor 2.9.3, SQLite 1.0.119 (MaterialDesign 5.x and Microsoft.Extensions 10.x deferred).
@@ -223,7 +243,7 @@
 
 ---
 
-## [1.3.2] — 2026-06-13
+## [1.3.2] ΓÇö 2026-06-13
 
 ### Fixed
 
@@ -251,7 +271,7 @@
 
 ---
 
-## [1.3.1] — 2026-05-01
+## [1.3.1] ΓÇö 2026-05-01
 
 ### Changed
 
@@ -259,20 +279,20 @@
 
 ---
 
-## [1.3.0] — 2026-04-30
+## [1.3.0] ΓÇö 2026-04-30
 
 ### Fixed
 
-- **Delete after import (FTP)**: Post-import verification used **`FileInfo`** / **`SHA-256`** on **`SourcePath`**, which for FTP is a **server path**, not a local file—verification always failed and **remote files were never deleted**. FTP sources now verify using **listing size** (`ImportItem.FileSize`) vs the **downloaded file** size before calling **`DeleteAsync`**. Strict mode documents **size-only** verification for FTP (cannot hash server bytes via **`System.IO`**).
+- **Delete after import (FTP)**: Post-import verification used **`FileInfo`** / **`SHA-256`** on **`SourcePath`**, which for FTP is a **server path**, not a local fileΓÇöverification always failed and **remote files were never deleted**. FTP sources now verify using **listing size** (`ImportItem.FileSize`) vs the **downloaded file** size before calling **`DeleteAsync`**. Strict mode documents **size-only** verification for FTP (cannot hash server bytes via **`System.IO`**).
 - **Duplicate policy `OverwriteIfNewer` (FTP)**: Compare **scan metadata time** (`DateTaken`) to the existing destination file instead of **`FileInfo`** on the FTP path.
 
 ---
 
-## [1.2.2] — 2026-04-29
+## [1.2.2] ΓÇö 2026-04-29
 
 ### Fixed
 
-- **Single-file publish**: Set **IncludeAllContentForSelfExtract** so bundled assemblies extract at startup and **System.Data.SQLite** can resolve native interop paths (fixes **`ArgumentNullException`** in **`SQLiteConnection`** during startup—the splash hang / error dialog some users saw with portable **`QuickMediaIngest.exe`**).
+- **Single-file publish**: Set **IncludeAllContentForSelfExtract** so bundled assemblies extract at startup and **System.Data.SQLite** can resolve native interop paths (fixes **`ArgumentNullException`** in **`SQLiteConnection`** during startupΓÇöthe splash hang / error dialog some users saw with portable **`QuickMediaIngest.exe`**).
 
 ### Changed
 
@@ -281,12 +301,12 @@
 
 ---
 
-## [1.2.1] — 2026-04-28
+## [1.2.1] ΓÇö 2026-04-28
 
 ### Added
 
 - **Update discovery**: When GitHub reports a **newer release**, the app can show a **desktop popup** (in addition to status text). Each **release tag** is remembered so the same build is not announced repeatedly across background checks (`LastNotifiedUpdateTag` in `config.json`).
-- **Update API**: `UpdateCheckResult` returns **download URL** and **remote tag** from the latest release; startup runs an update check according to **About → interval** (still gated by `%AppData%\QuickMediaIngest\last_update_check.txt`).
+- **Update API**: `UpdateCheckResult` returns **download URL** and **remote tag** from the latest release; startup runs an update check according to **About ΓåÆ interval** (still gated by `%AppData%\QuickMediaIngest\last_update_check.txt`).
 - **Shortcuts**: **F1** opens an in-app **keyboard shortcuts** reference window.
 - **Architecture**: **`AppConfig`** for persisted settings; **`MainViewModel`** split into partial files (`Config`, tokens); additional **`Core/Services`** types and unit tests (`FtpWorkflowService`, `ShootFilterService`, `UnifiedConcreteSourceScanService`).
 
@@ -300,13 +320,13 @@
 
 ---
 
-## [1.2.0] — 2026-04-27
+## [1.2.0] ΓÇö 2026-04-27
 
 ### Added
 
 - **Localization**: Resource-based UI strings with **English** defaults and satellite resources for **Spanish** and **French**; language selector in Preferences (`Strings.resx`, `Strings.es.resx`, `Strings.fr.resx`).
 - **Scan exclusions UX**: Dedicated overlay for excluding drives / blacklisting folders, aligned with Preferences modal chrome.
-- **Skipped-folder summary**: Distinguished **user exclusion rules** vs **FTP listing failures** in titles, body copy, and status messages; optional **“do not remind when skips are only from exclusions”** (persisted in `config.json` as `SuppressExcludedFolderScanReminders`).
+- **Skipped-folder summary**: Distinguished **user exclusion rules** vs **FTP listing failures** in titles, body copy, and status messages; optional **ΓÇ£do not remind when skips are only from exclusionsΓÇ¥** (persisted in `config.json` as `SuppressExcludedFolderScanReminders`).
 - **Skipped-folder dialog**: Completes the panel with title, scrollable body, Copy, Close, and optional suppression checkbox.
 
 ### Changed
@@ -320,7 +340,7 @@
 ### Fixed
 
 - **Unified / scan UX**: Blurred overlay could remain until Escape when preview work extended past merge; overlay lifecycle tied to scan/merge completion instead.
-- **Messaging**: Misleading “FTP listing error” wording when folders were skipped only because of **Scan exclusions**.
+- **Messaging**: Misleading ΓÇ£FTP listing errorΓÇ¥ wording when folders were skipped only because of **Scan exclusions**.
 
 ---
 
@@ -329,7 +349,7 @@
 See git history and tags prior to `v1.2.0` for incremental changes. The pre-1.2.0 working notes below were folded into **1.2.0** where shipped:
 
 <details>
-<summary>Historical “Unreleased” draft (superseded by 1.2.0)</summary>
+<summary>Historical ΓÇ£UnreleasedΓÇ¥ draft (superseded by 1.2.0)</summary>
 
 - Import History: confirmation before clearing history; improved CSV export (headers, escaping, UTF-8).
 - Preview: RAW shell preview aspect ratio; video thumbnails in local, FTP, and unified paths.

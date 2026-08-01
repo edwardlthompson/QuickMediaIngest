@@ -33,6 +33,8 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 }
             }
 
+            bool isPartial = hints?.IsPartialPreview == true;
+
             if (thumb == null && isRaw)
             {
                 if (TryGetSiblingRenderedPath(filePath, out string siblingRenderedPath))
@@ -52,6 +54,13 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                     return thumb;
                 }
 
+                // Partial RAW: siblings only — no Shell/Magick on truncated buffers.
+                if (isPartial)
+                {
+                    _logger.LogDebug("Skipping Shell/Magick for partial RAW preview {FilePath}.", filePath);
+                    return null;
+                }
+
                 int deferMs = hints?.DeferRawShellMilliseconds ?? 0;
                 if (deferMs > 0)
                 {
@@ -69,7 +78,7 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 }
             }
 
-            if (thumb == null && !isRaw)
+            if (thumb == null && !isRaw && !isPartial)
             {
                 try
                 {
@@ -86,13 +95,13 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 }
             }
 
-            if (thumb == null)
+            if (thumb == null && !(isPartial && (isRaw || isVideo)))
             {
                 try
                 {
                     BitmapSource? shell = ShellThumbnailInterop.TryGetShellImage(
                         filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
-                    if (shell == null && isVideo)
+                    if (shell == null && isVideo && !isPartial)
                     {
                         shell = ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false);
                     }
@@ -101,11 +110,12 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Shell thumbnail extraction failed for {FilePath}.", filePath);
+                    _logger.LogWarning("Shell thumbnail extraction failed for {FilePath}: {Message}", filePath, ex.Message);
+                    _logger.LogDebug(ex, "Shell thumbnail detail for {FilePath}.", filePath);
                 }
             }
 
-            if (thumb == null && !skipMagick && !isVideo)
+            if (thumb == null && !skipMagick && !isVideo && !(isPartial && isRaw))
             {
                 try
                 {

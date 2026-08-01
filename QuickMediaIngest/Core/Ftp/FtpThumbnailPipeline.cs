@@ -37,10 +37,17 @@ namespace QuickMediaIngest.Core
             Func<FtpThumbnailItemResult, Task>? onItemCompleted,
             CancellationToken cancellationToken)
         {
+            _adbSession = options.AdbSession;
+            _adbPreviewFetcher = options.AdbPreviewFetcher;
+            _adbVideoThumbnailFetcher = options.AdbVideoThumbnailFetcher;
+            _adbPathProbe = options.AdbPathProbe;
+            _adbExistsCache.Clear();
+            LogThumbnailTransport(items.Count);
+
             string tempDir = Path.Combine(Path.GetTempPath(), "QuickMediaIngest", "ftp-thumbs");
             Directory.CreateDirectory(tempDir);
 
-            int downloadParallelism = Math.Max(1, Math.Min(options.DownloadParallelism, 6));
+            int downloadParallelism = Math.Max(1, Math.Min(options.DownloadParallelism, 3));
             using var decodeGate = new SemaphoreSlim(Math.Max(1, options.DecodeParallelism));
             using var fullDownloadGate = new SemaphoreSlim(2, 2);
             bool useFluentFtp = options.PerformanceMode is "Max" or "Ultra";
@@ -48,6 +55,8 @@ namespace QuickMediaIngest.Core
             int loadedCount = 0;
             int skippedCount = 0;
             int processedCount = 0;
+            int adbDecoded = 0;
+            int ftpDecoded = 0;
             var results = new ConcurrentBag<FtpThumbnailItemResult>();
             var orderedItems = items.OrderBy(GetThumbnailPriority).ToList();
 
@@ -77,10 +86,11 @@ namespace QuickMediaIngest.Core
                             workItem.RemotePath,
                             workItem.FileSize);
                         DecodedThumbnail? thumb = cached;
+                        bool viaAdb = false;
 
                         if (thumb == null)
                         {
-                            thumb = await LoadWithTieredFetchAsync(
+                            (thumb, viaAdb) = await LoadWithTieredFetchAsync(
                                 endpoint,
                                 workItem,
                                 tempPath,
@@ -101,6 +111,14 @@ namespace QuickMediaIngest.Core
                                     endpoint.Port,
                                     workItem.RemotePath,
                                     workItem.FileSize);
+                                if (viaAdb)
+                                {
+                                    Interlocked.Increment(ref adbDecoded);
+                                }
+                                else
+                                {
+                                    Interlocked.Increment(ref ftpDecoded);
+                                }
                             }
 
                             Interlocked.Increment(ref loadedCount);
@@ -124,7 +142,11 @@ namespace QuickMediaIngest.Core
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         Interlocked.Increment(ref skippedCount);
-                        _logger.LogWarning(ex, "FTP thumbnail failed for {RemotePath}.", workItem.RemotePath);
+                        _logger.LogWarning(
+                            "FTP thumbnail failed for {RemotePath}: {Message}",
+                            workItem.RemotePath,
+                            ex.Message);
+                        _logger.LogDebug(ex, "FTP thumbnail failure detail for {RemotePath}.", workItem.RemotePath);
                         result = new FtpThumbnailItemResult
                         {
                             ItemKey = workItem.ItemKey,
@@ -158,6 +180,8 @@ namespace QuickMediaIngest.Core
             {
                 LoadedCount = loadedCount,
                 SkippedCount = skippedCount,
+                AdbDecodedCount = adbDecoded,
+                FtpDecodedCount = ftpDecoded,
                 Items = results.ToList()
             };
         }

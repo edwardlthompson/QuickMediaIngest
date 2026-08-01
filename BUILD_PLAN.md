@@ -3,7 +3,7 @@
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 > Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.22 · **Template:** v0.15.1 · **Tests:** 154 (Release)
+**Release:** v1.3.22 · **Template:** v0.15.1 · **Tests:** 184 (Release)
 
 > **Bootstrap alignment 0.11 → 0.15.1** archived in COMPLETED_TASKS.md.
 >
@@ -19,7 +19,6 @@
 | `[HUMAN]` | Human — OAuth, optional UI glance, push approval, deferred CI policy |
 | `[ADB]` | Human — Android device/emulator testing (N/A for this product) |
 | `[AUTO]` | CI, Dependabot, gate scripts |
-
 Status markers (emoji only — never GitHub `- [ ]` checkboxes):
 
 | Marker | Meaning |
@@ -27,14 +26,21 @@ Status markers (emoji only — never GitHub `- [ ]` checkboxes):
 | 🔲 | Open |
 | ✅ | Done |
 | ❌ | Blocked |
-
 Format: `🔲 [OWNER] Description`
 
 ---
 
 ## Sequential lane
 
-🔲 `[AGENT]` Next scoped feature or fix (add concrete task before release work)
+✅ `[AGENT]` FTP vault migrate on DHCP host change + reconnect/test success logs + listing KeepAlive=false
+✅ `[AGENT]` Skip Android `.trashed-*` / trash dirs; restore FTP thumbnail limit defaults (48)
+✅ `[AGENT]` Hybrid FTP browse / ADB pull import with media-root preflight + PreferAdb setting
+✅ `[AGENT]` Seamless hybrid ADB scan+thumbs; HEIF normalize; 550 fail-fast; safe Magick/glitch reject; Unified scan dedupe
+✅ `[AGENT]` PreferAdb polish: sibling FileExists gate; quiet 550 cache logs; ADB find+stat sizes; reconnect auto-select Unified
+✅ `[AGENT]` Thumb limit on Unified/FTP; ADB vs FTP transport Info logs; cap thumb RETR parallelism=3; find+stat `|` fix
+✅ `[AGENT]` Fix ADB dd quoting (sh -c) + media magic gate; no Magick on capped HEIC; Dispatcher group rebuild
+✅ `[AGENT]` HEIC 12MB ADB pull + CompleteFile ADB; video full download; Unified sibling thumbs
+🔲 `[HUMAN]` Live OP13 smoke: PreferAdb browse/previews/transfer (USB debugging)
 
 ---
 
@@ -46,7 +52,7 @@ _(none)_
 
 ## Human & device (after automation)
 
-🔲 `[HUMAN]` WPF UI sign-off via `.\scripts\run-human-signoffs.ps1` when shipping product changes  
+🔲 `[HUMAN]` WPF UI sign-off via `.\scripts\run-human-signoffs.ps1` when shipping product changes
 
 ---
 
@@ -56,6 +62,7 @@ _(none)_
 .\scripts\run-human-signoffs.ps1              # full automated pass
 .\scripts\run-human-signoffs.ps1 -PublishedExe  # + portable exe libvips smoke
 $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
+
 ```
 
 | Check | Command |
@@ -65,7 +72,6 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 | WPF feature gates | `bash scripts/feature-gate.sh --stack dotnet-wpf` |
 | Pre-release | `bash scripts/pre-release-gate.sh` |
 | Human backlog automation | `.\scripts\automate-human-backlog.ps1` |
-
 ---
 
 ## Archive

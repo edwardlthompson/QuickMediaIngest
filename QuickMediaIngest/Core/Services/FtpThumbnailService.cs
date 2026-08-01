@@ -67,12 +67,14 @@ namespace QuickMediaIngest.Core.Services
                 cancellationToken);
 
             _logger.LogInformation(
-                "FTP thumbnail batch finished for {Host}:{Port}: loaded {Loaded}, skipped {Skipped}, total {Total}.",
+                "Thumbnail batch finished for {Host}:{Port}: loaded {Loaded}, skipped {Skipped}, total {Total} (ADB decode {Adb}, FTP decode {Ftp}).",
                 endpoint.Host,
                 endpoint.Port,
                 result.LoadedCount,
                 result.SkippedCount,
-                items.Count);
+                items.Count,
+                result.AdbDecodedCount,
+                result.FtpDecodedCount);
 
             return result;
         }

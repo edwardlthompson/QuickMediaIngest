@@ -11,17 +11,72 @@ namespace QuickMediaIngest.Core
 {
     internal sealed partial class FtpThumbnailPipeline
     {
-        private async Task<DecodedThumbnail?> TryTieredDownloadAndDecodeAsync(
+        private AdbTransferSession? _adbSession;
+        private IAdbPreviewFetcher? _adbPreviewFetcher;
+        private IAdbVideoThumbnailFetcher? _adbVideoThumbnailFetcher;
+
+        private async Task<(DecodedThumbnail? Thumb, bool ViaAdb)> TryTieredDownloadAndDecodeAsync(
             FtpEndpoint endpoint,
             string remotePath,
             string fileName,
+            long knownFileSize,
             string tempPath,
             ThumbnailHints? hints,
             bool useFluentFtp,
             SemaphoreSlim decodeGate,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<long> tiers = FtpPreviewDownloadLimits.GetPreviewByteTiers(fileName);
+            IReadOnlyList<long> tiers = FtpPreviewDownloadLimits.GetFetchTiers(fileName, knownFileSize);
+
+            if (_adbSession is { } adb && _adbPreviewFetcher != null)
+            {
+                for (int tierIndex = 0; tierIndex < tiers.Count; tierIndex++)
+                {
+                    long maxBytes = tiers[tierIndex];
+
+                    cancellationToken.ThrowIfCancellationRequested();
+                    TryDeleteTemp(tempPath);
+
+                    bool downloaded = await _adbPreviewFetcher.TryFetchCappedAsync(
+                        adb,
+                        remotePath,
+                        tempPath,
+                        maxBytes,
+                        knownFileSize,
+                        cancellationToken);
+
+                    if (!downloaded)
+                    {
+                        continue;
+                    }
+
+                    await decodeGate.WaitAsync(cancellationToken);
+                    try
+                    {
+                        (FtpPreviewDecodeMode decodeMode, ThumbnailHints decodeHints) =
+                            ResolveDecodeHints(tempPath, knownFileSize, maxBytes, tierIndex, tiers.Count, hints);
+                        DecodedThumbnail? thumb = _tieredLoader.TryDecodeDownloaded(
+                            fileName,
+                            tempPath,
+                            decodeHints,
+                            decodeMode);
+                        if (thumb != null)
+                        {
+                            _logger.LogDebug(
+                                "ADB preview decoded at {MaxBytes} bytes (tier {TierIndex}) for {RemotePath}.",
+                                maxBytes,
+                                tierIndex,
+                                remotePath);
+                            return (thumb, true);
+                        }
+                    }
+                    finally
+                    {
+                        decodeGate.Release();
+                    }
+                }
+            }
+
             FtpStreamingDownloader? fluent = useFluentFtp
                 ? FtpStreamingDownloader.GetOrCreate(endpoint, poolSize: 3, _logger)
                 : null;
@@ -29,9 +84,6 @@ namespace QuickMediaIngest.Core
             for (int tierIndex = 0; tierIndex < tiers.Count; tierIndex++)
             {
                 long maxBytes = tiers[tierIndex];
-                FtpPreviewDecodeMode decodeMode = tierIndex < tiers.Count - 1
-                    ? FtpPreviewDecodeMode.TieredPartial
-                    : FtpPreviewDecodeMode.TieredFinalCap;
 
                 cancellationToken.ThrowIfCancellationRequested();
                 TryDeleteTemp(tempPath);
@@ -71,10 +123,12 @@ namespace QuickMediaIngest.Core
                 await decodeGate.WaitAsync(cancellationToken);
                 try
                 {
+                    (FtpPreviewDecodeMode decodeMode, ThumbnailHints decodeHints) =
+                        ResolveDecodeHints(tempPath, knownFileSize, maxBytes, tierIndex, tiers.Count, hints);
                     DecodedThumbnail? thumb = _tieredLoader.TryDecodeDownloaded(
                         fileName,
                         tempPath,
-                        hints,
+                        decodeHints,
                         decodeMode);
                     if (thumb != null)
                     {
@@ -83,7 +137,7 @@ namespace QuickMediaIngest.Core
                             maxBytes,
                             tierIndex,
                             remotePath);
-                        return thumb;
+                        return (thumb, false);
                     }
                 }
                 finally
@@ -92,7 +146,7 @@ namespace QuickMediaIngest.Core
                 }
             }
 
-            return null;
+            return (null, false);
         }
     }
 }

@@ -51,8 +51,9 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private string selectedFtpPresetFolder = "/DCIM";
         [ObservableProperty] private FtpFolderOption? selectedBrowsedFtpFolder;
         [ObservableProperty] private string ftpDialogStatusMessage = "";
-        [ObservableProperty] private bool limitFtpThumbnailLoad = false;
-        [ObservableProperty] private int ftpInitialThumbnailCount = 0;
+        [ObservableProperty] private bool limitFtpThumbnailLoad = true;
+        [ObservableProperty] private int ftpInitialThumbnailCount = 48;
+        [ObservableProperty] private bool preferAdbTransferWhenAvailable = true;
         [ObservableProperty] private bool showSkippedFoldersDialog = false;
         [ObservableProperty] private string skippedFoldersReportTitle = AppLocalizer.Get("Vm_SkippedFoldersReportTitle");
         [ObservableProperty] private string skippedFoldersReportText = string.Empty;
@@ -119,6 +120,7 @@ namespace QuickMediaIngest.ViewModels
             OnPropertyChanged(nameof(ShowEmptyFilterPanel));
             OnPropertyChanged(nameof(ShowEmptyFtpFailurePanel));
             OnPropertyChanged(nameof(ShowEmptyScanPanel));
+            OnPropertyChanged(nameof(AdbTransferStatusHint));
         }
 
         private static string BuildShootExpansionKey(ItemGroup g) =>
@@ -265,6 +267,10 @@ namespace QuickMediaIngest.ViewModels
         private readonly IUnifiedConcreteSourceScanService _unifiedConcreteSourceScanService;
         private readonly IFtpCredentialStore _ftpCredentialStore;
         private readonly IFtpThumbnailService _ftpThumbnailService;
+        private readonly IAdbMediaScanner _adbMediaScanner;
+        private readonly IAdbPreviewFetcher _adbPreviewFetcher;
+        private readonly IAdbVideoThumbnailFetcher _adbVideoThumbnailFetcher;
+        private readonly IAdbPathProbe _adbPathProbe;
         private readonly IFileDialogService _fileDialogService;
         private readonly IShellService _shellService;
         private readonly IThumbnailService _thumbnailService;
@@ -279,6 +285,8 @@ namespace QuickMediaIngest.ViewModels
         private bool _applyingNamingPreset = false;
         private bool _refreshingDestinationPresetLabels = false;
         private bool _startupInitialized = false;
+        private string _previousFtpHost = string.Empty;
+        private readonly HashSet<string> _knownFtpVaultHosts = new(StringComparer.OrdinalIgnoreCase);
         private double _savedWindowWidth = 960;
         private double _savedWindowHeight = 620;
         private bool _savedWindowMaximized = false;
@@ -306,6 +314,7 @@ namespace QuickMediaIngest.ViewModels
 
         private List<ImportItem> _currentSourceItems = new();
         private readonly Dictionary<string, List<ImportItem>> _sourceItemsCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Task<List<ImportItem>>> _inflightSourceScans = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, object?> _thumbnailByItemKey = new(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource? _importCancellationSource;
         private CancellationTokenSource? _ftpThumbnailCts;
@@ -330,6 +339,7 @@ namespace QuickMediaIngest.ViewModels
             OnPropertyChanged(nameof(IsLocalSourceSelected));
             OnPropertyChanged(nameof(IsFtpSourceSelected));
             OnPropertyChanged(nameof(IsUnifiedSourceSelected));
+            OnPropertyChanged(nameof(AdbTransferStatusHint));
 
             if (value is string drive)
             {

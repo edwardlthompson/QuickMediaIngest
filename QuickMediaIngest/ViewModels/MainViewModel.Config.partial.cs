@@ -64,6 +64,7 @@ namespace QuickMediaIngest.ViewModels
                     FtpPass = string.Empty,
                     FtpRemoteFolder = FtpRemoteFolder,
                     AutoReconnectLastFtp = AutoReconnectLastFtp,
+                    PreferAdbTransferWhenAvailable = PreferAdbTransferWhenAvailable,
                     SettingsMenuExpanded = SettingsMenuExpanded,
                     ScanPath = ScanPath,
                     SelectAll = SelectAll,
@@ -222,6 +223,7 @@ namespace QuickMediaIngest.ViewModels
                 }
 
                 string host = FtpHostNormalizer.Normalize(entry.Host);
+                RememberFtpVaultHost(host);
                 string remoteFolder = NormalizeFtpPath(entry.RemoteFolder);
                 bool exists = Sources.OfType<FtpSourceItem>().Any(s =>
                     string.Equals(s.Host, host, StringComparison.OrdinalIgnoreCase) &&

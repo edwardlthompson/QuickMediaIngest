@@ -8,7 +8,41 @@ namespace QuickMediaIngest.Core
     public static class MediaExtensions
     {
         public static bool IsMediaFile(string fileName) =>
+            !IsAndroidTrashOrNoise(fileName) &&
             IsMediaExtension(Path.GetExtension(fileName));
+
+        public static bool IsAndroidTrashOrNoise(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return true;
+            }
+
+            string name = Path.GetFileName(fileName.Trim());
+            if (string.IsNullOrEmpty(name))
+            {
+                return true;
+            }
+
+            if (name.Equals(".nomedia", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return name.StartsWith(".trashed-", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsAndroidTrashDirectory(string dirName)
+        {
+            if (string.IsNullOrWhiteSpace(dirName))
+            {
+                return false;
+            }
+
+            string name = Path.GetFileName(dirName.Trim().TrimEnd('/', '\\'));
+            return name.Equals(".Trash", StringComparison.OrdinalIgnoreCase) ||
+                   name.Equals("trash", StringComparison.OrdinalIgnoreCase);
+        }
 
         public static bool IsMediaExtension(string extension)
         {

@@ -90,6 +90,7 @@ namespace QuickMediaIngest.ViewModels
 
                             if (!string.IsNullOrWhiteSpace(config.FtpRemoteFolder)) FtpRemoteFolder = NormalizeFtpPath(config.FtpRemoteFolder);
                             AutoReconnectLastFtp = config.AutoReconnectLastFtp;
+                            PreferAdbTransferWhenAvailable = config.PreferAdbTransferWhenAvailable;
                             SettingsMenuExpanded = config.SettingsMenuExpanded;
                             if (!string.IsNullOrWhiteSpace(config.ScanPath)) ScanPath = config.ScanPath;
                             SelectAll = config.SelectAll;
@@ -101,8 +102,16 @@ namespace QuickMediaIngest.ViewModels
                             if (config.ThumbnailSize > 0) ThumbnailSize = config.ThumbnailSize;
                             ScanIncludeSubfolders = config.ScanIncludeSubfolders;
                             TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);
-                            LimitFtpThumbnailLoad = false;
-                            FtpInitialThumbnailCount = 0;
+                            LimitFtpThumbnailLoad = config.LimitFtpThumbnailLoad;
+                            int thumbCount = config.FtpInitialThumbnailCount;
+                            if (LimitFtpThumbnailLoad && thumbCount <= 0)
+                            {
+                                thumbCount = 48;
+                            }
+
+                            FtpInitialThumbnailCount = thumbCount <= 0
+                                ? 48
+                                : Math.Clamp(thumbCount, 20, 2000);
                             ExpandPreviewStacks = config.ExpandPreviewStacks;
                             if (!string.IsNullOrWhiteSpace(config.DuplicatePolicy)) DuplicatePolicy = config.DuplicatePolicy;
                             if (!string.IsNullOrWhiteSpace(config.VerificationMode)) VerificationMode = config.VerificationMode;

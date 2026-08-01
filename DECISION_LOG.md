@@ -2,9 +2,158 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-01 — Unified load fail-fast FTP + progressive local UI
+
+**Status:** Accepted
+**Context:** SD card (`E:\`) enumeration finished in tens of ms, but Unified browse waited ~9s on dead FTP `10.0.0.7`, threw, discarded local results, and retried.
+
+**Decision:**
+- Soft-fail FTP in unified merge (never fail the whole load); 8s connect probe then 45s listing; PreferAdb unchanged.
+- Progressive paint: show local items as soon as drive scans finish; status explains FTP still loading / unavailable.
+- Process-local 60s FTP host cooldown + single-flight unified load with queued forceRefresh.
+- Do not cache empty FTP failures.
+
+**Validation:** Unit tests for soft-fail, budgets, cooldown; local preview WallTimeMs logging; gates + local portable build.
+
+---
+
+## 2026-07-30 — MP4 thumbs Windows-aligned (MediaStore JPEG, not full pull)
+
+**Status:** Accepted
+**Context:** Three DCIM MP4s (174MB–1.1GB) failed grid preview. Truncated ADB pulls are not seekable; Shell needs a coherent local file. Explorer uses Shell locally and MTP thumbnail JPEGs for phones — not full-video download.
+
+**Decision:**
+- PreferAdb video path: `IAdbVideoThumbnailFetcher` resolves MediaStore id and pulls a small JPEG (`…/thumbnail` or thumbnails `_data`).
+- Skip truncated video tiers when size > 8MB; complete-file Shell/ffmpeg fallback only when size ≤ **256MB**.
+- No multi‑GB pulls solely for grid previews.
+
+**Validation:** Unit coverage for fetch tiers / fallback gate + PreferAdb routing (device JPEG skips pull; ≥256MB never full-pulls); PreferAdb smoke for DCIM MP4s when device attached.
+
+---
+
+## 2026-07-30 — HEIC preview load felt empty (Magick-first latency)
+
+**Status:** Accepted
+**Context:** After rejecting false embedded JPEGs, CompleteFile used Magick on every HEIC. Mid-load the grid looked empty (“almost none showing”); smoke later showed **loaded 112 / failed 3 / pending 0** (3 ≈ MP4 + rare still).
+
+**Decision:**
+- `GetFetchTiers`: single-shot pull when known size ≤ type cap; unknown HEIC skips 64K–512K tiers.
+- Magick HEIC open prefers `heic:thumbnail` define then full decode.
+
+**Validation:** PrintWindow smoke health 112/3/0; warm cache reload; unit coverage for fetch tiers.
+
+---
+
+## 2026-07-30 — HEIC embedded JPEG false positives → Preview failed
+
+**Status:** Accepted
+**Context:** Pipeline reported ~112 loaded but UI showed many HEIC/DNG “Preview failed”. Offline Magick decoded OP13 HEICs fine; WPF rejected the bytes the pipeline returned.
+
+**Decision:**
+- Naive `FF D8…FF D9` scans inside HEIC BMFF produce corrupt “JPEGs”; `LooksGlitchy` Magick failures previously counted as “not glitchy,” so embeds short-circuited Magick and WPF failed.
+- Require Magick-decodable JPEG for SOI payloads; require `FF D8 FF` after SOI for embeds; Magick-first for CompleteFile HEIC; bump disk cache to `ftp-thumb-v4`.
+- Always copy rendered sibling thumbs onto RAW tiles (even when pairs are not stacked).
+
+**Validation:** 190 tests; corrupt SOI + BMFF false-positive unit coverage.
+
+---
+
+## 2026-07-30 — Fix failed (non-glitch) PreferAdb previews
+
+**Status:** Accepted
+**Context:** Glitches gone but many “Preview failed”. All OP13 HEICs are >2MB (cap was 2MB); DNG siblings used DNG byte size; videos never full-downloaded; CompleteFile used FTP only.
+
+**Decision:**
+- HEIC preview budget **12MB**; prefer ADB `pull` when file fits budget; complete buffers decode as `CompleteFile`.
+- CompleteFile fallback prefers ADB pull (≤40MB) before FTP; videos allowed up to 80MB.
+- Sibling HEIC probes use `knownFileSize=0` (not parent DNG size).
+- Unified applies rendered-sibling thumbnails after each FTP/ADB batch.
+
+**Validation:** 188 tests; gates 9/9; smoke ADB decode dominant, skipped ≈ videos only.
+
+---
+
+**Status:** Accepted
+**Context:** UI showed many failed/broken previews. Logs: PreferAdb claimed but **ADB decode always 0**; FTP Magick on truncated HEIC produced green glitches; selecting FTP sidebar crashed Groups rebuild off-UI-thread.
+
+**Decision:**
+- ADB capped fetch via `exec-out sh -c "dd if='…'"` (single-quoted `exec-out dd` was emitting `dd: '…` text as “success”).
+- Reject non-media payloads (`dd:` / short buffers) before decode.
+- No Magick on capped HEIC/HEIF (same rule as RAW/video); bump FTP thumb cache to `ftp-thumb-v3`.
+- `RebuildGroupsFromCurrentItems` always on Dispatcher after async scan.
+
+**Validation:** Unit payload tests; `dotnet test`; OP13 smoke expects `ADB decode > 0`.
+
+---
+
+**Status:** Accepted
+**Context:** Unified ignored `LimitFtpThumbnailLoad` (loaded 115); PreferAdb transport opaque in Info logs; phone FTP Connection-reset noise from parallel capped RETRs.
+
+**Decision:**
+- Honor `LimitFtpThumbnailLoad` / `FtpInitialThumbnailCount` for Unified and FTP source (initial batch + background remainder).
+- Info-log PreferAdb vs FTP transport at batch start; finish line includes ADB/FTP decode counts.
+- Cap thumb download parallelism at 3; when PreferAdb session resolves, force Balanced (no FluentFTP pool) for thumbs.
+
+**Validation:** 187 unit tests; watch-agent-gates 9/9; OP13 smoke after find+stat `|` fix.
+
+---
+
+**Status:** Accepted (amended same day: find+stat separator)
+**Context:** Post-hybrid OP13 session: 332 Warning FTP 550 sibling probes for phantom `.heif`/`.jpg`; ADB `FileSize=0` blocked size-capped pull; reconnect left Sources empty of selection. Follow-up smoke: ADB scan returned 0 because toybox `stat -c '%n\t%s'` emits literal `\t`, so parsers dropped all paths under folders with spaces (e.g. `Point & Shoot`).
+
+**Decision:**
+- When PreferAdb thumb session + `IAdbPathProbe` are set, `FileExists` (cached) before sibling/HEIF candidate ADB/FTP probes; missing paths mark 550 cache.
+- Demote “permanent failure cached” skip logs to Debug (first 550 still Warning).
+- ADB scan prefers `find … -exec stat -c '%n|%s'` (pipe separator); fall back to plain `find` if sized parse yields 0 media.
+- Successful FTP auto-reconnect selects Unified (starts browse) after ensuring `_unifiedSource` is in Sources.
+
+**Validation:** Unit tests for find-line size parse (pipe + spaces in path); `dotnet test` + agent gates.
+
+---
+
+## 2026-07-29 — Seamless hybrid ADB browse (scan + thumbs + import)
+
+**Status:** Accepted (supersedes browse half of “Hybrid FTP browse / ADB pull” same day)
+**Context:** OP13 FTP LIST aliases (.heif/.jpg phantoms), 550 RETR storms, Magick green/magenta glitches on capped RAW/video, Unified re-scanning `/DCIM` after FTP, PreferAdb already on for import.
+
+**Decision:**
+- Seamless hybrid (A): keep FTP sidebar/Unified UI; when PreferAdb + `TryResolve`, ADB owns **scan** (`find -type f`), **thumbnails** (dd → size-capped pull), and **import**; FTP fallback on failure.
+- `ImportItem.SourcePath` stays FTP-style; map via `AdbAndroidPath`.
+- HEIF→HEIC RETR/probe candidates with always-fall-back to original `.heif`.
+- Permanent FTP 550 negative cache (host|port|path); clear on reconnect; FluentFTP thumb `RetryAttempts=0`.
+- Partial RAW/video: never Magick/Shell on capped buffers; glitch JPEG reject in `ThumbnailPreviewValidator`.
+- Unified/FTP share `_sourceItemsCache` + inflight scan map; narrow cache clears on scan path change.
+- First `adb devices` serial only; multi-device picker still deferred.
+
+**Alternatives rejected:** Dedicated sidebar ADB source; Magick on TieredFinalCap RAW/video; retrying 550×3 per worker.
+
+**Validation:** Unit tests (path normalize, failure cache, glitch fixtures, Adb path rewrite); `dotnet test`.
+
+---
+
+## 2026-07-29 — Hybrid FTP browse / ADB pull for Android imports
+
+**Status:** Accepted
+**Context:** OP13 FTP session showed DHCP IP churn breaking host-keyed Credential Manager entries; large `/DCIM` libraries; ADB already available on the same device for faster copies.
+
+**Decision:**
+- Keep FTP for browse/scan/thumbnails; when `PreferAdbTransferWhenAvailable` (default true) and preflight finds a device + readable `/sdcard` or `/storage/emulated/0` remote folder, import Copy/Delete via remapped `AdbFileProvider`.
+- No mid-import soft-fallback to FTP (avoids mixed transport / delete-after confusion).
+- Multi-device: first `adb devices` serial only; show serial suffix in UI; picker deferred.
+- Vault: `TryMigratePassword` from previous/saved hosts on IP change; fail-fast when password missing.
+- FTP listing `KeepAlive=false`; ADB processes killed on cancel / 5-minute per-file wall timeout.
+- Skip `.trashed-*`, `.nomedia`, and `.Trash`/`trash` directories at scan time.
+- Fix ConfigLoad wiping FTP thumbnail limits; default limit on with count 48.
+
+**Alternatives rejected:** First-class sidebar `AdbSourceItem` scan in this slice; mid-group FTP fallback; GUID vault keys.
+
+**Validation:** Unit tests for migrate/path/trash; `watch-agent-gates` / `dotnet test`.
+
+---
+
 ## 2026-07-22 — Automate Align-0.15 HUMAN_BACKLOG (keep release-please/pages off)
 
-**Status:** Accepted  
+**Status:** Accepted
 **Context:** HUMAN_BACKLOG deferred enabling several upstream workflows after template alignment.
 
 **Decision:**
@@ -19,7 +168,7 @@
 
 ## 2026-07-21 — Align process tooling with agent-project-bootstrap v0.15.1
 
-**Status:** Accepted  
+**Status:** Accepted
 **Context:** Repo was on template `0.11.0`; upstream tip is `0.15.1` (Cursor FOSS pack, parallel BUILD_PLAN, expanded scripts/CI). This is a live WPF product, not a fresh bootstrap.
 
 **Decision:**
@@ -189,7 +338,6 @@
 | 1 | `plan.md` — Phase 5 validation scope | Pass (trivial rubric; no code edits) |
 | 3 | `feature.md` — Phase 5 AGENT rows | Pass (gates + docs only) |
 | 4 | `gates.md` — local validation | See gate table below |
-
 **Gate suite results:**
 
 | Script | Result | Notes |
@@ -201,7 +349,6 @@
 | `validate-local.ps1 -QuickBootstrap -SkipBuild` | ✅ Pass | All local gates |
 | `pre-release-gate.sh` | ⚠️ Partial | feature-gate ✅; CI/CodeQL ✅; **Dependabot strict FAIL** — `gh` lacks `security_events` scope locally |
 | `dotnet test -c Release` | ✅ Pass | 91 passed, 5 skipped (prior session) |
-
 **Pending [HUMAN]:** Confirm `/bootstrap`, `/build`, `/verify`, `/ship`, `/gates`, `/audit` in Cursor `/` menu; sign off template v0.11.0 bump; run `gh auth refresh -s security_events` or manual CVE triage per `docs/SECURITY_TRIAGE.md`.
 
 **Pending [AUTO]:** Push branch; CI green on all new gates.
@@ -383,4 +530,3 @@
 **Release assets:** `QuickMediaIngest.exe`, `QuickMediaIngest-Portable.zip`, `QuickMediaIngest.msi`, `QuickMediaIngest-1.3.22.cyclonedx.json` on [v1.3.22](https://github.com/edwardlthompson/QuickMediaIngest/releases/tag/v1.3.22).
 
 **N/A:** GitHub Pages; release-please (declined for this product). `simulate-template-upgrade` web-stack smoke gaps are expected for this WPF-only child.
-

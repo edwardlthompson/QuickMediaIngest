@@ -35,25 +35,6 @@ namespace QuickMediaIngest.ViewModels
 
         private void OpenUrl(string url) => _shellService.OpenUrl(url);
 
-        private string ResolveFtpPassword() =>
-            FtpSourceCredentials.ResolvePassword(FtpPass, FtpHost, FtpPort, FtpHost, _ftpCredentialStore);
-
-        private string ResolveFtpPasswordForSource(FtpSourceItem ftp) =>
-            FtpSourceCredentials.ResolvePassword(ftp.Pass, ftp.Host, ftp.Port, ftp.Host, _ftpCredentialStore);
-
-        private void EnsureFtpSourceCredentials(FtpSourceItem ftp)
-        {
-            ftp.Pass = ResolveFtpPasswordForSource(ftp);
-        }
-
-        private FtpEndpoint ToFtpEndpoint(FtpSourceItem ftp)
-        {
-            EnsureFtpSourceCredentials(ftp);
-            string pass = ResolveFtpPasswordForSource(ftp);
-            ftp.Pass = pass;
-            return new FtpEndpoint(ftp.Host, ftp.Port, ftp.User, pass);
-        }
-
         private void ExecuteSaveFtp()
         {
             if (string.IsNullOrEmpty(FtpHost)) return;
@@ -110,6 +91,19 @@ namespace QuickMediaIngest.ViewModels
             try
             {
                 string password = ResolveFtpPassword();
+                if (string.IsNullOrEmpty(password) && string.IsNullOrEmpty(FtpPass))
+                {
+                    HasLastFtpReconnectFailure = true;
+                    RefreshUxEmptyStateHints();
+                    StatusMessage = AppLocalizer.Format("Vm_Ftp_PasswordMissingForHost", FtpHost, FtpPort);
+                    FtpDialogStatusMessage = StatusMessage;
+                    _logger.LogWarning(
+                        "FTP connection test skipped: no password for {Host}:{Port}.",
+                        FtpHost,
+                        FtpPort);
+                    return;
+                }
+
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var result = await Task.Run(async () =>
                     await _ftpWorkflowService.TestConnectionAsync(
@@ -125,8 +119,16 @@ namespace QuickMediaIngest.ViewModels
                 {
                     HasLastFtpReconnectFailure = false;
                     RefreshUxEmptyStateHints();
+                    FtpPermanentFailureCache.ClearEndpoint(FtpHost, FtpPort);
+                    FtpAdbAliasFilter.ClearSessionCache();
                     IsFirstRun = false;
+                    RememberFtpVaultHost(FtpHost);
                     SaveConfig();
+                    _logger.LogInformation(
+                        "FTP UI connection test succeeded for {Host}:{Port}{RemotePath}.",
+                        FtpHost,
+                        FtpPort,
+                        remotePath);
                 }
 
                 StatusMessage = result.Success
@@ -240,76 +242,6 @@ namespace QuickMediaIngest.ViewModels
             SelectedFtpPresetFolder = SelectedBrowsedFtpFolder.Path;
             StatusMessage = AppLocalizer.Format("Vm_Ftp_FolderSelected", SelectedBrowsedFtpFolder.Path);
             FtpDialogStatusMessage = StatusMessage;
-        }
-
-        private async Task TryReconnectLastFtpAsync()
-        {
-            if (!AutoReconnectLastFtp || string.IsNullOrWhiteSpace(FtpHost))
-            {
-                return;
-            }
-
-            string remotePath = NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
-            string password = ResolveFtpPassword();
-            try
-            {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var result = await _ftpWorkflowService.TestConnectionAsync(
-                    FtpHost,
-                    FtpPort,
-                    FtpUser,
-                    password,
-                    remotePath,
-                    8,
-                    timeout.Token);
-
-                if (!result.Success)
-                {
-                    HasLastFtpReconnectFailure = true;
-                    RefreshUxEmptyStateHints();
-                    StatusMessage = AppLocalizer.Format("Vm_Ftp_LastSourceUnreachable", FtpHost, FtpPort, remotePath);
-                    return;
-                }
-
-                HasLastFtpReconnectFailure = false;
-                RefreshUxEmptyStateHints();
-
-                var ftp = new FtpSourceItem
-                {
-                    Host = FtpHostNormalizer.Normalize(FtpHost),
-                    Port = FtpPort,
-                    User = FtpUser,
-                    Pass = password,
-                    RemoteFolder = remotePath
-                };
-
-                bool exists = Sources.OfType<FtpSourceItem>().Any(s =>
-                    string.Equals(s.Host, ftp.Host, StringComparison.OrdinalIgnoreCase) &&
-                    s.Port == ftp.Port &&
-                    string.Equals(NormalizeFtpPath(s.RemoteFolder), remotePath, StringComparison.OrdinalIgnoreCase));
-
-                if (!exists)
-                {
-                    Sources.Add(ftp);
-                }
-                else
-                {
-                    var existing = Sources.OfType<FtpSourceItem>().First(s =>
-                        string.Equals(s.Host, ftp.Host, StringComparison.OrdinalIgnoreCase) &&
-                        s.Port == ftp.Port &&
-                        string.Equals(NormalizeFtpPath(s.RemoteFolder), remotePath, StringComparison.OrdinalIgnoreCase));
-                    existing.Pass = password;
-                }
-
-                StatusMessage = AppLocalizer.Format("Vm_Ftp_Reconnected", FtpHost, FtpPort, remotePath);
-                SaveConfig();
-            }
-            catch
-            {
-                HasLastFtpReconnectFailure = true;
-                RefreshUxEmptyStateHints();
-                StatusMessage = AppLocalizer.Format("Vm_Ftp_LastSourceUnreachable", FtpHost, FtpPort, remotePath);
-            }
         }
     }
 }

@@ -33,184 +33,6 @@ namespace QuickMediaIngest.ViewModels
     public partial class MainViewModel : ObservableObject
     {
 
-        private async Task LoadUnifiedThumbnailsAsync(List<ItemGroup> groups, string sourceLabel, CancellationToken cancellationToken = default)
-        {
-            var allItems = groups
-                .SelectMany(g => g.Items)
-                .ToList();
-
-            if (allItems.Count == 0)
-            {
-                StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_NoUnifiedImages", sourceLabel);
-                return;
-            }
-
-            int total = allItems.Count;
-            int processedAtomic = 0;
-
-            await Application.Current.Dispatcher
-                .InvokeAsync(() =>
-                {
-                    ScannedFiles = 0;
-                    TotalFilesToScan = total;
-                    ScanProgressPercent = 0;
-                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingUnifiedPreviewsProgress", 0, total);
-                })
-                .Task
-                .ConfigureAwait(false);
-
-            var ftpSourcesByKey = Sources
-                .OfType<FtpSourceItem>()
-                .ToDictionary(BuildSourceKey, ftp => ftp, StringComparer.OrdinalIgnoreCase);
-
-            foreach (var ftp in ftpSourcesByKey.Values)
-            {
-                EnsureFtpSourceCredentials(ftp);
-            }
-
-            var needLocal = new List<ImportItem>();
-            var needFtp = new List<ImportItem>();
-
-            foreach (var item in allItems)
-            {
-                string itemKey = BuildItemKey(item);
-                if (_thumbnailByItemKey.TryGetValue(itemKey, out var cachedThumb) && cachedThumb != null)
-                {
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        item.Thumbnail = cachedThumb;
-                        item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                    });
-                    BumpProgress();
-                }
-                else if (item.IsFtpSource)
-                {
-                    needFtp.Add(item);
-                }
-                else
-                {
-                    needLocal.Add(item);
-                }
-            }
-
-            string? localSamplePath = needLocal.Count > 0 ? needLocal[0].SourcePath : null;
-            int localWorkers = GetThumbnailWorkerCount(localSamplePath);
-
-            void BumpProgress()
-            {
-                int c = Interlocked.Increment(ref processedAtomic);
-                Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    ScannedFiles = Math.Max(ScannedFiles, c);
-                    int shown = ScannedFiles;
-                    TotalFilesToScan = total;
-                    ScanProgressPercent = total > 0 ? (shown * 100) / total : 0;
-                    ScanProgressMessage = AppLocalizer.Format("Vm_Scan_LoadingUnifiedPreviewsProgress", shown, total);
-                });
-            }
-
-            try
-            {
-                Task localTask = Task.Run(() =>
-                {
-                    Parallel.ForEach(
-                        needLocal,
-                        new ParallelOptions { MaxDegreeOfParallelism = localWorkers, CancellationToken = cancellationToken },
-                        item =>
-                        {
-                            string itemKey = BuildItemKey(item);
-                            object? thumb = null;
-                            try
-                            {
-                                thumb = WpfThumbnailBridge.ToBitmapSource(
-                                    _thumbnailService.GetThumbnail(item.SourcePath, BuildThumbnailHints()));
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogDebug(ex, "Unified thumbnail failed for local {Path}.", item.SourcePath);
-                            }
-
-                            Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                if (thumb != null)
-                                {
-                                    item.Thumbnail = thumb;
-                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Loaded;
-                                    _thumbnailByItemKey[itemKey] = thumb;
-                                }
-                                else
-                                {
-                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed;
-                                }
-                            });
-                            BumpProgress();
-                        });
-                }, cancellationToken);
-
-                Task ftpTask = Task.Run(async () =>
-                {
-                    var ftpGroups = needFtp.GroupBy(i => i.SourceId, StringComparer.OrdinalIgnoreCase);
-                    foreach (var group in ftpGroups)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (!ftpSourcesByKey.TryGetValue(group.Key, out var ftp))
-                        {
-                            foreach (var item in group)
-                            {
-                                await Application.Current.Dispatcher.InvokeAsync(() =>
-                                    item.ThumbnailPreviewStatus = ThumbnailPreviewStatus.Failed);
-                                BumpProgress();
-                            }
-
-                            continue;
-                        }
-
-                        var groupItems = group.ToList();
-                        var itemByKey = groupItems.ToDictionary(BuildItemKey, i => i, StringComparer.OrdinalIgnoreCase);
-                        var workItems = groupItems
-                            .Where(item => !ShouldSkipFtpThumbnailWorkItem(item, groupItems))
-                            .Select(item => new FtpThumbnailWorkItem
-                            {
-                                ItemKey = BuildItemKey(item),
-                                RemotePath = item.SourcePath,
-                                FileName = item.FileName,
-                                FileSize = item.FileSize
-                            })
-                            .ToList();
-
-                        FtpThumbnailBatchResult batch = await _ftpThumbnailService.LoadBatchAsync(
-                            ToFtpEndpoint(ftp),
-                            workItems,
-                            BuildThumbnailHints(),
-                            BuildFtpThumbnailLoadOptions(),
-                            _ =>
-                            {
-                                BumpProgress();
-                                return Task.CompletedTask;
-                            },
-                            async result =>
-                            {
-                                await ApplyFtpThumbnailResultAsync(result, itemByKey);
-                            },
-                            cancellationToken);
-
-                        await ApplyFtpThumbnailBatchResultsAsync(batch.Items, itemByKey);
-                    }
-                }, cancellationToken);
-
-                await Task.WhenAll(localTask, ftpTask).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Unified preview load canceled for {SourceLabel}.", sourceLabel);
-                StatusMessage = AppLocalizer.Get("Vm_Status_PreviewLoadCanceled");
-                return;
-            }
-
-            Application.Current.Dispatcher.Invoke(RefreshPreviewHealthSummary);
-            StatusMessage = AppLocalizer.Format("Vm_Status_ScanComplete_UnifiedPreviews", sourceLabel);
-        }
-
         private static void StampItems(List<ImportItem> items, string sourceId, bool isFtp)
         {
             foreach (var item in items)
@@ -288,11 +110,33 @@ namespace QuickMediaIngest.ViewModels
 
         private FtpThumbnailLoadOptions BuildFtpThumbnailLoadOptions()
         {
+            AdbTransferSession? session = null;
+            IAdbPreviewFetcher? fetcher = null;
+            IAdbVideoThumbnailFetcher? videoFetcher = null;
+            if (PreferAdbTransferWhenAvailable)
+            {
+                string folder = SelectedSource is FtpSourceItem ftpSel
+                    ? NormalizeFtpPath(ftpSel.RemoteFolder)
+                    : NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+                session = AdbTransferEligibility.TryResolve(folder, _adbPathProbe);
+                if (session != null)
+                {
+                    fetcher = _adbPreviewFetcher;
+                    videoFetcher = _adbVideoThumbnailFetcher;
+                }
+            }
+
+            // Cap parallel RETRs to reduce phone FTP "Connection reset" from early-close capped reads.
+            // PreferAdb also forces Balanced so FluentFTP pools stay off for thumbs.
             return new FtpThumbnailLoadOptions
             {
-                DownloadParallelism = Math.Min(GetFtpThumbnailWorkerCount(), 6),
+                DownloadParallelism = Math.Min(GetFtpThumbnailWorkerCount(), 3),
                 DecodeParallelism = GetThumbnailWorkerCount(),
-                PerformanceMode = ThumbnailPerformanceMode
+                PerformanceMode = session != null ? "Balanced" : ThumbnailPerformanceMode,
+                AdbSession = session,
+                AdbPreviewFetcher = fetcher,
+                AdbVideoThumbnailFetcher = videoFetcher,
+                AdbPathProbe = session != null ? _adbPathProbe : null,
             };
         }
 

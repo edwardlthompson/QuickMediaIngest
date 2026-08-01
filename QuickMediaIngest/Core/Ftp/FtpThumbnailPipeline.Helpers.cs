@@ -1,8 +1,9 @@
 #nullable enable
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
 
@@ -10,7 +11,27 @@ namespace QuickMediaIngest.Core
 {
     internal sealed partial class FtpThumbnailPipeline
     {
-        private async Task<DecodedThumbnail?> TryLoadSiblingPreviewAsync(
+        private IAdbPathProbe? _adbPathProbe;
+        private readonly ConcurrentDictionary<string, bool> _adbExistsCache = new();
+
+        private void LogThumbnailTransport(int itemCount)
+        {
+            if (_adbSession is { } preferAdb)
+            {
+                _logger.LogInformation(
+                    "Thumbnail batch transport: PreferAdb ADB ({Serial}) with FTP fallback for {Count} item(s).",
+                    preferAdb.DeviceSerial,
+                    itemCount);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Thumbnail batch transport: FTP for {Count} item(s).",
+                    itemCount);
+            }
+        }
+
+        private async Task<(DecodedThumbnail? Thumb, bool ViaAdb)> TryLoadSiblingPreviewAsync(
             FtpEndpoint endpoint,
             FtpThumbnailWorkItem workItem,
             string tempPath,
@@ -19,12 +40,19 @@ namespace QuickMediaIngest.Core
             SemaphoreSlim decodeGate,
             CancellationToken cancellationToken)
         {
-            foreach (string siblingPath in GetRenderedSiblingRemotePaths(workItem.RemotePath, workItem.FileName))
+            foreach (string siblingPath in FtpMediaPathNormalizer.GetRenderedSiblingRemotePaths(
+                         workItem.RemotePath, workItem.FileName))
             {
-                DecodedThumbnail? thumb = await TryTieredDownloadAndDecodeAsync(
+                if (await ShouldSkipMissingRemoteAsync(endpoint, siblingPath, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                (DecodedThumbnail? thumb, bool viaAdb) = await TryTieredDownloadAndDecodeAsync(
                     endpoint,
                     siblingPath,
                     Path.GetFileName(siblingPath),
+                    knownFileSize: 0,
                     tempPath,
                     hints,
                     useFluentFtp,
@@ -32,22 +60,45 @@ namespace QuickMediaIngest.Core
                     cancellationToken);
                 if (thumb != null)
                 {
-                    return thumb;
+                    return (thumb, viaAdb);
                 }
             }
 
-            return null;
+            return (null, false);
         }
 
-        private static IEnumerable<string> GetRenderedSiblingRemotePaths(string remotePath, string fileName)
+        /// <summary>
+        /// When PreferAdb session + probe are set, skip paths that do not exist on the device
+        /// (avoids FTP 550 storms for phantom .heif/.jpg siblings).
+        /// </summary>
+        private async Task<bool> ShouldSkipMissingRemoteAsync(
+            FtpEndpoint endpoint,
+            string remotePath,
+            CancellationToken cancellationToken)
         {
-            int slash = remotePath.LastIndexOf('/');
-            string directory = slash >= 0 ? remotePath[..slash] : string.Empty;
-            string baseName = Path.GetFileNameWithoutExtension(fileName);
-            foreach (string ext in new[] { ".heic", ".heif", ".jpg", ".jpeg" })
+            if (_adbSession is not { } adb || _adbPathProbe is null)
             {
-                yield return string.IsNullOrEmpty(directory) ? "/" + baseName + ext : directory + "/" + baseName + ext;
+                return false;
             }
+
+            string devicePath = AdbAndroidPath.ToDevicePath(adb.MediaRootPrefix, remotePath);
+            string cacheKey = $"{adb.DeviceSerial}|{devicePath}";
+            if (_adbExistsCache.TryGetValue(cacheKey, out bool cached))
+            {
+                return !cached;
+            }
+
+            bool exists = await Task.Run(
+                    () => _adbPathProbe.FileExists(adb.DeviceSerial, devicePath),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            _adbExistsCache[cacheKey] = exists;
+            if (!exists)
+            {
+                FtpPermanentFailureCache.MarkFailed(endpoint.Host, endpoint.Port, remotePath);
+            }
+
+            return !exists;
         }
 
         private static bool ShouldTryFullDownload(FtpThumbnailWorkItem workItem)
@@ -55,10 +106,12 @@ namespace QuickMediaIngest.Core
             string ext = Path.GetExtension(workItem.FileName);
             if (MediaExtensions.IsVideoExtension(ext))
             {
-                return false;
+                return FtpPreviewDownloadLimits.ShouldTryVideoCompleteFallback(workItem.FileSize);
             }
 
-            return workItem.FileSize <= 0 || workItem.FileSize <= 25 * 1024 * 1024;
+            // Stills up to 40MB.
+            const long stillLimit = 40L * 1024 * 1024;
+            return workItem.FileSize <= 0 || workItem.FileSize <= stillLimit;
         }
 
         private static int GetThumbnailPriority(FtpThumbnailWorkItem item)

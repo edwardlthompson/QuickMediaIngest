@@ -30,6 +30,10 @@ namespace QuickMediaIngest.Tests
                 new Mock<IUnifiedConcreteSourceScanService>().Object,
                 new Mock<IFtpCredentialStore>().Object,
                 new Mock<IFtpThumbnailService>().Object,
+                new Mock<IAdbMediaScanner>().Object,
+                new Mock<IAdbPreviewFetcher>().Object,
+                new Mock<IAdbVideoThumbnailFetcher>().Object,
+                new Mock<IAdbPathProbe>().Object,
                 new Mock<IFileDialogService>().Object,
                 new Mock<IShellService>().Object,
                 new Mock<ILogger<MainViewModel>>().Object);

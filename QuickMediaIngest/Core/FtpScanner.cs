@@ -88,6 +88,7 @@ namespace QuickMediaIngest.Core
                     timeoutSeconds,
                     cancellationToken);
 
+                _logger.LogInformation("FTP connection test succeeded for {Host}:{Port}{RemotePath}.", host, port, LogPathSanitizer.FtpRemote(normalizedPath));
                 return (true, $"Connected to {host}:{port} and listed folder {normalizedPath}");
             }
             catch (OperationCanceledException)

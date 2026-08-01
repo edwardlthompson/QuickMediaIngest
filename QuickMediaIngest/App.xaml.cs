@@ -202,6 +202,10 @@ namespace QuickMediaIngest
             });
 
 
+            services.AddSingleton<IAdbPathProbe, AdbShellPathProbe>();
+            services.AddSingleton<IAdbMediaScanner, AdbMediaScanner>();
+            services.AddSingleton<IAdbPreviewFetcher, AdbPreviewFetcher>();
+            services.AddSingleton<IAdbVideoThumbnailFetcher, AdbVideoThumbnailFetcher>();
             services.AddSingleton<ILocalScanner, LocalScanner>();
             services.AddSingleton<IFtpScanner, FtpScanner>();
             services.AddSingleton<IThumbnailService, ThumbnailService>();

@@ -13,6 +13,12 @@ namespace QuickMediaIngest.Core.Services
 
         void WritePassword(string host, int port, string userName, string password);
 
+        /// <summary>
+        /// Copies a stored password from <paramref name="oldHost"/> to <paramref name="newHost"/> at the same port.
+        /// Leaves the old key in place. Returns false if the old key is missing or hosts normalize equal.
+        /// </summary>
+        bool TryMigratePassword(string oldHost, string newHost, int port, string userName);
+
         /// <summary>Remove stored secret for this FTP endpoint (empty password).</summary>
         void DeletePassword(string host, int port);
     }

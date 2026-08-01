@@ -8,7 +8,7 @@ namespace QuickMediaIngest.Core
 {
     internal static class ThumbnailDiskCache
     {
-        private const string FtpCacheVersion = "ftp-thumb-v2";
+        private const string FtpCacheVersion = "ftp-thumb-v4";
 
         public static string GetCacheDirectory()
         {

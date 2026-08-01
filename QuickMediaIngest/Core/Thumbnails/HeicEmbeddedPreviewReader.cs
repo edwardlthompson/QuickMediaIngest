@@ -1,6 +1,8 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
@@ -34,9 +36,36 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            int bestStart = -1;
-            int bestLength = 0;
+            // Longest first; require SOI + marker (FF D8 FF …) so BMFF noise is skipped.
+            foreach ((int start, int length) in EnumerateJpegCandidates(data))
+            {
+                if (length < 2048 || start + 3 >= data.Length || data[start + 2] != 0xFF)
+                {
+                    continue;
+                }
 
+                try
+                {
+                    byte[] jpegBytes = new byte[length];
+                    Buffer.BlockCopy(data, start, jpegBytes, 0, length);
+                    DecodedThumbnail? thumb = JpegSofDimensionParser.TryCreate(jpegBytes);
+                    if (thumb != null)
+                    {
+                        return thumb;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogDebug(ex, "HEIC embedded JPEG segment decode failed.");
+                }
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<(int Start, int Length)> EnumerateJpegCandidates(byte[] data)
+        {
+            var found = new List<(int Start, int Length)>();
             for (int i = 0; i < data.Length - 1; i++)
             {
                 if (data[i] != 0xFF || data[i + 1] != 0xD8)
@@ -45,35 +74,13 @@ namespace QuickMediaIngest.Core
                 }
 
                 int end = FindJpegEnd(data, i + 2);
-                if (end < 0)
+                if (end >= 0)
                 {
-                    continue;
-                }
-
-                int length = end - i;
-                if (length > bestLength)
-                {
-                    bestStart = i;
-                    bestLength = length;
+                    found.Add((i, end - i));
                 }
             }
 
-            if (bestStart < 0 || bestLength < 2048)
-            {
-                return null;
-            }
-
-            try
-            {
-                byte[] jpegBytes = new byte[bestLength];
-                Buffer.BlockCopy(data, bestStart, jpegBytes, 0, bestLength);
-                return JpegSofDimensionParser.TryCreate(jpegBytes);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogDebug(ex, "HEIC embedded JPEG segment decode failed.");
-                return null;
-            }
+            return found.OrderByDescending(c => c.Length);
         }
 
         private static int FindJpegEnd(byte[] data, int start)

@@ -159,7 +159,8 @@ namespace QuickMediaIngest.ViewModels
                     IFileProvider provider = _fileProviderFactory.CreateLocalProvider();
                     if (SelectedSource is FtpSourceItem ftp)
                     {
-                        provider = _fileProviderFactory.CreateFtpProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
+                        EnsureFtpSourceCredentials(ftp);
+                        provider = CreateProviderForFtpSource(ftp);
                     }
                     else if (SelectedSource is AdbSourceItem adb)
                     {

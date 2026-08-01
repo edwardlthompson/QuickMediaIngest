@@ -12,6 +12,10 @@ namespace QuickMediaIngest.Core.Services
         public int DownloadParallelism { get; init; } = 3;
         public int DecodeParallelism { get; init; } = 4;
         public string PerformanceMode { get; init; } = "Balanced";
+        public AdbTransferSession? AdbSession { get; init; }
+        public IAdbPreviewFetcher? AdbPreviewFetcher { get; init; }
+        public IAdbVideoThumbnailFetcher? AdbVideoThumbnailFetcher { get; init; }
+        public IAdbPathProbe? AdbPathProbe { get; init; }
     }
 
     public sealed class FtpThumbnailWorkItem
@@ -33,6 +37,8 @@ namespace QuickMediaIngest.Core.Services
     {
         public int LoadedCount { get; init; }
         public int SkippedCount { get; init; }
+        public int AdbDecodedCount { get; init; }
+        public int FtpDecodedCount { get; init; }
         public IReadOnlyList<FtpThumbnailItemResult> Items { get; init; } = [];
     }
 

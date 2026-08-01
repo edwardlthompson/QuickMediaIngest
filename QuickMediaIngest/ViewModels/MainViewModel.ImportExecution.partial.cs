@@ -139,7 +139,8 @@ namespace QuickMediaIngest.ViewModels
 
                         if (!ftpProviders.TryGetValue(ftpBatch.Key, out var ftpProvider))
                         {
-                            ftpProvider = _fileProviderFactory.CreateFtpProvider(ftpSource.Host, ftpSource.Port, ftpSource.User, ftpSource.Pass);
+                            EnsureFtpSourceCredentials(ftpSource);
+                            ftpProvider = CreateProviderForFtpSource(ftpSource);
                             ftpProviders[ftpBatch.Key] = ftpProvider;
                         }
 
@@ -157,6 +158,36 @@ namespace QuickMediaIngest.ViewModels
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Prefers remapped ADB pull when enabled and preflight succeeds; otherwise FTP.
+        /// Preflight runs once per provider creation (import start / unified batch key).
+        /// </summary>
+        private IFileProvider CreateProviderForFtpSource(FtpSourceItem ftp)
+        {
+            string remoteFolder = NormalizeFtpPath(string.IsNullOrWhiteSpace(ftp.RemoteFolder) ? "/DCIM" : ftp.RemoteFolder);
+            if (PreferAdbTransferWhenAvailable)
+            {
+                AdbTransferSession? session = AdbTransferEligibility.TryResolve(remoteFolder);
+                if (session is { } adb)
+                {
+                    _logger.LogInformation(
+                        "Using ADB transfer for FTP import (serialSuffix={SerialSuffix}, rootPrefix={RootPrefix}, folder={Folder}).",
+                        AdbTransferEligibility.FormatSerialSuffix(adb.DeviceSerial),
+                        adb.MediaRootPrefix,
+                        remoteFolder);
+                    return _fileProviderFactory.CreateAdbRemappingProvider(adb.DeviceSerial, adb.MediaRootPrefix);
+                }
+
+                _logger.LogInformation(
+                    "ADB transfer unavailable for {Folder}; using FTP {Host}:{Port}.",
+                    remoteFolder,
+                    ftp.Host,
+                    ftp.Port);
+            }
+
+            return _fileProviderFactory.CreateFtpProvider(ftp.Host, ftp.Port, ftp.User, ftp.Pass);
         }
 
         private async Task ImportUnifiedSubsetAsync(ItemGroup group, List<ImportItem> items, IFileProvider provider, CancellationToken cancellationToken)

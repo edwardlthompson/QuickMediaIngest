@@ -76,6 +76,7 @@ namespace QuickMediaIngest.ViewModels
 
                     if (!forceRefresh && _sourceItemsCache.TryGetValue(sourceKey, out var cachedFtpItems))
                     {
+                        _logger.LogInformation("Source cache hit for {SourceKey}.", sourceKey);
                         items = CloneItems(cachedFtpItems);
                         ScanProgressMessage = AppLocalizer.Get("Vm_Scan_LoadedFromCache");
                         ScannedFiles = items.Count;
@@ -84,71 +85,16 @@ namespace QuickMediaIngest.ViewModels
                         goto BuildGroups;
                     }
 
+                    _logger.LogInformation("Source cache miss for {SourceKey}.", sourceKey);
                     StatusMessage = AppLocalizer.Format("Vm_Status_ScanningFtp", sourceLabel);
                     ScanProgressMessage = AppLocalizer.Format("Vm_Scan_ProgressFtpFolders", remotePath);
 
-                    items = await _ftpScanner.ScanAsync(
-                        ftp.Host,
-                        ftp.Port,
-                        ftp.User,
-                        ftp.Pass,
+                    items = await GetOrStartFtpSourceScanAsync(
+                        ftp,
                         remotePath,
-                        ScanIncludeSubfolders,
-                        120,
-                        CancellationToken.None,
-                        progress =>
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ScannedFolders = progress.ProcessedFolders;
-                                TotalFoldersToScan = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
-                                ScannedFiles = progress.ProcessedFiles;
-                                TotalFilesToScan = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
-                                CurrentScanFolder = progress.CurrentFolder;
-                                CurrentScanFolderProcessedFiles = progress.CurrentFolderProcessedFiles;
-                                CurrentScanFolderTotalFiles = progress.CurrentFolderTotalFiles;
-
-                                string noteSuffix = string.IsNullOrWhiteSpace(progress.Note) ? string.Empty : $" | {progress.Note}";
-                                if (progress.Phase == "Prescan")
-                                {
-                                    ScanProgressPercent = 0;
-                                    int prescanFolderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
-                                    ScanProgressMessage = AppLocalizer.Format(
-                                            "Vm_FtpPrescanProgress",
-                                            progress.ProcessedFolders,
-                                            prescanFolderDenom,
-                                            progress.TotalFiles,
-                                            progress.SkippedFolders,
-                                            progress.CurrentFolder)
-                                        + noteSuffix;
-                                }
-                                else
-                                {
-                                    ScanProgressPercent = progress.TotalFiles > 0
-                                        ? (progress.ProcessedFiles * 100) / progress.TotalFiles
-                                        : (progress.TotalFolders > 0 ? (progress.ProcessedFolders * 100) / progress.TotalFolders : 0);
-                                    int fileDenom = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
-                                    int currentFolderDenom = Math.Max(progress.CurrentFolderTotalFiles, progress.CurrentFolderProcessedFiles);
-                                    int folderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
-                                    ScanProgressMessage = AppLocalizer.Format(
-                                            "Vm_FtpScanProgressDetail",
-                                            progress.ProcessedFiles,
-                                            fileDenom,
-                                            progress.CurrentFolderProcessedFiles,
-                                            currentFolderDenom,
-                                            progress.ProcessedFolders,
-                                            folderDenom,
-                                            progress.SkippedFolders,
-                                            progress.CurrentFolder)
-                                        + noteSuffix;
-                                }
-
-                                if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    ftpListingFailures.Add($"{progress.CurrentFolder} - {progress.Note}");
-                                }
-                            });
-                        });
+                        sourceKey,
+                        forceRefresh,
+                        ftpListingFailures).ConfigureAwait(false);
                 }
                 else if (source is string drive)
                 {
@@ -198,7 +144,7 @@ namespace QuickMediaIngest.ViewModels
                 _sourceItemsCache[sourceKey] = CloneItems(items);
 
                 _currentSourceItems = items;
-                RebuildGroupsFromCurrentItems();
+                await Application.Current.Dispatcher.InvokeAsync(RebuildGroupsFromCurrentItems);
 
                 if (Groups.Count > 0)
                 {
@@ -233,6 +179,137 @@ namespace QuickMediaIngest.ViewModels
             {
                 ShowScanProgressDialog = false;
             }
+        }
+
+        private async Task<List<ImportItem>> GetOrStartFtpSourceScanAsync(
+            FtpSourceItem ftp,
+            string remotePath,
+            string sourceKey,
+            bool forceRefresh,
+            HashSet<string> ftpListingFailures)
+        {
+            if (!forceRefresh && _inflightSourceScans.TryGetValue(sourceKey, out Task<List<ImportItem>>? inflight))
+            {
+                _logger.LogInformation("Awaiting in-flight scan for {SourceKey}.", sourceKey);
+                return CloneItems(await inflight.ConfigureAwait(false));
+            }
+
+            Task<List<ImportItem>> scanTask = ScanFtpSourcePreferAdbAsync(ftp, remotePath, ftpListingFailures);
+            _inflightSourceScans[sourceKey] = scanTask;
+            try
+            {
+                List<ImportItem> result = await scanTask.ConfigureAwait(false);
+                return result;
+            }
+            finally
+            {
+                _inflightSourceScans.TryRemove(sourceKey, out _);
+            }
+        }
+
+        private async Task<List<ImportItem>> ScanFtpSourcePreferAdbAsync(
+            FtpSourceItem ftp,
+            string remotePath,
+            HashSet<string> ftpListingFailures)
+        {
+            if (PreferAdbTransferWhenAvailable)
+            {
+                AdbTransferSession? session = AdbTransferEligibility.TryResolve(remotePath, _adbPathProbe);
+                if (session is { } adb)
+                {
+                    List<ImportItem>? adbItems = await _adbMediaScanner
+                        .ScanAsync(adb, remotePath, ScanIncludeSubfolders, CancellationToken.None)
+                        .ConfigureAwait(false);
+                    if (adbItems != null)
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            ScannedFiles = adbItems.Count;
+                            TotalFilesToScan = adbItems.Count;
+                            ScanProgressPercent = 100;
+                            ScanProgressMessage = AppLocalizer.Format("Vm_Scan_AdbListedFiles", adbItems.Count);
+                        });
+                        return adbItems;
+                    }
+
+                    List<ImportItem> ftpAfterAdbFail = await ScanFtpWithProgressAsync(ftp, remotePath, ftpListingFailures)
+                        .ConfigureAwait(false);
+                    return await FtpAdbAliasFilter
+                        .FilterAsync(ftpAfterAdbFail, adb, _adbPathProbe, CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            return await ScanFtpWithProgressAsync(ftp, remotePath, ftpListingFailures).ConfigureAwait(false);
+        }
+
+        private async Task<List<ImportItem>> ScanFtpWithProgressAsync(
+            FtpSourceItem ftp,
+            string remotePath,
+            HashSet<string> ftpListingFailures)
+        {
+            return await _ftpScanner.ScanAsync(
+                ftp.Host,
+                ftp.Port,
+                ftp.User,
+                ftp.Pass,
+                remotePath,
+                ScanIncludeSubfolders,
+                120,
+                CancellationToken.None,
+                progress =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ScannedFolders = progress.ProcessedFolders;
+                        TotalFoldersToScan = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
+                        ScannedFiles = progress.ProcessedFiles;
+                        TotalFilesToScan = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
+                        CurrentScanFolder = progress.CurrentFolder;
+                        CurrentScanFolderProcessedFiles = progress.CurrentFolderProcessedFiles;
+                        CurrentScanFolderTotalFiles = progress.CurrentFolderTotalFiles;
+
+                        string noteSuffix = string.IsNullOrWhiteSpace(progress.Note) ? string.Empty : $" | {progress.Note}";
+                        if (progress.Phase == "Prescan")
+                        {
+                            ScanProgressPercent = 0;
+                            int prescanFolderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
+                            ScanProgressMessage = AppLocalizer.Format(
+                                    "Vm_FtpPrescanProgress",
+                                    progress.ProcessedFolders,
+                                    prescanFolderDenom,
+                                    progress.TotalFiles,
+                                    progress.SkippedFolders,
+                                    progress.CurrentFolder)
+                                + noteSuffix;
+                        }
+                        else
+                        {
+                            ScanProgressPercent = progress.TotalFiles > 0
+                                ? (progress.ProcessedFiles * 100) / progress.TotalFiles
+                                : (progress.TotalFolders > 0 ? (progress.ProcessedFolders * 100) / progress.TotalFolders : 0);
+                            int fileDenom = Math.Max(progress.TotalFiles, progress.ProcessedFiles);
+                            int currentFolderDenom = Math.Max(progress.CurrentFolderTotalFiles, progress.CurrentFolderProcessedFiles);
+                            int folderDenom = Math.Max(progress.TotalFolders, progress.ProcessedFolders);
+                            ScanProgressMessage = AppLocalizer.Format(
+                                    "Vm_FtpScanProgressDetail",
+                                    progress.ProcessedFiles,
+                                    fileDenom,
+                                    progress.CurrentFolderProcessedFiles,
+                                    currentFolderDenom,
+                                    progress.ProcessedFolders,
+                                    folderDenom,
+                                    progress.SkippedFolders,
+                                    progress.CurrentFolder)
+                                + noteSuffix;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(progress.Note) && progress.Note.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ftpListingFailures.Add($"{progress.CurrentFolder} - {progress.Note}");
+                        }
+                    });
+                });
         }
     }
 }

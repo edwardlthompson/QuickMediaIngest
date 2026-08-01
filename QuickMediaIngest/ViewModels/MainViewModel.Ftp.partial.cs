@@ -107,6 +107,17 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
+        partial void OnPreferAdbTransferWhenAvailableChanged(bool value)
+        {
+            if (!_loadingConfig)
+            {
+                SaveConfig();
+            }
+
+            OnPropertyChanged(nameof(AdbTransferStatusHint));
+            RefreshUxEmptyStateHints();
+        }
+
         partial void OnFtpInitialThumbnailCountChanged(int value)
         {
             if (_loadingConfig)
@@ -119,34 +130,50 @@ namespace QuickMediaIngest.ViewModels
             SaveConfig();
         }
 
+        partial void OnFtpHostChanging(string value)
+        {
+            if (_loadingConfig)
+            {
+                return;
+            }
+
+            string current = FtpHostNormalizer.Normalize(FtpHost ?? string.Empty);
+            if (!string.IsNullOrWhiteSpace(current))
+            {
+                _previousFtpHost = current;
+                RememberFtpVaultHost(current);
+            }
+        }
+
         partial void OnFtpHostChanged(string value)
         {
             if (_loadingConfig || string.IsNullOrWhiteSpace(value))
             {
+                RememberFtpVaultHost(value);
                 return;
             }
 
-            if (!value.Contains("ftp://", StringComparison.OrdinalIgnoreCase) &&
-                !value.Contains("ftps://", StringComparison.OrdinalIgnoreCase) &&
-                !value.Contains(':', StringComparison.Ordinal))
+            if (value.Contains("ftp://", StringComparison.OrdinalIgnoreCase) ||
+                value.Contains("ftps://", StringComparison.OrdinalIgnoreCase) ||
+                value.Contains(':', StringComparison.Ordinal))
             {
-                return;
+                if (FtpHostNormalizer.TryParseHostAndPort(value, out string normalized, out int? port))
+                {
+                    if (port.HasValue && FtpPort != port.Value)
+                    {
+                        FtpPort = port.Value;
+                    }
+
+                    if (!string.Equals(FtpHost, normalized, StringComparison.Ordinal))
+                    {
+                        FtpHost = normalized;
+                        return;
+                    }
+                }
             }
 
-            if (!FtpHostNormalizer.TryParseHostAndPort(value, out string normalized, out int? port))
-            {
-                return;
-            }
-
-            if (port.HasValue && FtpPort != port.Value)
-            {
-                FtpPort = port.Value;
-            }
-
-            if (!string.Equals(FtpHost, normalized, StringComparison.Ordinal))
-            {
-                FtpHost = normalized;
-            }
+            RememberFtpVaultHost(FtpHost);
+            TryMigrateFtpVaultPasswordIfNeeded();
         }
 
         private List<string> _ribbonTileOrder = new();
@@ -323,12 +350,22 @@ namespace QuickMediaIngest.ViewModels
         partial void OnScanPathChanged(string value)
         {
             if (SelectedSource is FtpSourceItem ftp)
+            {
                 ftp.RemoteFolder = NormalizeFtpPath(value);
-            _sourceItemsCache.Clear();
+                string key = BuildSourceKey(ftp);
+                _sourceItemsCache.Remove(key);
+            }
+            else if (SelectedSource is string drive)
+            {
+                string key = BuildSourceKey(ResolveLocalScanPath(drive, value));
+                _sourceItemsCache.Remove(key);
+            }
+
             SaveConfig();
         }
         partial void OnScanIncludeSubfoldersChanged(bool value)
         {
+            // Subfolder flag affects all sources — invalidate all cached lists.
             _sourceItemsCache.Clear();
             SaveConfig();
         }

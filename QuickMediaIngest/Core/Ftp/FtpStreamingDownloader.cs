@@ -43,6 +43,14 @@ namespace QuickMediaIngest.Core
             long maxBytes,
             CancellationToken cancellationToken)
         {
+            if (FtpPermanentFailureCache.IsFailed(_endpoint.Host, _endpoint.Port, remotePath))
+            {
+                _logger.LogDebug(
+                    "FluentFTP download skipped for {RemotePath}: permanent failure cached (550).",
+                    remotePath);
+                return false;
+            }
+
             await _slotLock.WaitAsync(cancellationToken);
             int slot = Interlocked.Increment(ref _roundRobin) % _clients.Length;
             try
@@ -117,7 +125,7 @@ namespace QuickMediaIngest.Core
                     EncryptionMode = FtpEncryptionMode.None,
                     DataConnectionEncryption = false,
                     SocketKeepAlive = true,
-                    RetryAttempts = 2
+                    RetryAttempts = 0
                 }
             };
 

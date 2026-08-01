@@ -404,6 +404,8 @@ Vous pouvez revoir cette visite depuis Paramètres &gt; À propos.</value></data
   <data name="Vm_Scan_LoadingUnifiedPreviewsProgress" xml:space="preserve"><value>Chargement des aperçus unifiés : {0}/{1}</value></data>
   <data name="Vm_Status_ScanComplete_UnifiedPreviews" xml:space="preserve"><value>Analyse de {0} terminée. Aperçus unifiés chargés automatiquement.</value></data>
   <data name="Vm_Status_UnifiedLoadError" xml:space="preserve"><value>Erreur lors du chargement des sources unifiées : {0}</value></data>
+  <data name="Vm_Status_UnifiedFtpStillLoading" xml:space="preserve"><value>Médias locaux prêts. FTP encore en cours…</value></data>
+  <data name="Vm_Status_UnifiedFtpUnavailable" xml:space="preserve"><value>Médias locaux prêts. {0}</value></data>
   <data name="About_Update_Checking" xml:space="preserve"><value>Recherche de mises à jour…</value></data>
   <data name="Vm_Update_Available" xml:space="preserve"><value>Mise à jour disponible : {0}</value></data>
   <data name="Vm_Update_FoundGithub" xml:space="preserve"><value>Mise à jour trouvée sur GitHub : {0}</value></data>

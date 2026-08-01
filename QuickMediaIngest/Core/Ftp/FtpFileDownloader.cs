@@ -83,6 +83,14 @@ namespace QuickMediaIngest.Core
                 return false;
             }
 
+            if (FtpPermanentFailureCache.IsFailed(host, port, remotePath))
+            {
+                _logger.LogDebug(
+                    "FTP download skipped for {RemotePath}: permanent failure cached (550).",
+                    remotePath);
+                return false;
+            }
+
             Exception? lastError = null;
 
             for (int attempt = 1; attempt <= 3; attempt++)
@@ -105,6 +113,17 @@ namespace QuickMediaIngest.Core
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     lastError = ex;
+                    if (FtpWebExceptionHelper.IsPermanentFileUnavailable(ex))
+                    {
+                        FtpPermanentFailureCache.MarkFailed(host, port, remotePath);
+                        _logger.LogWarning(
+                            "FTP download permanent failure for {RemotePath}: {Status} (no retry).",
+                            remotePath,
+                            FtpWebExceptionHelper.Describe(ex));
+                        _logger.LogDebug(ex, "FTP permanent failure detail for {RemotePath}.", remotePath);
+                        TryDeletePartial(localPath);
+                        return false;
+                    }
                 }
 
                 TryDeletePartial(localPath);
@@ -115,7 +134,11 @@ namespace QuickMediaIngest.Core
                 }
             }
 
-            _logger.LogWarning(lastError, "FTP download failed after retries for {RemotePath}.", remotePath);
+            _logger.LogWarning(
+                "FTP download failed after retries for {RemotePath}: {Message}",
+                remotePath,
+                lastError?.Message ?? "unknown");
+            _logger.LogDebug(lastError, "FTP download failure detail for {RemotePath}.", remotePath);
             return false;
         }
 
@@ -145,14 +168,6 @@ namespace QuickMediaIngest.Core
             int timeoutSeconds,
             CancellationToken cancellationToken) =>
             FtpDownloadSync.DownloadCapped(
-                host,
-                port,
-                user,
-                pass,
-                remotePath,
-                localPath,
-                maxBytes,
-                timeoutSeconds,
-                cancellationToken);
+                host, port, user, pass, remotePath, localPath, maxBytes, timeoutSeconds, cancellationToken);
     }
 }

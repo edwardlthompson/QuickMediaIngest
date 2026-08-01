@@ -724,6 +724,21 @@
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource MenuForegroundBrush}"
                                        TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AdbTransferStatusHint}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Theme.TextSecondary.Brush}"
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AdbTransferStatusHint}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                             <TextBlock Text="{Binding ScanProgressMessage}"
                                        FontSize="11"
                                        Foreground="{DynamicResource Theme.TextSecondary.Brush}"

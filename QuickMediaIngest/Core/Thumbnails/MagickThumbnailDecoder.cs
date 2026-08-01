@@ -16,24 +16,45 @@ namespace QuickMediaIngest.Core
 
             try
             {
-                using var image = new MagickImage(filePath);
-                image.AutoOrient();
-                uint size = (uint)Math.Max(120, decodePixelWidth);
-                image.Thumbnail(size, size);
+                string ext = Path.GetExtension(filePath).ToLowerInvariant();
+                MagickImage image = ext is ".heic" or ".heif"
+                    ? OpenHeicPreferringThumbnail(filePath)
+                    : new MagickImage(filePath);
 
-                using var memoryStream = new MemoryStream();
-                image.Write(memoryStream, MagickFormat.Jpeg);
-                byte[] jpegBytes = memoryStream.ToArray();
-                if (jpegBytes.Length == 0)
+                using (image)
                 {
-                    return null;
-                }
+                    image.AutoOrient();
+                    uint size = (uint)Math.Max(120, decodePixelWidth);
+                    image.Thumbnail(size, size);
 
-                return new DecodedThumbnail(jpegBytes, (int)image.Width, (int)image.Height);
+                    using var memoryStream = new MemoryStream();
+                    image.Write(memoryStream, MagickFormat.Jpeg);
+                    byte[] jpegBytes = memoryStream.ToArray();
+                    if (jpegBytes.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    return new DecodedThumbnail(jpegBytes, (int)image.Width, (int)image.Height);
+                }
             }
             catch
             {
                 return null;
+            }
+        }
+
+        private static MagickImage OpenHeicPreferringThumbnail(string filePath)
+        {
+            try
+            {
+                var settings = new MagickReadSettings();
+                settings.SetDefine(MagickFormat.Heic, "thumbnail", "true");
+                return new MagickImage(filePath, settings);
+            }
+            catch
+            {
+                return new MagickImage(filePath);
             }
         }
     }

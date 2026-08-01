@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Data;
 using QuickMediaIngest.Localization;
@@ -17,6 +18,42 @@ namespace QuickMediaIngest.ViewModels
         public bool IsLocalSourceSelected => SelectedSource is string;
         public bool IsFtpSourceSelected => SelectedSource is FtpSourceItem;
         public bool IsUnifiedSourceSelected => SelectedSource is UnifiedSourceItem;
+
+        /// <summary>Hint shown when an FTP source is selected describing ADB vs FTP transfer preference.</summary>
+        public string AdbTransferStatusHint
+        {
+            get
+            {
+                if (!IsFtpSourceSelected && SelectedSource is not UnifiedSourceItem)
+                {
+                    return string.Empty;
+                }
+
+                if (!PreferAdbTransferWhenAvailable)
+                {
+                    return AppLocalizer.Get("Vm_Adb_PreferOffUsingFtp");
+                }
+
+                string folder = SelectedSource is FtpSourceItem ftp
+                    ? NormalizeFtpPath(ftp.RemoteFolder)
+                    : NormalizeFtpPath(string.IsNullOrWhiteSpace(FtpRemoteFolder) ? "/DCIM" : FtpRemoteFolder);
+
+                AdbTransferSession? session = AdbTransferEligibility.TryResolve(folder);
+                if (session is null)
+                {
+                    if (!AdbDeviceProbe.IsAdbAvailable() || AdbDeviceProbe.GetFirstDeviceSerial() is null)
+                    {
+                        return AppLocalizer.Get("Vm_Adb_UnavailableUsingFtp");
+                    }
+
+                    return AppLocalizer.Get("Vm_Adb_PathNotFoundUsingFtp");
+                }
+
+                string suffix = AdbTransferEligibility.FormatSerialSuffix(session.Value.DeviceSerial);
+                return AppLocalizer.Format("Vm_Adb_WillUseAdb", suffix);
+            }
+        }
+
         public string RawGroupingStatusText => GroupRawAndRenderedPairs ? "RAW/JPEG grouping: On" : "RAW/JPEG grouping: Off";
         public bool IsRawJpegGroupingEnabled => GroupRawAndRenderedPairs;
         public bool IsDeleteAfterImportEnabled => DeleteAfterImport;

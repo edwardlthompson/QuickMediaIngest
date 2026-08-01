@@ -11,6 +11,7 @@ using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Thumbnails;
+using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.ViewModels
 {
@@ -37,22 +38,23 @@ namespace QuickMediaIngest.ViewModels
                         _thumbnailByItemKey[result.ItemKey] = bitmap;
                         return;
                     }
+
+                    _logger.LogDebug(
+                        "WPF could not decode preview JPEG for {ItemKey} ({Bytes} bytes).",
+                        result.ItemKey,
+                        result.Thumbnail.JpegBytes.Length);
                 }
 
                 item.Thumbnail = null;
                 item.ThumbnailPreviewStatus = result.Thumbnail != null
                     ? ThumbnailPreviewStatus.Failed
                     : result.Status;
-            }, System.Windows.Threading.DispatcherPriority.Background);
+            }, System.Windows.Threading.DispatcherPriority.Normal);
         }
 
         private async Task ApplyRenderedSiblingThumbnailsAsync(IReadOnlyList<ImportItem> items)
         {
-            if (!GroupRawAndRenderedPairs)
-            {
-                return;
-            }
-
+            // Always copy a good HEIC/JPEG thumb onto same-stem RAW tiles (even when pairs are not stacked).
             var byStem = items
                 .GroupBy(i => Path.GetFileNameWithoutExtension(i.FileName), StringComparer.OrdinalIgnoreCase)
                 .ToList();

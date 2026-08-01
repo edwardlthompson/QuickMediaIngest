@@ -26,7 +26,10 @@ namespace QuickMediaIngest.Tests
         [Fact]
         public void IsAcceptable_AcceptsValidPayload()
         {
-            Assert.True(ThumbnailPreviewValidator.IsAcceptable(new DecodedThumbnail([1], 64, 48)));
+            // Non-JPEG stub: chroma heuristics skipped when SOI missing.
+            byte[] stub = new byte[32];
+            stub[0] = 0x00;
+            Assert.True(ThumbnailPreviewValidator.IsAcceptable(new DecodedThumbnail(stub, 64, 48)));
         }
 
         [Fact]

@@ -47,7 +47,9 @@ namespace QuickMediaIngest.Core
             try
             {
                 foldersToScan = includeSubfolders
-                    ? Directory.EnumerateDirectories(sourcePath, "*", SearchOption.AllDirectories).ToList()
+                    ? Directory.EnumerateDirectories(sourcePath, "*", SearchOption.AllDirectories)
+                        .Where(d => !IsUnderAndroidTrashDirectory(d))
+                        .ToList()
                     : new List<string>();
             }
             catch
@@ -76,6 +78,11 @@ namespace QuickMediaIngest.Core
                 foreach (var file in files)
                 {
                     FileInfo info = new FileInfo(file);
+                    if (MediaExtensions.IsAndroidTrashOrNoise(info.Name))
+                    {
+                        continue;
+                    }
+
                     string ext = info.Extension.ToLowerInvariant();
 
                     // Skip non-media metadata files (CTG, DAT, etc.)
@@ -98,6 +105,12 @@ namespace QuickMediaIngest.Core
 
             _logger.LogInformation("Completed local scan for {SourcePath}. MediaFiles={FileCount}", LogPathSanitizer.Local(sourcePath), items.Count);
             return items;
+        }
+
+        private static bool IsUnderAndroidTrashDirectory(string directoryPath)
+        {
+            string[] parts = directoryPath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Any(MediaExtensions.IsAndroidTrashDirectory);
         }
 
         private static bool IsMediaFile(string ext) => MediaExtensions.IsMediaExtension(ext);

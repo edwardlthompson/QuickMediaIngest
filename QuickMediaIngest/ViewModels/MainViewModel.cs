@@ -237,6 +237,10 @@ namespace QuickMediaIngest.ViewModels
             IUnifiedConcreteSourceScanService unifiedConcreteSourceScanService,
             IFtpCredentialStore ftpCredentialStore,
             IFtpThumbnailService ftpThumbnailService,
+            IAdbMediaScanner adbMediaScanner,
+            IAdbPreviewFetcher adbPreviewFetcher,
+            IAdbVideoThumbnailFetcher adbVideoThumbnailFetcher,
+            IAdbPathProbe adbPathProbe,
             IFileDialogService fileDialogService,
             IShellService shellService,
             ILogger<MainViewModel> logger)
@@ -248,6 +252,10 @@ namespace QuickMediaIngest.ViewModels
             _unifiedConcreteSourceScanService = unifiedConcreteSourceScanService;
             _ftpCredentialStore = ftpCredentialStore;
             _ftpThumbnailService = ftpThumbnailService;
+            _adbMediaScanner = adbMediaScanner;
+            _adbPreviewFetcher = adbPreviewFetcher;
+            _adbVideoThumbnailFetcher = adbVideoThumbnailFetcher;
+            _adbPathProbe = adbPathProbe;
             _fileDialogService = fileDialogService;
             _shellService = shellService;
             _thumbnailService = thumbnailService;

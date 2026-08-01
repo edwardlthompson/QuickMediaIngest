@@ -17,6 +17,8 @@ namespace QuickMediaIngest.Core
             FtpPreviewDecodeMode mode = FtpPreviewDecodeMode.TieredPartial)
         {
             string ext = Path.GetExtension(fileName).ToLowerInvariant();
+            bool isRaw = MediaExtensions.IsRawExtension(ext);
+            bool isVideo = MediaExtensions.IsVideoExtension(ext);
 
             if (ext is ".jpg" or ".jpeg")
             {
@@ -29,10 +31,30 @@ namespace QuickMediaIngest.Core
 
             if (ext is ".heic" or ".heif")
             {
+                // Complete HEIC: Magick first — naive FF D8..FF D9 scans hit BMFF false positives.
+                if (mode == FtpPreviewDecodeMode.CompleteFile)
+                {
+                    DecodedThumbnail? heicMagick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
+                    if (heicMagick != null)
+                    {
+                        return heicMagick;
+                    }
+                }
+
                 DecodedThumbnail? embedded = Accept(HeicEmbeddedPreviewReader.TryExtractFromFile(tempPath, logger));
                 if (embedded != null)
                 {
                     return embedded;
+                }
+
+                if (mode == FtpPreviewDecodeMode.TieredPartial)
+                {
+                    return null;
+                }
+
+                if (mode == FtpPreviewDecodeMode.TieredFinalCap)
+                {
+                    return null;
                 }
             }
 
@@ -41,24 +63,53 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
-            DecodedThumbnail? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
+            // Partial RAW/video: never Magick on capped buffers.
+            if (mode == FtpPreviewDecodeMode.TieredFinalCap && (isRaw || isVideo))
+            {
+                return null;
+            }
+
+            if (mode == FtpPreviewDecodeMode.TieredFinalCap)
+            {
+                // JPEG/PNG and similar stills only.
+                return Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
+            }
+
+            // CompleteFile video: Shell first (industry standard), optional ffmpeg.
+            if (isVideo)
+            {
+                DecodedThumbnail? shellVideo = Accept(thumbnailService.GetThumbnail(tempPath, new ThumbnailHints
+                {
+                    DeferRawShellMilliseconds = hints?.DeferRawShellMilliseconds ?? 0,
+                    IsPartialPreview = false,
+                }));
+                if (shellVideo != null)
+                {
+                    return shellVideo;
+                }
+
+                return Accept(FfmpegVideoThumbnailDecoder.TryGetThumbnail(tempPath, logger));
+            }
+
+            // CompleteFile stills
+            DecodedThumbnail? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, isRaw ? 320 : 240));
             if (magick != null)
             {
                 return magick;
             }
 
-            if (mode == FtpPreviewDecodeMode.TieredFinalCap)
-            {
-                return null;
-            }
-
-            DecodedThumbnail? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 240, logger));
+            DecodedThumbnail? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, isRaw ? 320 : 240, logger));
             if (vips != null)
             {
                 return vips;
             }
 
-            return Accept(thumbnailService.GetThumbnail(tempPath, hints));
+            ThumbnailHints completeHints = new()
+            {
+                DeferRawShellMilliseconds = hints?.DeferRawShellMilliseconds ?? 0,
+                IsPartialPreview = false,
+            };
+            return Accept(thumbnailService.GetThumbnail(tempPath, completeHints));
         }
 
         private static DecodedThumbnail? Accept(DecodedThumbnail? thumb) =>

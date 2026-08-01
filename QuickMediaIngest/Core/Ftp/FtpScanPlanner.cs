@@ -106,6 +106,11 @@ namespace QuickMediaIngest.Core
                         continue;
                     }
 
+                    if (MediaExtensions.IsAndroidTrashDirectory(entry.Name))
+                    {
+                        continue;
+                    }
+
                     string folder = FtpListingParser.NormalizeRemotePath(entry.FullPath);
                     if (visited.Add(folder))
                     {

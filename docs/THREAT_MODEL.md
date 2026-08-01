@@ -9,7 +9,6 @@
 | Project | Quick Media Ingest |
 | Stack | .NET 8 WPF, Windows desktop |
 | Methodology | STRIDE |
-
 ## Trust Boundaries
 
 ```text
@@ -18,6 +17,7 @@
          AppConfig / SQLite          Windows Credential Manager
                 |
          Destination filesystem (user-chosen)
+
 ```
 
 ## STRIDE Summary
@@ -30,7 +30,7 @@
 | Information disclosure | FTP creds in logs | Credential Manager; no password logging | AGENT |
 | Denial of service | Huge FTP directory listing | Scan limits, cancellation tokens | AGENT |
 | Elevation of privilege | Path traversal on import | Path normalization, whitelist filters | AGENT |
-
+| Elevation of privilege | ADB path remap abuse | `AdbAndroidPath` rejects `..`; pull uses user-confirmed device serial via local `adb` CLI | AGENT |
 ## Top Abuse Cases
 
 1. **Malicious FTP server** — crafted paths or credential phishing via fake Wi-Fi camera share

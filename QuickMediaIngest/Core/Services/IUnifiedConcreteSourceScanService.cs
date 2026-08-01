@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core.Services
 {
@@ -13,8 +14,10 @@ namespace QuickMediaIngest.Core.Services
             IReadOnlyList<object> concreteSources,
             bool forceRefresh,
             bool scanSubfolders,
-            IDictionary<string, List<QuickMediaIngest.Core.Models.ImportItem>> itemCache,
+            IDictionary<string, List<ImportItem>> itemCache,
             IProgress<(int Completed, int Total)>? mergeProgress = null,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default,
+            bool preferAdbTransfer = false,
+            IProgress<UnifiedScanSourceCompleted>? sourceCompleted = null);
     }
 }

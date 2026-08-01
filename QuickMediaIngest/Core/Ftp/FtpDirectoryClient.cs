@@ -64,7 +64,7 @@ namespace QuickMediaIngest.Core
             request.Credentials = new NetworkCredential(user, pass);
             request.UseBinary = true;
             request.UsePassive = true;
-            request.KeepAlive = true;
+            request.KeepAlive = false;
             request.Timeout = Math.Max(5, timeoutSeconds) * 1000;
             request.ReadWriteTimeout = Math.Max(5, timeoutSeconds) * 1000;
 

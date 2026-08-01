@@ -72,7 +72,7 @@ namespace QuickMediaIngest.Core
             _client.Config.EncryptionMode = FtpEncryptionMode.None;
             _client.Config.DataConnectionEncryption = false;
             _client.Config.SocketKeepAlive = true;
-            _client.Config.RetryAttempts = 2;
+            _client.Config.RetryAttempts = 0;
 
             await _client.Connect(cancellationToken);
         }
