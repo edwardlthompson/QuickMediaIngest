@@ -38,6 +38,13 @@ High `Parallel.ForEach` preview workers + Shell decode via `Dispatcher.Invoke` +
 `ImportByteProgressTracker.ReportBytes` fires on every 1MB buffer. Wiring used sync `Dispatcher.Invoke` for byte progress and `ItemProcessed`, so copy threads blocked on the UI queue and the import appeared frozen (no new log lines / dest writes) while the process still burned CPU.
 
 **Fix:** Post import UI updates with `BeginInvoke` + coalesce pending byte snapshots. Keep **Delete after import** off until a card finishes cleanly.
+
+## PreferAdb import hang (parallel large pulls + low free space)
+
+PreferAdb FTP→ADB imports used engine default parallelism (up to 8) with a fixed 5-minute `adb pull` wall timeout. Concurrent large TIFF/DNG pulls against a nearly-full destination volume stalled with no progress until all timed out; truncated dest stubs were left behind, so Retry + Duplicate Skip could skip incomplete files.
+
+**Fix:** `AdbTransferIo` caps ADB/remapped copies to 2; `ImportFreeSpaceGate` aborts when selected bytes + 256MB margin exceed free (soft-warn when sizes unknown and free &lt; 256MB); `AdbPullTimeout` scales 5–10 min from `expectedBytes` on `IFileProvider.CopyAsync`; `IngestItemProcessor` deletes partial destinations on failure and cancel.
+
 ## Settings reset on restart (naming preset + destination combo)
 
 Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear forgotten when (1) `OnNamingPresetChanged` re-applies Recommended during/after load over a diverged `NamingTemplate`, or (2) `RefreshDestinationPresetLabels` clears the combo and WPF nulls `DestinationPreset`.

@@ -79,7 +79,12 @@ namespace QuickMediaIngest.Tests
             public string? LastCopySrc { get; private set; }
             public string? LastDeleteSrc { get; private set; }
 
-            public Task CopyAsync(string srcPath, string destPath, CancellationToken token, System.IProgress<long>? bytesCopied = null)
+            public Task CopyAsync(
+                string srcPath,
+                string destPath,
+                CancellationToken token,
+                System.IProgress<long>? bytesCopied = null,
+                long expectedBytes = 0)
             {
                 LastCopySrc = srcPath;
                 return Task.CompletedTask;

@@ -67,7 +67,7 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
-        private IngestOptions CreateIngestOptions(ItemGroup group)
+        private IngestOptions CreateIngestOptions(ItemGroup group, IFileProvider? provider = null)
         {
             DuplicateHandlingMode duplicateMode = DuplicatePolicy switch
             {
@@ -88,6 +88,11 @@ namespace QuickMediaIngest.ViewModels
                 .FirstOrDefault(i => i.IsSelected && !i.IsFtpSource)
                 ?.SourcePath;
             maxCopy = RemovableDriveIo.CapConcurrentCopies(maxCopy, localSamplePath);
+            if (AdbTransferIo.IsAdbBackedProvider(provider) || SelectedSource is AdbSourceItem)
+            {
+                maxCopy = AdbTransferIo.CapConcurrentCopies(maxCopy);
+            }
+
             int delayMs = Math.Max(0, ImportCooldownBetweenFilesMs);
 
             return new IngestOptions
@@ -216,7 +221,7 @@ namespace QuickMediaIngest.ViewModels
                 DestinationRoot,
                 NamingTemplate,
                 cancellationToken,
-                CreateIngestOptions(group),
+                CreateIngestOptions(group, provider),
                 DeleteAfterImport);
         }
 

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [1.3.24] — 2026-08-09
+
+### Fixed
+
+- **PreferAdb import hang**: Large concurrent ADB pulls against a nearly-full destination no longer sit idle until the fixed 5-minute timeout. ADB/remapped imports are capped at 2 concurrent copies; free-space preflight aborts when selected bytes + 256MB exceed free space (soft-warn when sizes are unknown and free is under 256MB); truncated destination files are deleted on failure or cancel; ADB pull wall timeout scales 5–10 minutes from known file size.
+
+### Added
+
+- **AdbTransferIo** / **AdbPullTimeout** / **ImportFreeSpaceGate** helpers with unit coverage.
+- Localized free-space abort and low-space warning dialogs.
+
 ## [1.3.23] — 2026-08-01
 
 ### Fixed

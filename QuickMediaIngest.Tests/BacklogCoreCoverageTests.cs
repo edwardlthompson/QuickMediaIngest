@@ -142,7 +142,7 @@ namespace QuickMediaIngest.Tests
                     itemProcessed: null,
                     CancellationToken.None);
 
-                provider.Verify(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>()), Times.Never);
+                provider.Verify(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>(), It.IsAny<long>()), Times.Never);
             }
             finally
             {
@@ -159,8 +159,8 @@ namespace QuickMediaIngest.Tests
             {
                 var provider = new Mock<IFileProvider>();
                 provider
-                    .Setup(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>()))
-                    .Returns<string, string, CancellationToken, IProgress<long>?>((_, dest, _, __) =>
+                    .Setup(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>(), It.IsAny<long>()))
+                    .Returns<string, string, CancellationToken, IProgress<long>?, long>((_, dest, _, __, ___) =>
                     {
                         // Write a tiny dest file so File.Exists passes, but size won't match Fast verification.
                         File.WriteAllBytes(dest, new byte[] { 1 });

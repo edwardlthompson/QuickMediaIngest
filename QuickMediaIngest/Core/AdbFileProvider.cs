@@ -13,8 +13,6 @@ namespace QuickMediaIngest.Core
     /// </summary>
     public class AdbFileProvider : IFileProvider
     {
-        private static readonly TimeSpan PerFileWallTimeout = TimeSpan.FromMinutes(5);
-
         private readonly string _deviceSerial;
         private readonly ILogger<AdbFileProvider> _logger;
 
@@ -24,12 +22,18 @@ namespace QuickMediaIngest.Core
             _logger = logger;
         }
 
-        public Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null) =>
+        public Task CopyAsync(
+            string srcPath,
+            string destPath,
+            CancellationToken token,
+            IProgress<long>? bytesCopied = null,
+            long expectedBytes = 0) =>
             RunAdbAsync(
                 $"pull \"{srcPath}\" \"{destPath}\"",
                 $"ADB pull: {srcPath} -> {destPath}",
                 "ADB pull failed",
                 token,
+                AdbPullTimeout.Compute(expectedBytes),
                 afterSuccess: () =>
                 {
                     if (bytesCopied != null && File.Exists(destPath))
@@ -43,13 +47,15 @@ namespace QuickMediaIngest.Core
                 $"shell rm \"{srcPath}\"",
                 $"ADB delete: {srcPath}",
                 "ADB delete failed",
-                token);
+                token,
+                AdbPullTimeout.Floor);
 
         private async Task RunAdbAsync(
             string adbArgumentsWithoutSerial,
             string startLog,
             string failurePrefix,
             CancellationToken token,
+            TimeSpan wallTimeout,
             Action? afterSuccess = null)
         {
             var psi = new ProcessStartInfo
@@ -69,7 +75,7 @@ namespace QuickMediaIngest.Core
             }
 
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
-            linked.CancelAfter(PerFileWallTimeout);
+            linked.CancelAfter(wallTimeout);
             try
             {
                 await process.WaitForExitAsync(linked.Token).ConfigureAwait(false);
@@ -78,7 +84,8 @@ namespace QuickMediaIngest.Core
             {
                 TryKill(process);
                 token.ThrowIfCancellationRequested();
-                throw new TimeoutException($"{failurePrefix}: timed out after {PerFileWallTimeout.TotalMinutes:0} minutes.");
+                throw new TimeoutException(
+                    $"{failurePrefix}: timed out after {wallTimeout.TotalMinutes:0.##} minutes.");
             }
 
             if (process.ExitCode != 0)

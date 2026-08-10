@@ -37,8 +37,16 @@ namespace QuickMediaIngest.Core
 
         public string MediaRootPrefix => _mediaRootPrefix;
 
-        public Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null) =>
-            _inner.CopyAsync(ResolveDevicePath(srcPath), destPath, token, bytesCopied);
+        /// <summary>True when the inner provider is <see cref="AdbFileProvider"/> (PreferAdb remapping).</summary>
+        public bool InnerIsAdb => _inner is AdbFileProvider;
+
+        public Task CopyAsync(
+            string srcPath,
+            string destPath,
+            CancellationToken token,
+            IProgress<long>? bytesCopied = null,
+            long expectedBytes = 0) =>
+            _inner.CopyAsync(ResolveDevicePath(srcPath), destPath, token, bytesCopied, expectedBytes);
 
         public Task DeleteAsync(string srcPath, CancellationToken token) =>
             _inner.DeleteAsync(ResolveDevicePath(srcPath), token);

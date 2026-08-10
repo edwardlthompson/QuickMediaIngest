@@ -88,7 +88,12 @@ namespace QuickMediaIngest.Core
         /// <param name="srcPath">Source path on the FTP server.</param>
         /// <param name="destPath">Destination local path.</param>
         /// <param name="token">Cancellation token.</param>
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
+        public async Task CopyAsync(
+            string srcPath,
+            string destPath,
+            CancellationToken token,
+            IProgress<long>? bytesCopied = null,
+            long expectedBytes = 0)
         {
             await _clientLock.WaitAsync(token);
             try

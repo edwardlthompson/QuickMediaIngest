@@ -82,6 +82,11 @@ namespace QuickMediaIngest.ViewModels
                     MessageBoxImage.Information);
             }
 
+            if (!TryPassImportFreeSpaceGate(selectedGroups))
+            {
+                return;
+            }
+
             IsImporting = true;
             // Stop preview I/O so SD/USB bandwidth is not shared with parallel decode workers.
             try
@@ -181,7 +186,7 @@ namespace QuickMediaIngest.ViewModels
                                     DestinationRoot,
                                     NamingTemplate,
                                     importCts.Token,
-                                    CreateIngestOptions(group),
+                                    CreateIngestOptions(group, provider),
                                     DeleteAfterImport);
                             }
                         });
@@ -275,6 +280,65 @@ namespace QuickMediaIngest.ViewModels
             }
 
             TryStartNextQueuedImport();
+        }
+
+        /// <summary>
+        /// Returns false when import should not start (insufficient free space or user canceled soft-warn).
+        /// </summary>
+        private bool TryPassImportFreeSpaceGate(List<ItemGroup> selectedGroups)
+        {
+            long selectedBytes = ImportDestinationEstimator.SumSelectedBytes(selectedGroups);
+            long? freeBytes = ImportDestinationEstimator.TryGetFreeBytes(DestinationRoot);
+            if (!freeBytes.HasValue)
+            {
+                _logger.LogWarning("Could not determine free space for destination {Destination}; skipping free-space gate.", DestinationRoot);
+                return true;
+            }
+
+            ImportFreeSpaceDecision decision = ImportFreeSpaceGate.Evaluate(selectedBytes, freeBytes);
+            try
+            {
+                switch (decision)
+                {
+                    case ImportFreeSpaceDecision.AbortInsufficient:
+                        {
+                            string neededMb = ((selectedBytes + ImportFreeSpaceGate.MarginBytes) / (1024d * 1024d))
+                                .ToString("0.##", CultureInfo.CurrentCulture);
+                            string freeMb = (freeBytes.Value / (1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture);
+                            MessageBox.Show(
+                                AppLocalizer.Format("Msg_ImportFreeSpace_AbortBody", neededMb, freeMb),
+                                AppLocalizer.Get("Msg_ImportFreeSpace_AbortTitle"),
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                            StatusMessage = AppLocalizer.Get("Vm_Status_ImportAbortedLowFreeSpace");
+                            return false;
+                        }
+                    case ImportFreeSpaceDecision.WarnUnknownSizesLowFree:
+                        {
+                            string freeMb = (freeBytes.Value / (1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture);
+                            MessageBoxResult warn = MessageBox.Show(
+                                AppLocalizer.Format("Msg_ImportFreeSpace_WarnBody", freeMb),
+                                AppLocalizer.Get("Msg_ImportFreeSpace_WarnTitle"),
+                                MessageBoxButton.OKCancel,
+                                MessageBoxImage.Warning);
+                            if (warn != MessageBoxResult.OK)
+                            {
+                                StatusMessage = AppLocalizer.Get("Vm_StatusImportCanceled");
+                                return false;
+                            }
+
+                            return true;
+                        }
+                    default:
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Free-space preflight dialog failed; aborting import.");
+                StatusMessage = AppLocalizer.Get("Vm_Status_ImportAbortedLowFreeSpace");
+                return false;
+            }
         }
     }
 }

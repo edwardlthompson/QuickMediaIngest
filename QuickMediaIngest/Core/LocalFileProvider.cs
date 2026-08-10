@@ -31,7 +31,12 @@ namespace QuickMediaIngest.Core
         /// <param name="destPath">Destination file path.</param>
         /// <param name="token">Cancellation token.</param>
         /// <param name="bytesCopied">Optional progress reporter (bytes copied so far).</param>
-        public async Task CopyAsync(string srcPath, string destPath, CancellationToken token, IProgress<long>? bytesCopied = null)
+        public async Task CopyAsync(
+            string srcPath,
+            string destPath,
+            CancellationToken token,
+            IProgress<long>? bytesCopied = null,
+            long expectedBytes = 0)
         {
             _logger.LogDebug("Copying local file from {SourcePath} to {DestinationPath}.", srcPath, destPath);
             token.ThrowIfCancellationRequested();

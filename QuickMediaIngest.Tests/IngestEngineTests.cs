@@ -59,8 +59,9 @@ namespace QuickMediaIngest.Tests
                             It.IsAny<string>(),
                             It.IsAny<string>(),
                             It.IsAny<CancellationToken>(),
-                            It.IsAny<IProgress<long>>()))
-                    .Returns<string, string, CancellationToken, IProgress<long>>((_, dst, _, progress) =>
+                            It.IsAny<IProgress<long>>(),
+                            It.IsAny<long>()))
+                    .Returns<string, string, CancellationToken, IProgress<long>, long>((_, dst, _, progress, _) =>
                     {
                         File.WriteAllBytes(dst, new byte[321]);
                         progress?.Report(321);
@@ -129,8 +130,9 @@ namespace QuickMediaIngest.Tests
                             It.IsAny<string>(),
                             It.IsAny<string>(),
                             It.IsAny<CancellationToken>(),
-                            It.IsAny<IProgress<long>>()))
-                    .Returns<string, string, CancellationToken, IProgress<long>>((_, dst, _, progress) =>
+                            It.IsAny<IProgress<long>>(),
+                            It.IsAny<long>()))
+                    .Returns<string, string, CancellationToken, IProgress<long>, long>((_, dst, _, progress, _) =>
                     {
                         progress?.Report(512);
                         File.WriteAllBytes(dst, new byte[1024]);
@@ -204,8 +206,9 @@ namespace QuickMediaIngest.Tests
                             It.IsAny<string>(),
                             It.IsAny<string>(),
                             It.IsAny<CancellationToken>(),
-                            It.IsAny<IProgress<long>>()))
-                    .Returns<string, string, CancellationToken, IProgress<long>>((_, _, ct, _) =>
+                            It.IsAny<IProgress<long>>(),
+                            It.IsAny<long>()))
+                    .Returns<string, string, CancellationToken, IProgress<long>, long>((_, _, ct, _, _) =>
                         Task.FromCanceled(ct));
 
                 var logger = new Mock<ILogger<IngestEngine>>();
