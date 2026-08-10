@@ -18,3 +18,5 @@ test-results/
 publish/
 bin/
 obj/
+.cursor/session-logs/
+.cursor-session-state.json
