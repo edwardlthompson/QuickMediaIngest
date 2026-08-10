@@ -2,6 +2,20 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-09 — PreferAdb import hang harden (v1.3.24)
+
+**Status:** Accepted
+**Context:** PreferAdb FTP→ADB import of large TIFF/DNG files stalled ~5 minutes with 8-way parallelism against a nearly-full destination; fixed wall timeout then failed six files and left truncated stubs.
+
+**Decision:**
+- Cap ADB/remapped import concurrency at 2 (`AdbTransferIo`).
+- Hard free-space preflight (selected + 256MB margin); soft-warn when sizes unknown and free < 256MB.
+- Delete partial destinations on failure and cancel; size-scaled ADB pull timeout 5–10 min.
+- FTP failover mid-pull deferred.
+
+**Validation:** Feature gate + pre-release gate; 222 unit tests; local portable `1.3.24`; CI/Security/CodeQL green on `864853b`; `workflow_dispatch` Build and Release for tag/assets.
+
+---
 ## 2026-08-01 — Unified load fail-fast FTP + progressive local UI
 
 **Status:** Accepted
