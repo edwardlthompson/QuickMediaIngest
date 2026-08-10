@@ -45,6 +45,8 @@ PreferAdb FTP→ADB imports used engine default parallelism (up to 8) with a fix
 
 **Fix:** `AdbTransferIo` caps ADB/remapped copies to 2; `ImportFreeSpaceGate` aborts when selected bytes + 256MB margin exceed free (soft-warn when sizes unknown and free &lt; 256MB); `AdbPullTimeout` scales 5–10 min from `expectedBytes` on `IFileProvider.CopyAsync`; `IngestItemProcessor` deletes partial destinations on failure and cancel.
 
+**Shipped:** v1.3.24 (2026-08-09). Post-release: CI/Security/CodeQL green; GitHub Release includes EXE/MSI/zip + CycloneDX SBOM; `simulate-template-upgrade` reports missing web-only template files (`docs/WEB_PROJECT_LAYOUT.md`, `design-tokens/`) — expected for this WPF child product, not a product regression.
+
 ## Settings reset on restart (naming preset + destination combo)
 
 Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear forgotten when (1) `OnNamingPresetChanged` re-applies Recommended during/after load over a diverged `NamingTemplate`, or (2) `RefreshDestinationPresetLabels` clears the combo and WPF nulls `DestinationPreset`.
