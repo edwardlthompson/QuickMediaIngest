@@ -204,6 +204,129 @@ namespace QuickMediaIngest.Tests
                 try { Directory.Delete(dir, true); } catch { /* ignore */ }
             }
         }
+
+        [Fact]
+        public async Task ProcessOneAsync_CopyFailsButVerifiedDestExists_CountsSuccessAndDeletes()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "qmi-proc-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                byte[] payload = new byte[] { 1, 2, 3, 4, 5 };
+                string existing = Path.Combine(dir, "IMG_DUP.JPG");
+                File.WriteAllBytes(existing, payload);
+
+                var provider = new Mock<IFileProvider>(MockBehavior.Strict);
+                provider
+                    .Setup(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>(), It.IsAny<long>()))
+                    .ThrowsAsync(new IOException("ADB pull failed: No such file or directory"));
+                provider
+                    .Setup(p => p.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .Returns(Task.CompletedTask);
+
+                bool? reportedSuccess = null;
+                string? reportedError = null;
+                var logger = new Mock<ILogger>();
+                var item = new ImportItem
+                {
+                    FileName = "IMG_DUP.JPG",
+                    SourcePath = "/sdcard/DCIM/IMG_DUP.JPG",
+                    FileSize = payload.Length,
+                    DateTaken = DateTime.Now,
+                    IsFtpSource = true
+                };
+                var group = new ItemGroup { Title = "Shoot" };
+                var options = new IngestOptions
+                {
+                    DuplicateHandling = DuplicateHandlingMode.Suffix,
+                    VerificationMode = ImportVerificationMode.Fast
+                };
+
+                await IngestItemProcessor.ProcessOneAsync(
+                    item,
+                    1,
+                    1,
+                    group,
+                    dir,
+                    "[Original]",
+                    options,
+                    deleteAfterImport: true,
+                    provider.Object,
+                    logger.Object,
+                    null,
+                    info =>
+                    {
+                        if (!info.IsStarted)
+                        {
+                            reportedSuccess = info.Success;
+                            reportedError = info.ErrorMessage;
+                        }
+                    },
+                    CancellationToken.None);
+
+                Assert.True(reportedSuccess);
+                Assert.Contains("Already imported", reportedError ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                Assert.True(File.Exists(existing));
+                provider.Verify(p => p.DeleteAsync(item.SourcePath, It.IsAny<CancellationToken>()), Times.Once);
+            }
+            finally
+            {
+                try { Directory.Delete(dir, true); } catch { /* ignore */ }
+            }
+        }
+
+        [Fact]
+        public async Task ProcessOneAsync_CopyFailsWithoutDest_StillFails()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "qmi-proc-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var provider = new Mock<IFileProvider>(MockBehavior.Strict);
+                provider
+                    .Setup(p => p.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<IProgress<long>?>(), It.IsAny<long>()))
+                    .ThrowsAsync(new IOException("ADB pull failed: No such file or directory"));
+
+                bool? reportedSuccess = null;
+                var logger = new Mock<ILogger>();
+                var item = new ImportItem
+                {
+                    FileName = "MISSING.JPG",
+                    SourcePath = "/sdcard/DCIM/MISSING.JPG",
+                    FileSize = 10,
+                    DateTaken = DateTime.Now,
+                    IsFtpSource = true
+                };
+
+                await IngestItemProcessor.ProcessOneAsync(
+                    item,
+                    1,
+                    1,
+                    new ItemGroup { Title = "Shoot" },
+                    dir,
+                    "[Original]",
+                    new IngestOptions { DuplicateHandling = DuplicateHandlingMode.Suffix },
+                    deleteAfterImport: true,
+                    provider.Object,
+                    logger.Object,
+                    null,
+                    info =>
+                    {
+                        if (!info.IsStarted)
+                        {
+                            reportedSuccess = info.Success;
+                        }
+                    },
+                    CancellationToken.None);
+
+                Assert.False(reportedSuccess);
+                provider.Verify(p => p.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            }
+            finally
+            {
+                try { Directory.Delete(dir, true); } catch { /* ignore */ }
+            }
+        }
     }
 
     public class UpdateServiceTests

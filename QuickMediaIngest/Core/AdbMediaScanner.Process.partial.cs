@@ -32,8 +32,12 @@ namespace QuickMediaIngest.Core
             linked.CancelAfter(WallTimeout);
             try
             {
-                string stdout = await process.StandardOutput.ReadToEndAsync(linked.Token).ConfigureAwait(false);
+                // Drain both pipes concurrently so large stderr progress cannot deadlock WaitForExit.
+                Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync(linked.Token);
+                Task<string> stderrTask = process.StandardError.ReadToEndAsync(linked.Token);
+                await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
                 await process.WaitForExitAsync(linked.Token).ConfigureAwait(false);
+                string stdout = await stdoutTask.ConfigureAwait(false);
                 return process.ExitCode == 0 ? stdout : null;
             }
             catch (OperationCanceledException)

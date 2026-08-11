@@ -7,16 +7,12 @@ namespace QuickMediaIngest.Core
 {
     public static class IngestFileNaming
     {
-        public static string ResolveFileName(
+        public static string BuildBaseFileName(
             ImportItem item,
-            string targetDir,
             string template,
             string shootName,
-            int sequenceNumber,
-            DuplicateHandlingMode duplicateHandling,
-            out bool skippedAsDuplicate)
+            int sequenceNumber)
         {
-            skippedAsDuplicate = false;
             string ext = Path.GetExtension(item.FileName);
             string outputName = template;
             string safeShootName = SanitizeFileNamePart(string.IsNullOrWhiteSpace(shootName) ? "Shoot" : shootName);
@@ -55,9 +51,23 @@ namespace QuickMediaIngest.Core
             outputName = outputName.Replace("[Original]", Path.GetFileNameWithoutExtension(item.FileName));
             outputName = outputName.Replace("[Sequence]", sequenceNumber.ToString("D4"));
             outputName = outputName.Replace("[Ext]", ext.TrimStart('.'));
+            return $"{outputName}{ext}";
+        }
 
-            string destFileName = $"{outputName}{ext}";
+        public static string ResolveFileName(
+            ImportItem item,
+            string targetDir,
+            string template,
+            string shootName,
+            int sequenceNumber,
+            DuplicateHandlingMode duplicateHandling,
+            out bool skippedAsDuplicate)
+        {
+            skippedAsDuplicate = false;
+            string destFileName = BuildBaseFileName(item, template, shootName, sequenceNumber);
             string fullPath = Path.Combine(targetDir, destFileName);
+            string ext = Path.GetExtension(destFileName);
+            string outputName = Path.GetFileNameWithoutExtension(destFileName);
 
             if (File.Exists(fullPath))
             {

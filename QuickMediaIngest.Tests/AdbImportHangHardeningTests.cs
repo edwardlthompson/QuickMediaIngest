@@ -118,5 +118,34 @@ namespace QuickMediaIngest.Tests
                 Path.Combine(Path.GetTempPath(), "qmi_missing_" + Guid.NewGuid().ToString("N")),
                 logger.Object);
         }
+
+        [Fact]
+        public void AdbFileProvider_DocumentsPipeDrainRequirement()
+        {
+            // Regression guard: AdbFileProvider.RunAdbAsync must ReadToEndAsync stdout+stderr
+            // concurrently with WaitForExitAsync. Redirect without drain deadlocks adb pull
+            // once progress fills the OS pipe (~few MB), matching hung PreferAdb imports.
+            string source = File.ReadAllText(
+                Path.Combine(RepoRoot(), "QuickMediaIngest", "Core", "AdbFileProvider.cs"));
+            Assert.Contains("Drain stdout/stderr", source, StringComparison.Ordinal);
+            Assert.Contains("ReadToEndAsync()", source, StringComparison.Ordinal);
+            Assert.Contains("WaitForExitAsync", source, StringComparison.Ordinal);
+        }
+
+        private static string RepoRoot()
+        {
+            string dir = AppContext.BaseDirectory;
+            for (int i = 0; i < 8; i++)
+            {
+                if (File.Exists(Path.Combine(dir, "QuickMediaIngest-1.sln")))
+                {
+                    return dir;
+                }
+
+                dir = Path.GetFullPath(Path.Combine(dir, ".."));
+            }
+
+            return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        }
     }
 }

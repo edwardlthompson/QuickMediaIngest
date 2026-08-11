@@ -2,6 +2,19 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-10 — PreferAdb pipe-drain + already-imported recovery (v1.3.26)
+
+**Status:** Accepted
+**Context:** Large Prefer-ADB pulls hung with idle CPU (stdout/stderr pipe fill). Duplicate FTP→ADB batches marked already-pulled files as failures; `Point & Shoot` deletes failed because `&` broke Android `sh` double-quoted `rm`.
+
+**Decision:**
+- Drain ADB stdout/stderr concurrently in pull/shell helpers (`AdbFileProvider` + scanner/preview/thumb process partials).
+- Single-quote remote paths for `shell rm`; treat missing remote as benign delete success.
+- On copy failure, if a size-verified destination already exists, count success and honor Delete after Import (`IngestAlreadyImported`).
+
+**Validation:** Feature gate + prerelease autofix; unit tests for recovery and benign delete; local portable `1.3.26-hardened`.
+
+---
 ## 2026-08-09 — PreferAdb import hang harden (v1.3.24)
 
 **Status:** Accepted

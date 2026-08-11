@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.3.26] — 2026-08-10
+
+### Fixed
+
+- **ADB pull pipe deadlock**: Drain stdout/stderr while waiting on adb so progress text cannot fill the pipe and hang large Prefer-ADB pulls.
+- **Delete-after-import paths with `&`**: Android `shell rm` now single-quotes remote paths so folders like `Point & Shoot` delete correctly.
+- **Duplicate Prefer-ADB failures**: When pull fails but a size-verified copy already exists at the destination, treat as success and still delete the source when Delete after Import is on; ADB `rm` of an already-absent file is non-fatal.
+- Clearer ADB failure messages (stdout + stderr + exit code).
+
+### Added
+
+- `IngestAlreadyImported` recovery helper and unit coverage for already-imported / benign-delete paths.
+
 ## [1.3.25] — 2026-08-10
 
 ### Fixed

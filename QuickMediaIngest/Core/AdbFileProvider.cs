@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -42,13 +43,18 @@ namespace QuickMediaIngest.Core
                     }
                 });
 
-        public Task DeleteAsync(string srcPath, CancellationToken token) =>
-            RunAdbAsync(
-                $"shell rm \"{srcPath}\"",
+        public Task DeleteAsync(string srcPath, CancellationToken token)
+        {
+            // Android sh treats & as a command separator — double quotes do NOT protect it.
+            // Prefer single-quoted path (escape embedded single quotes for POSIX sh).
+            string quoted = "'" + srcPath.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+            return RunAdbAsync(
+                $"shell rm {quoted}",
                 $"ADB delete: {srcPath}",
                 "ADB delete failed",
                 token,
                 AdbPullTimeout.Floor);
+        }
 
         private async Task RunAdbAsync(
             string adbArgumentsWithoutSerial,
@@ -74,11 +80,16 @@ namespace QuickMediaIngest.Core
                 throw new IOException("Failed to start adb process.");
             }
 
+            // Drain stdout/stderr while waiting — otherwise adb progress fills the pipe and deadlocks.
+            Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
             linked.CancelAfter(wallTimeout);
             try
             {
                 await process.WaitForExitAsync(linked.Token).ConfigureAwait(false);
+                await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -90,12 +101,26 @@ namespace QuickMediaIngest.Core
 
             if (process.ExitCode != 0)
             {
-                string error = await process.StandardError.ReadToEndAsync(token).ConfigureAwait(false);
-                throw new IOException($"{failurePrefix}: {error}");
+                string stderr = await stderrTask.ConfigureAwait(false);
+                string stdout = await stdoutTask.ConfigureAwait(false);
+                string detail = string.Join(" | ", new[] { stderr.Trim(), stdout.Trim() }.Where(s => s.Length > 0));
+                if (IsBenignMissingDelete(failurePrefix, detail))
+                {
+                    _logger.LogInformation("ADB delete skipped; remote file already absent.");
+                    return;
+                }
+
+                throw new IOException(
+                    string.IsNullOrEmpty(detail) ? $"{failurePrefix} (exit {process.ExitCode})." : $"{failurePrefix}: {detail}");
             }
 
             afterSuccess?.Invoke();
         }
+
+        internal static bool IsBenignMissingDelete(string failurePrefix, string detail) =>
+            failurePrefix.StartsWith("ADB delete", StringComparison.Ordinal)
+            && (detail.Contains("No such file", StringComparison.OrdinalIgnoreCase)
+                || detail.Contains("does not exist", StringComparison.OrdinalIgnoreCase));
 
         private static void TryKill(Process process)
         {

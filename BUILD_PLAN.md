@@ -3,7 +3,7 @@
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 > Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.25 · **Template:** v0.16.0 · **Tests:** 227 (Release)
+**Release:** v1.3.26 · **Template:** v0.16.0 · **Tests:** 227 (Release)
 
 > **Bootstrap alignment 0.11 → 0.16.0** (process); 0.11 → 0.15.1 archive in COMPLETED_TASKS.md; 0.16.0 cherry-pick in `docs/BOOTSTRAP_ALIGNMENT.md`.
 >

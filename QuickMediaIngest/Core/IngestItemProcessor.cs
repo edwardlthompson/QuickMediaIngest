@@ -9,7 +9,7 @@ using QuickMediaIngest.Core.Models;
 
 namespace QuickMediaIngest.Core
 {
-    internal static class IngestItemProcessor
+    internal static partial class IngestItemProcessor
     {
         public static async Task ProcessOneAsync(
             ImportItem item,
@@ -72,30 +72,8 @@ namespace QuickMediaIngest.Core
                     MetadataKeywordWriter.TryApplyKeywords(destPath, options.ImportKeywords, logger);
                 }
 
-                if (deleteAfterImport && success && File.Exists(destPath))
-                {
-                    try
-                    {
-                        if (IngestVerification.IsPostImportVerifiedForDelete(item, destPath, options, logger, out string? verifyNote))
-                        {
-                            await provider.DeleteAsync(item.SourcePath, cancellationToken);
-                            logger.LogInformation(
-                                "Deleted source file {SourcePath} after successful import and verification.",
-                                LogPathSanitizer.Local(item.SourcePath));
-                        }
-                        else
-                        {
-                            logger.LogWarning(
-                                "Source and destination did not pass post-import verification for {FileName}. {Details} Skipping delete.",
-                                item.FileName,
-                                verifyNote ?? string.Empty);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", LogPathSanitizer.Local(item.SourcePath));
-                    }
-                }
+                await TryDeleteSourceAfterImportAsync(
+                    item, destPath, deleteAfterImport, success, provider, options, logger, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -105,60 +83,87 @@ namespace QuickMediaIngest.Core
             }
             catch (Exception ex)
             {
-                TryDeletePartialDestination(destPath, logger);
-                errorMessage = ex.Message;
-                logger.LogError(
-                    ex,
-                    "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.",
-                    item.FileName,
-                    LogPathSanitizer.Local(item.SourcePath),
-                    LogPathSanitizer.Local(destPath));
+                if (IngestAlreadyImported.TryFindVerifiedDestination(
+                        item,
+                        targetDir,
+                        namingTemplate,
+                        group.Title,
+                        itemIndex,
+                        options,
+                        logger,
+                        out string existingPath))
+                {
+                    if (!string.Equals(destPath, existingPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        TryDeletePartialDestination(destPath, logger);
+                    }
+
+                    destPath = existingPath;
+                    success = true;
+                    errorMessage = "Already imported at destination; skipped re-copy.";
+                    logger.LogInformation(
+                        "Treating {FileName} as already imported at {DestinationPath} after copy failure: {Error}",
+                        item.FileName,
+                        LogPathSanitizer.Local(destPath),
+                        ex.Message);
+
+                    await TryDeleteSourceAfterImportAsync(
+                        item, destPath, deleteAfterImport, success, provider, options, logger, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    TryDeletePartialDestination(destPath, logger);
+                    errorMessage = ex.Message;
+                    logger.LogError(
+                        ex,
+                        "Failed to import file {FileName} from {SourcePath} to {DestinationPath}.",
+                        item.FileName,
+                        LogPathSanitizer.Local(item.SourcePath),
+                        LogPathSanitizer.Local(destPath));
+                }
             }
 
             tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);
             itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage, isStarted: false));
         }
 
-        internal static void TryDeletePartialDestination(string destPath, ILogger logger)
+        private static async Task TryDeleteSourceAfterImportAsync(
+            ImportItem item,
+            string destPath,
+            bool deleteAfterImport,
+            bool success,
+            IFileProvider provider,
+            IngestOptions options,
+            ILogger logger,
+            CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(destPath) || !File.Exists(destPath))
+            if (!deleteAfterImport || !success || !File.Exists(destPath))
             {
                 return;
             }
 
             try
             {
-                File.Delete(destPath);
-                logger.LogDebug("Removed partial destination file {DestinationPath} after failed or canceled import.", LogPathSanitizer.Local(destPath));
+                if (IngestVerification.IsPostImportVerifiedForDelete(item, destPath, options, logger, out string? verifyNote))
+                {
+                    await provider.DeleteAsync(item.SourcePath, cancellationToken).ConfigureAwait(false);
+                    logger.LogInformation(
+                        "Deleted source file {SourcePath} after successful import and verification.",
+                        LogPathSanitizer.Local(item.SourcePath));
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Source and destination did not pass post-import verification for {FileName}. {Details} Skipping delete.",
+                        item.FileName,
+                        verifyNote ?? string.Empty);
+                }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                logger.LogDebug(ex, "Could not remove partial destination {DestinationPath}.", LogPathSanitizer.Local(destPath));
+                logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", LogPathSanitizer.Local(item.SourcePath));
             }
         }
 
-        private static IngestProgressInfo BuildProgressInfo(
-            ItemGroup group,
-            string targetDir,
-            ImportItem item,
-            int itemIndex,
-            int total,
-            string destPath,
-            bool success,
-            string errorMessage,
-            bool isStarted) =>
-            new()
-            {
-                GroupTitle = string.IsNullOrWhiteSpace(group.Title) ? targetDir : group.Title,
-                GroupCurrent = itemIndex,
-                GroupTotal = total,
-                SourcePath = item.SourcePath,
-                DestinationPath = destPath,
-                FileName = item.FileName,
-                FileSizeBytes = item.FileSize,
-                Success = success,
-                ErrorMessage = errorMessage,
-                IsStarted = isStarted,
-            };
     }
 }

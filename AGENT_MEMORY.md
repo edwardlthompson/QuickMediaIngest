@@ -67,6 +67,7 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-07-28 | Release v1.3.22 | Settings persistence (naming preset + destination combo) | Confirm prefs survive cold start on portable EXE |
 | 2026-08-01 | Release v1.3.23 | Unified fail-fast FTP + PreferAdb/MP4 thumbs + HEIC fixes; local build + GH release | Warm PreferAdb smoke with OP13; confirm Unified paints E: while FTP down |
 | 2026-08-09 | Release v1.3.24 | PreferAdb import hang harden (ADB concurrency cap, free-space gate, stub cleanup) | Watch large PreferAdb imports when destination free space is tight |
+| 2026-08-10 | Release v1.3.26 | ADB pipe-drain + already-imported recovery + `Point & Shoot` delete quoting | Watch PreferAdb dual-FTP alias duplicate batches |
 | 2026-08-10 | Release v1.3.25 | Phone DateTaken: ADB mtime + EXIF MetadataReader rewired | PreferAdb phone shoot folders should match capture, not scan-time UTC |
 | 2026-07-21 | Template align → 0.16.0 | FOSS Cursor pack + BUILD_PLAN markers; kept WPF module/`build.yml` | HUMAN: deferred CI (release-please/pages/automerge) |
 

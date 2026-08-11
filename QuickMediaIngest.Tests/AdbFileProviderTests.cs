@@ -13,6 +13,15 @@ namespace QuickMediaIngest.Tests
 {
     public class AdbFileProviderTests
     {
+        [Theory]
+        [InlineData("ADB delete failed", "rm: /sdcard/x: No such file or directory", true)]
+        [InlineData("ADB delete failed", "permission denied", false)]
+        [InlineData("ADB pull failed", "No such file or directory", false)]
+        public void IsBenignMissingDelete_OnlyForAbsentRemoteDeletes(string prefix, string detail, bool expected)
+        {
+            Assert.Equal(expected, AdbFileProvider.IsBenignMissingDelete(prefix, detail));
+        }
+
         [Fact]
         public void AdbDeviceProbe_ListDeviceSerials_ReturnsConnectedDevice()
         {
