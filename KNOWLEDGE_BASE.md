@@ -47,6 +47,14 @@ PreferAdb FTP→ADB imports used engine default parallelism (up to 8) with a fix
 
 **Shipped:** v1.3.24 (2026-08-09). Post-release: CI/Security/CodeQL green; GitHub Release includes EXE/MSI/zip + CycloneDX SBOM; `simulate-template-upgrade` reports missing web-only template files (`docs/WEB_PROJECT_LAYOUT.md`, `design-tokens/`) — expected for this WPF child product, not a product regression.
 
+## PreferAdb pipe deadlock + duplicate FTP→ADB “failures”
+
+Redirected `adb` stdout/stderr without concurrent drain filled the pipe mid-pull (often stuck near ~3.5MB) with idle CPU. Separately, two FTP hosts PreferAdb-mapped to the same phone path imported the same files twice; the second pull failed after delete-after-import, and `shell rm "…/Point & Shoot/…"` broke on `&` inside double quotes.
+
+**Fix:** Drain stdout/stderr while waiting in ADB process helpers; single-quote `shell rm` paths; on copy failure, `IngestAlreadyImported` size-verifies an existing destination and counts success (still deletes source when Delete after Import is on); missing remote `rm` is benign.
+
+**Shipped:** v1.3.26 (2026-08-10). Post-release: CI/Security/CodeQL green; Release assets include EXE/MSI/zip + CycloneDX SBOM; `simulate-template-upgrade` still fails web-only bootstrap smoke files — expected for WPF child, not a product regression. Follow-up: dedupe PreferAdb work when multiple FTP sources alias one device.
+
 ## Settings reset on restart (naming preset + destination combo)
 
 Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear forgotten when (1) `OnNamingPresetChanged` re-applies Recommended during/after load over a diverged `NamingTemplate`, or (2) `RefreshDestinationPresetLabels` clears the combo and WPF nulls `DestinationPreset`.
