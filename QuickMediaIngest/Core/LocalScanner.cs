@@ -15,14 +15,17 @@ namespace QuickMediaIngest.Core
     public class LocalScanner : ILocalScanner
     {
         private readonly ILogger<LocalScanner> _logger;
+        private readonly IMetadataReader _metadataReader;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalScanner"/> class.
         /// </summary>
         /// <param name="logger">Logger for diagnostic output.</param>
-        public LocalScanner(ILogger<LocalScanner> logger)
+        /// <param name="metadataReader">EXIF/DateTaken enrichment for local-readable files.</param>
+        public LocalScanner(ILogger<LocalScanner> logger, IMetadataReader metadataReader)
         {
             _logger = logger;
+            _metadataReader = metadataReader;
         }
 
         /// <summary>
@@ -88,7 +91,7 @@ namespace QuickMediaIngest.Core
                     // Skip non-media metadata files (CTG, DAT, etc.)
                     if (!IsMediaFile(ext)) continue;
 
-                    items.Add(new ImportItem
+                    var item = new ImportItem
                     {
                         SourcePath = info.FullName,
                         FileName = info.Name,
@@ -96,7 +99,9 @@ namespace QuickMediaIngest.Core
                         DateTaken = info.LastWriteTime,
                         IsVideo = MediaExtensions.IsVideoExtension(ext),
                         FileType = ext.TrimStart('.').ToUpper()
-                    });
+                    };
+                    _metadataReader.ReadMetadata(item);
+                    items.Add(item);
                 }
 
                 scannedFolders++;

@@ -41,9 +41,16 @@ namespace QuickMediaIngest.Core
                 var directories = ImageMetadataReader.ReadMetadata(item.SourcePath);
                 var subIfdDir = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
 
+                // Capture wall clock (Unspecified/local display) — do not invent UTC conversion.
                 if (subIfdDir != null && subIfdDir.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out DateTime dateTime))
                 {
-                    item.DateTaken = ApplyExifSubsecondPrecision(subIfdDir, dateTime);
+                    DateTime stamped = ApplyExifSubsecondPrecision(subIfdDir, dateTime);
+                    if (stamped.Kind == DateTimeKind.Utc)
+                    {
+                        stamped = DateTime.SpecifyKind(stamped, DateTimeKind.Unspecified);
+                    }
+
+                    item.DateTaken = stamped;
                 }
                 else
                 {

@@ -36,11 +36,12 @@ namespace QuickMediaIngest.Core
 
             try
             {
-                // Prefer find+stat so ImportItem.FileSize is set (enables size-capped ADB pull).
+                // Prefer find+stat so FileSize + mtime (DateTaken) are set.
                 // Use '|' — Android toybox stat -c does not expand \t escapes.
+                // %Y = seconds since epoch (device clock); converted to local wall clock when parsed.
                 string? output = await RunAdbCaptureAsync(
                         session.DeviceSerial,
-                        $"shell find '{escaped}' -type f -exec stat -c '%n|%s' {{}} +",
+                        $"shell find '{escaped}' -type f -exec stat -c '%n|%s|%Y' {{}} +",
                         cancellationToken)
                     .ConfigureAwait(false);
 

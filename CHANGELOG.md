@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.3.25] — 2026-08-10
+
+### Fixed
+
+- **Phone DateTaken / timezone skew**: Prefer-ADB scans no longer stamp every file with `DateTime.UtcNow`. Device `stat` now returns mtime (`%n|%s|%Y`) converted to local wall clock for shoot folders and naming. Local/SD scans re-enable EXIF `DateTimeOriginal` via `MetadataReader` when the file is readable on disk.
+
+### Added
+
+- Unit coverage for ADB `path|size|mtime` parse, `ResolveDateTaken`, and MetadataReader fallback behavior.
+
 ## [1.3.24] — 2026-08-09
 
 ### Fixed

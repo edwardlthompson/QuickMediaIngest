@@ -17,13 +17,12 @@ namespace QuickMediaIngest.Core
             CancellationToken cancellationToken)
         {
             var items = new List<ImportItem>();
-            DateTime now = DateTime.UtcNow;
             using var reader = new StringReader(output);
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!TryParseFindLine(line, out string devicePath, out long fileSize))
+                if (!TryParseFindLine(line, out string devicePath, out long fileSize, out long mtimeUnix))
                 {
                     continue;
                 }
@@ -55,55 +54,13 @@ namespace QuickMediaIngest.Core
                     FileName = name,
                     SourcePath = ftpPath,
                     FileSize = fileSize,
-                    DateTaken = now,
+                    DateTaken = ResolveDateTaken(mtimeUnix),
                     IsVideo = MediaExtensions.IsVideoExtension(ext),
                     FileType = ext.TrimStart('.').ToUpperInvariant(),
                 });
             }
 
             return items;
-        }
-
-        /// <summary>
-        /// Parses <c>find</c> path-only lines or <c>stat -c '%n\t%s'</c> lines.
-        /// </summary>
-        internal static bool TryParseFindLine(string line, out string devicePath, out long fileSize)
-        {
-            devicePath = string.Empty;
-            fileSize = 0;
-            string trimmed = line.Trim();
-            if (string.IsNullOrEmpty(trimmed))
-            {
-                return false;
-            }
-
-            // Prefer '|' (portable across toybox stat -c); then real tab; then space.
-            foreach (char sep in new[] { '|', '\t', ' ' })
-            {
-                int idx = trimmed.LastIndexOf(sep);
-                if (idx <= 0 || idx >= trimmed.Length - 1)
-                {
-                    continue;
-                }
-
-                if (!long.TryParse(trimmed[(idx + 1)..], out long size) || size < 0)
-                {
-                    continue;
-                }
-
-                string pathPart = trimmed[..idx].Trim();
-                if (string.IsNullOrEmpty(pathPart) || !pathPart.Contains('/', StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                devicePath = pathPart;
-                fileSize = size;
-                return true;
-            }
-
-            devicePath = trimmed;
-            return true;
         }
 
         internal static bool TryToFtpStylePath(string mediaRootPrefix, string devicePath, out string ftpPath)

@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using Moq;
 using QuickMediaIngest.Core;
+using QuickMediaIngest.Core.Models;
 using Xunit;
 
 namespace QuickMediaIngest.Tests
@@ -23,8 +24,10 @@ namespace QuickMediaIngest.Tests
                 File.WriteAllText(Path.Combine(root, "thumb.ctg"), "ctg");
 
                 var logger = new Mock<ILogger<LocalScanner>>();
-                var scanner = new LocalScanner(logger.Object);
+                var metadata = new Mock<IMetadataReader>();
+                var scanner = new LocalScanner(logger.Object, metadata.Object);
                 var items = scanner.Scan(root, includeSubfolders: false);
+                metadata.Verify(m => m.ReadMetadata(It.IsAny<ImportItem>()), Times.Exactly(2));
 
                 Assert.Equal(2, items.Count);
                 Assert.Contains(items, i => i.FileName == "photo.jpg");
@@ -49,7 +52,8 @@ namespace QuickMediaIngest.Tests
                 File.WriteAllText(Path.Combine(nested, "IMG_0001.JPG"), "jpg");
 
                 var logger = new Mock<ILogger<LocalScanner>>();
-                var scanner = new LocalScanner(logger.Object);
+                var metadata = new Mock<IMetadataReader>();
+                var scanner = new LocalScanner(logger.Object, metadata.Object);
                 var items = scanner.Scan(root, includeSubfolders: true);
 
                 Assert.Single(items);
@@ -65,7 +69,8 @@ namespace QuickMediaIngest.Tests
         public void Scan_MissingDirectory_ReturnsEmptyList()
         {
             var logger = new Mock<ILogger<LocalScanner>>();
-            var scanner = new LocalScanner(logger.Object);
+            var metadata = new Mock<IMetadataReader>();
+            var scanner = new LocalScanner(logger.Object, metadata.Object);
             var items = scanner.Scan(Path.Combine(Path.GetTempPath(), "qmi_missing_" + Guid.NewGuid()), includeSubfolders: true);
             Assert.Empty(items);
         }

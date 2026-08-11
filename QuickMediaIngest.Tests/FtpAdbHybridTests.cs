@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using QuickMediaIngest.Core;
@@ -96,6 +97,40 @@ namespace QuickMediaIngest.Tests
                 out long size));
             Assert.Equal("/sdcard/DCIM/Point & Shoot/a.jpg", path);
             Assert.Equal(6134428, size);
+        }
+
+        [Fact]
+        public void TryParseFindLine_PipeSeparatedSizeAndMtime()
+        {
+            const long epoch = 1_700_000_000L; // 2023-11-14 UTC-ish
+            Assert.True(AdbMediaScanner.TryParseFindLine(
+                $"/sdcard/DCIM/Camera/IMG_001.jpg|2048|{epoch}",
+                out string path,
+                out long size,
+                out long mtime));
+            Assert.Equal("/sdcard/DCIM/Camera/IMG_001.jpg", path);
+            Assert.Equal(2048, size);
+            Assert.Equal(epoch, mtime);
+        }
+
+        [Fact]
+        public void ResolveDateTaken_UsesLocalWallClockFromEpoch()
+        {
+            const long epoch = 1_700_000_000L;
+            DateTime expected = DateTimeOffset.FromUnixTimeSeconds(epoch).LocalDateTime;
+            DateTime actual = AdbMediaScanner.ResolveDateTaken(epoch);
+            Assert.Equal(expected, actual);
+            Assert.NotEqual(DateTimeKind.Utc, actual.Kind); // LocalDateTime / Unspecified — never Utc batch stamp
+        }
+
+        [Fact]
+        public void ResolveDateTaken_MissingMtime_UsesLocalNowNotSharedUtcBatch()
+        {
+            DateTime a = AdbMediaScanner.ResolveDateTaken(0);
+            DateTime b = AdbMediaScanner.ResolveDateTaken(-1);
+            Assert.Equal(DateTimeKind.Local, a.Kind);
+            Assert.Equal(DateTimeKind.Local, b.Kind);
+            Assert.True((DateTime.Now - a).Duration() < TimeSpan.FromSeconds(5));
         }
     }
 
