@@ -2,6 +2,8 @@
 
 > Ephemeral audit output. Copy from this example; do not commit `CODE_REVIEW.md` (gitignored).
 
+**Source:** `audit` | `codex-local` | `codex-ci`
+
 ## Summary
 
 One paragraph: overall health, top risks, recommended sprint focus.
@@ -25,11 +27,12 @@ One paragraph: overall health, top risks, recommended sprint focus.
 | validate-bootstrap.sh --quick | | |
 | feature-gate.sh | | |
 | check-repo-hygiene.sh | | |
+| check-readme-health.sh | | |
 | Dependabot / CodeQL (if gh auth) | | |
 
 ## BUILD_PLAN links
 
-Map finding IDs to sprint rows in `BUILD_PLAN.md`.
+Map finding IDs to sprint rows in `BUILD_PLAN.md` (e.g. M27 🔲 [AGENT] Fix F-002 …).
 
 ## Out of scope
 

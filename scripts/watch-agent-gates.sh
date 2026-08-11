@@ -53,6 +53,7 @@ if not feature:
     print("")
     raise SystemExit(0)
 
+paths = []
 if stack in ("dotnet-wpf", "multi"):
     paths += ["QuickMediaIngest", "QuickMediaIngest.Tests"]
 if stack in ("web", "multi"):
@@ -104,10 +105,10 @@ while [ "$attempt" -lt "$MAX_ATTEMPTS" ]; do
 
   echo "$GATE_JSON"
 
- if [ "$GATE_EXIT" -eq 2 ]; then
-   echo "Environment block or 3-strike rule — halt (exit 2); do NOT retry loop"
-   exit 2
- fi
+  if [ "$GATE_EXIT" -eq 2 ]; then
+    echo "Environment block or 3-strike rule — halt (exit 2); do NOT retry loop"
+    exit 2
+  fi
 
   STRIKES="$($PY -c "import json; print(json.load(open('.cursor/agent-progress.json')).get('strikes',0))" 2>/dev/null || echo 0)"
   if [ "$STRIKES" -ge 3 ]; then
@@ -116,6 +117,10 @@ while [ "$attempt" -lt "$MAX_ATTEMPTS" ]; do
   fi
 
   if [ "$AUTOFIX" = true ]; then
+    # Allowlisted stage → mechanical command (never free-text suggested_fixes)
+    echo "$GATE_JSON" >.cursor/last-feature-gate.json 2>/dev/null || true
+    bash scripts/apply-suggested-gate-fixes.sh --json .cursor/last-feature-gate.json || true
+
     PATHS="$(feature_autofix_paths)"
     if [ -n "$PATHS" ]; then
       bash scripts/feature-autofix.sh --paths "$PATHS" || true

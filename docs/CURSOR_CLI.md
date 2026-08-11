@@ -43,3 +43,4 @@ Default FOSS CI remains the existing workflows (no Cursor API key required).
 
 - [`CURSOR_INTEGRATIONS.md`](CURSOR_INTEGRATIONS.md)
 - [`CURSOR_MODES.md`](CURSOR_MODES.md)
+- [`CODEX_REVIEW.md`](CODEX_REVIEW.md) — third-party Codex review (separate `OPENAI_API_KEY`)

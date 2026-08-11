@@ -37,6 +37,7 @@ _b/
 
 ## Agent ephemeral state (gitignored progress tracking)
 .cursor/agent-progress.json
+.cursor/last-feature-gate.json
 .cursor/session-logs/
 .cursor-session-state
 .cursor-session-state.json

@@ -131,7 +131,7 @@ Every task in `BUILD_PLAN.md` must carry an owner label so automated and human w
 To maximize reasoning accuracy, eliminate architectural drift, and maintain crisp memory over long development lifecycles, you must adhere to these cognitive constraints:
 
 - **The Read-Before-Write Rule:** Never edit a file based on assumption. You must explicitly reference and inspect upstream interfaces, types, data models, or schema definitions using @filename indexing before altering code. Verify type signatures at the boundary out loud in your plan.
-- **Chain-of-Thought with Active Self-Critique:** When presenting an implementation plan, include a mandatory `### Critique` subsection. Evaluate your own plan for edge cases: How will this handle null/empty values, network timeouts, multi-threaded race conditions, or unhandled exceptions? Refine the plan based on your own critique before writing code.
+- **Chain-of-Thought with Active Self-Critique:** When presenting an implementation plan, include a mandatory resolved `### Critique` (Issue→Resolution) subsection. Evaluate your own plan for edge cases: How will this handle null/empty values, network timeouts, multi-threaded race conditions, or unhandled exceptions? Refine the plan based on your own critique before writing code.
 - **Hardware-Accelerated Autonomous Iteration:** This workspace is hosted on a high-performance local hardware platform with YOLO Mode permissions enabled for execution validation. When diagnosing errors or testing features, execute parallelized local testing configurations and fast static analysis tooling cascades (ruff, multi-threaded test runners) directly. Use local @Docs indexes to parse framework rules dynamically instead of relying on slow, un-indexed cloud lookups.
 - **Multi-Agent Parallel Orchestration:** When handling complex, multi-file milestones, utilize Cursor's parallel execution systems (Git Worktrees or Cloud VMs via the Agents Window) to spin up up to 8 simultaneous agents. Adhere strictly to these parallel guardrails:
  - **Strict Feature Branching:** Every parallel agent must be deployed on an isolated short-lived feature branch (`feature/agent-[task-name]`) inside an independent git worktree to eliminate local write collisions.
@@ -164,7 +164,7 @@ To maximize reasoning accuracy, eliminate architectural drift, and maintain cris
 
 ### 7a. Pre-release audit (Agent Mode)
 
-Before any version bump, release tag, or production deployment, run the pre-release audit checklist in Agent Mode and verify:
+Before any version bump, release tag, or production deployment, run the pre-release (expanded `/prerelease`: autofix + optional Codex per `docs/CODEX_REVIEW.md`) audit checklist in Agent Mode and verify:
 
 - Complete regression test compliance (`dotnet test -c Release` — zero failures).
 - Clean static analysis, linting, and dependency/vulnerability scans (CodeQL/Trivy).

@@ -2,7 +2,7 @@
 
 > Slow lego assembly: one feature container at a time, smoke-tested before the next. Read when implementing BUILD_PLAN Sprint 2+.
 
-**Cursor modes:** Plan new features (BUILD_PLAN row + `### Critique`); Agent Mode for approved scaffold/tests/wire steps; Debug Mode when gates fail after autofix. See [`docs/CURSOR_MODES.md`](CURSOR_MODES.md).
+**Cursor modes:** Plan new features (BUILD_PLAN row + resolved `### Critique` Issue→Resolution); Agent Mode for approved scaffold/tests/wire steps; Debug Mode when gates fail after autofix. See [`docs/CURSOR_MODES.md`](CURSOR_MODES.md).
 
 ## Industry alignment
 
@@ -83,7 +83,8 @@ Progress file: `.cursor/agent-progress.json` (gitignored). See `.cursor-session-
 | Script | Purpose |
 |--------|---------|
 | `scripts/feature-gate.sh` | Hygiene + encoding + stack lint/test/build |
-| `scripts/feature-autofix.sh` | Mechanical ruff/pre-commit fixes |
+| `scripts/feature-autofix.sh` | Mechanical multi-stack format/lint (ruff, Biome, cargo fmt, gofmt, whitespace) |
+| `scripts/apply-suggested-gate-fixes.sh` | Allowlisted `failed_stage` → safe fixer commands |
 | `scripts/watch-agent-gates.sh` | Gate loop with autofix + progress tracking |
 | `scripts/agent-progress.sh` | Read/write agent progress JSON |
 | `scripts/smoke-stack.sh` | Alias for `feature-gate.sh` |

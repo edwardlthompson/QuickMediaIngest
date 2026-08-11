@@ -25,7 +25,7 @@ Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels.
 ```
 Read @docs/THEME_QA_CHECKLIST.md and @.cursor/rules/wpf-mvvm.mdc before editing XAML.
 Inspect existing MaterialDesignThemes patterns in QuickMediaIngest/Themes/.
-Include ### Critique for modal overlay order and localization (.resx).
+Include resolved ### Critique (Issue→Resolution) for modal overlay order and localization (.resx).
 ```
 
 ## Release prep
@@ -56,4 +56,11 @@ Archive completed rows to COMPLETED_TASKS.md; clear stale session state.
 ```
 Read @docs/BOOTSTRAP_ALIGNMENT.md and @HUMAN_BACKLOG.md before adopting new upstream CI workflows.
 Preserve modules/dotnet-wpf and .github/workflows/build.yml.
+```
+
+## Codex review (opt-in)
+
+```
+Read @docs/CODEX_REVIEW.md and run /codex-review (or expanded /prerelease).
+If OPENAI_API_KEY or Codex CLI is missing, SKIP and continue — do not block release.
 ```

@@ -26,7 +26,7 @@
 - Conventional Commits for all changes
 - Small, modular functions; split large files per Sprint 1 backlog
 - Read-before-write: inspect types/interfaces via `@filename` before editing
-- Plan Mode for all non-trivial tasks; include `### Critique` in plans
+- Plan Mode for all non-trivial tasks; include resolved `### Critique` (Issue→Resolution baked into the plan body)
 
 ## Build & Test
 
@@ -78,6 +78,7 @@ See `docs/CURSOR_INTEGRATIONS.md`:
 - **Local compute first** — `.cursor/rules/local-compute.mdc`
 - **Worktrees** — `.cursor/worktrees.json`
 - **Auto-review** — `.cursor/permissions.json`
+- **Codex review (opt-in)** — `docs/CODEX_REVIEW.md` + `/codex-review` + `.github/workflow-examples/codex-review.yml` (used by expanded `/prerelease` / `/ship`)
 - **Plugin pack** — `.cursor-plugin/` (optional)
 
 Validate after changes: `bash scripts/check-cursor-hooks.sh` (or via `agent-run.py` when present).

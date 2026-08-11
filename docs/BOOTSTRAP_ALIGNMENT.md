@@ -1,12 +1,26 @@
 # Bootstrap Alignment — QuickMediaIngest ↔ agent-project-bootstrap
 
 > Alignment of this live .NET 8 WPF repo with upstream
-> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v0.15.1**.
+> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v0.16.0**.
 > Not a fresh bootstrap. Application code and `modules/dotnet-wpf` are preserved.
 
-**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `0.15.1` (gates green)
+**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `0.16.0` (gates green)
 
 ---
+
+
+
+## 0.16.0 sync (2026-08-10)
+
+Cherry-picked upstream `agent-project-bootstrap` **0.16.0** process tooling:
+
+- Opt-in Codex review (`/codex-review`, `docs/CODEX_REVIEW.md`, workflow example — not enabled as active CI)
+- Expanded `/prerelease` (autofix → optional Codex → hard gate); QMI human sign-off note preserved
+- Resolved `### Critique` (Issue→Resolution) in Plan Mode docs/rules/commands
+- Multi-stack autofix helpers + `apply-suggested-gate-fixes` (WPF `dotnet-format` allowlisted)
+- Version pins: `.template-version` / `TEMPLATE_INDEX` / manifest → `0.16.0`
+
+Skipped: `examples/**` npm security (no examples tree), release-please/Pages, enabling Codex CI.
 
 ## Gap analysis
 

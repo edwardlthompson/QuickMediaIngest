@@ -67,11 +67,11 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-07-28 | Release v1.3.22 | Settings persistence (naming preset + destination combo) | Confirm prefs survive cold start on portable EXE |
 | 2026-08-01 | Release v1.3.23 | Unified fail-fast FTP + PreferAdb/MP4 thumbs + HEIC fixes; local build + GH release | Warm PreferAdb smoke with OP13; confirm Unified paints E: while FTP down |
 | 2026-08-09 | Release v1.3.24 | PreferAdb import hang harden (ADB concurrency cap, free-space gate, stub cleanup) | Watch large PreferAdb imports when destination free space is tight |
-| 2026-07-21 | Template align → 0.15.1 | FOSS Cursor pack + BUILD_PLAN markers; kept WPF module/`build.yml` | HUMAN: deferred CI (release-please/pages/automerge) |
+| 2026-07-21 | Template align → 0.16.0 | FOSS Cursor pack + BUILD_PLAN markers; kept WPF module/`build.yml` | HUMAN: deferred CI (release-please/pages/automerge) |
 
 ## Template Provenance
 
 - **Source template:** `edwardlthompson/agent-project-bootstrap`
-- **Template version:** `0.15.1` (see `.template-version`)
+- **Template version:** `0.16.0` (see `.template-version`)
 - **Alignment:** `docs/BOOTSTRAP_ALIGNMENT.md`
 - **Last update check:** See `.template-update.json`
