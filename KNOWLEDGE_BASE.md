@@ -55,6 +55,12 @@ Redirected `adb` stdout/stderr without concurrent drain filled the pipe mid-pull
 
 **Shipped:** v1.3.26 (2026-08-10). Post-release: CI/Security/CodeQL green; Release assets include EXE/MSI/zip + CycloneDX SBOM; `simulate-template-upgrade` still fails web-only bootstrap smoke files — expected for WPF child, not a product regression. Follow-up: dedupe PreferAdb work when multiple FTP sources alias one device.
 
+## Donate + filename-version updates
+
+Git/template tags can diverge from the product installer. Update checks compare `X.Y.Z` in asset filenames (`QuickMediaIngest-1.3.27-x64.exe` / `-x64-setup.msi`), not `tag_name`. Donate last-check/dismiss/nudge state stays in `%AppData%\QuickMediaIngest\update-donate.json` (never `config.json`). Unversioned `QuickMediaIngest.exe` assets do not trigger a prompt.
+
+**Shipped:** v1.3.27 (2026-08-21). Post-release: CI/Security/CodeQL green; Release assets include versioned EXE/MSI + unversioned copies + CycloneDX SBOM; `simulate-template-upgrade` still fails web-only bootstrap smoke files (`docs/DESIGN_GUIDE.md`, `docs/WEB_PROJECT_LAYOUT.md`, `design-tokens/`) — expected for this WPF child, not a product regression.
+
 ## Settings reset on restart (naming preset + destination combo)
 
 Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear forgotten when (1) `OnNamingPresetChanged` re-applies Recommended during/after load over a diverged `NamingTemplate`, or (2) `RefreshDestinationPresetLabels` clears the combo and WPF nulls `DestinationPreset`.
