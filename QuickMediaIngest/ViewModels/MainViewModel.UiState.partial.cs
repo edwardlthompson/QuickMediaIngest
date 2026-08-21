@@ -224,9 +224,8 @@ namespace QuickMediaIngest.ViewModels
                 System.Windows.Threading.DispatcherPriority.Background);
 
             _startupInitialized = true;
-
+            EvaluateDonateNudge();
             CheckUpdates();
-
             await Task.CompletedTask;
         }
 
@@ -275,6 +274,7 @@ namespace QuickMediaIngest.ViewModels
         private readonly IShellService _shellService;
         private readonly IThumbnailService _thumbnailService;
         private readonly IUpdateService _updateService;
+        private readonly IUpdateDonateStore _updateDonateStore;
         private readonly IDeviceWatcher _deviceWatcher;
         private readonly IFileProviderFactory _fileProviderFactory;
         private readonly IIngestEngineFactory _ingestEngineFactory;

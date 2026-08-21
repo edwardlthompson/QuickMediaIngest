@@ -102,7 +102,7 @@ namespace QuickMediaIngest.ViewModels
                     ConfirmCancelImportRequest = ConfirmCancelImportRequest,
                     ImportCooldownBetweenFilesMs = ImportCooldownBetweenFilesMs,
                     ImportSingleThreaded = ImportSingleThreaded,
-                    LastNotifiedUpdateTag = LastNotifiedUpdateTag,
+                    LastNotifiedUpdateTag = string.Empty,
                     DestinationPreset = DestinationPreset,
                     LastSessionDestinationRoot = LastSessionDestinationRoot,
                     SavedFtpSources = BuildSavedFtpSourcesSnapshot()

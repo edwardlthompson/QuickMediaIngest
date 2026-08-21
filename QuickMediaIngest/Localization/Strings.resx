@@ -146,6 +146,13 @@
   <data name="About_ReportBug" xml:space="preserve"><value>Report a Bug</value></data>
   <data name="About_Changelog" xml:space="preserve"><value>Changelog</value></data>
   <data name="About_Releases" xml:space="preserve"><value>Releases</value></data>
+  <data name="About_DonateVenmo" xml:space="preserve"><value>Donate via Venmo</value></data>
+  <data name="DonateNudge_Title" xml:space="preserve"><value>Development is still going</value></data>
+  <data name="DonateNudge_Body" xml:space="preserve"><value>You just got a new build. If this app helps you, you can support ongoing work on Venmo. This is optional and will not appear again until the next update.</value></data>
+  <data name="DonateNudge_NotNow" xml:space="preserve"><value>Not now</value></data>
+  <data name="UpdatePrompt_Title" xml:space="preserve"><value>Update available</value></data>
+  <data name="UpdatePrompt_Install" xml:space="preserve"><value>Install</value></data>
+  <data name="UpdatePrompt_Later" xml:space="preserve"><value>Later</value></data>
   <data name="About_BuildDate" xml:space="preserve"><value>Build Date:</value></data>
 
   <data name="Settings_Preset" xml:space="preserve"><value>Preset</value></data>

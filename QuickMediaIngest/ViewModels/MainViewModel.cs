@@ -227,6 +227,7 @@ namespace QuickMediaIngest.ViewModels
             IFtpScanner ftpScanner,
             IThumbnailService thumbnailService,
             IUpdateService updateService,
+            IUpdateDonateStore updateDonateStore,
             IDeviceWatcher deviceWatcher,
             IFileProviderFactory fileProviderFactory,
             IIngestEngineFactory ingestEngineFactory,
@@ -260,6 +261,7 @@ namespace QuickMediaIngest.ViewModels
             _shellService = shellService;
             _thumbnailService = thumbnailService;
             _updateService = updateService;
+            _updateDonateStore = updateDonateStore;
             _deviceWatcher = deviceWatcher;
             _fileProviderFactory = fileProviderFactory;
             _ingestEngineFactory = ingestEngineFactory;
@@ -279,8 +281,6 @@ namespace QuickMediaIngest.ViewModels
         {
             IntervalOptions.Clear();
             IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Daily"), Hours = 24 });
-            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Weekly"), Hours = 168 });
-            IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Monthly"), Hours = 720 });
             IntervalOptions.Add(new UpdateIntervalOption { Display = AppLocalizer.Get("Vm_UpdateInterval_Off"), Hours = -1 });
         }
 
@@ -336,6 +336,8 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool showUpdateBanner = false;
         [ObservableProperty] private string updateUrl = string.Empty;
         [ObservableProperty] private bool showAboutDialog = false;
+        [ObservableProperty] private bool showDonateNudgeDialog = false;
+        [ObservableProperty] private bool showUpdatePromptDialog = false;
         [ObservableProperty] private bool isUpdateAvailable = false;
         [ObservableProperty] private double updateProgress = 0.0;
         [ObservableProperty] private string updateStatus = string.Empty;

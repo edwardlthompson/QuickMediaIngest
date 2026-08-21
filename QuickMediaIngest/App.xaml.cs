@@ -210,6 +210,9 @@ namespace QuickMediaIngest
             services.AddSingleton<ILocalScanner, LocalScanner>();
             services.AddSingleton<IFtpScanner, FtpScanner>();
             services.AddSingleton<IThumbnailService, ThumbnailService>();
+            services.AddSingleton<ISystemClock, SystemClock>();
+            services.AddSingleton<IUpdateDonateStore>(sp =>
+                new FileUpdateDonateStore(logger: sp.GetService<ILogger<FileUpdateDonateStore>>()));
             services.AddSingleton<IUpdateService, UpdateService>();
             services.AddSingleton<IDatabaseService, DatabaseService>();
             services.AddSingleton<IDeviceWatcher, DeviceWatcher>();

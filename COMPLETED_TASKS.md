@@ -4,6 +4,13 @@
 
 ---
 
+## Donate and filename-version updates (2026-08-21)
+
+- ✅ [AGENT] Donate via Venmo + filename-version GitHub update prompt (device-local prefs, once-per-version nudge)
+- ✅ [AGENT] Ship v1.3.27; document in CHANGELOG / DECISION_LOG
+
+---
+
 ## Release v1.3.22 — Settings persistence (2026-07-28)
 
 - ✅ [AGENT] Fix destination + naming prefs wiped on restart (load guards, Custom coerce, destination combo restore)

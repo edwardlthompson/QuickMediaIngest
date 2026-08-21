@@ -20,6 +20,7 @@ namespace QuickMediaIngest.Tests
                 new Mock<IFtpScanner>().Object,
                 new Mock<IThumbnailService>().Object,
                 new Mock<IUpdateService>().Object,
+                new Mock<IUpdateDonateStore>().Object,
                 new Mock<IDeviceWatcher>().Object,
                 new Mock<IFileProviderFactory>().Object,
                 new Mock<IIngestEngineFactory>().Object,

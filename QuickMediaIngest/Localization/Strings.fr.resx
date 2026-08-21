@@ -167,6 +167,13 @@
   <data name="About_ReportBug" xml:space="preserve"><value>Signaler un problème</value></data>
   <data name="About_Changelog" xml:space="preserve"><value>Journal des modifications</value></data>
   <data name="About_Releases" xml:space="preserve"><value>Versions publiées</value></data>
+  <data name="About_DonateVenmo" xml:space="preserve"><value>Faire un don via Venmo</value></data>
+  <data name="DonateNudge_Title" xml:space="preserve"><value>Le développement continue</value></data>
+  <data name="DonateNudge_Body" xml:space="preserve"><value>Vous venez d’obtenir une nouvelle version. Si cette application vous est utile, vous pouvez soutenir le travail sur Venmo. C’est facultatif et cela n’apparaîtra plus avant la prochaine mise à jour.</value></data>
+  <data name="DonateNudge_NotNow" xml:space="preserve"><value>Pas maintenant</value></data>
+  <data name="UpdatePrompt_Title" xml:space="preserve"><value>Mise à jour disponible</value></data>
+  <data name="UpdatePrompt_Install" xml:space="preserve"><value>Installer</value></data>
+  <data name="UpdatePrompt_Later" xml:space="preserve"><value>Plus tard</value></data>
   <data name="About_BuildDate" xml:space="preserve"><value>Date de compilation :</value></data>
 
   <data name="Vm_Ftp_DefaultDialogStatus" xml:space="preserve"><value>Saisissez les informations FTP du téléphone, puis testez ou parcourez les dossiers.</value></data>

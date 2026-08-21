@@ -3,9 +3,11 @@
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 > Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.26 · **Template:** v0.16.0 · **Tests:** 227 (Release)
+**Release:** v1.3.27 · **Template:** v0.16.0 · **Tests:** 252 (Release)
 
 > **Bootstrap alignment 0.11 → 0.16.0** (process); 0.11 → 0.15.1 archive in COMPLETED_TASKS.md; 0.16.0 cherry-pick in `docs/BOOTSTRAP_ALIGNMENT.md`.
+>
+> **Release v1.3.27** donate + filename-version updates archived in COMPLETED_TASKS.md.
 >
 > **Release v1.3.22** archived in COMPLETED_TASKS.md.
 
@@ -78,6 +80,7 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 
 | Sprint | Location |
 |--------|----------|
+| Donate + filename-version updates | `COMPLETED_TASKS.md` § Donate and filename-version updates |
 | Bootstrap alignment 0.15.1 | `COMPLETED_TASKS.md` § Bootstrap alignment 0.11 → 0.15.1 |
 | AUTO-SBOM | `COMPLETED_TASKS.md` § AUTO-SBOM |
 | Audit R2 backlog (D1–D3) | `COMPLETED_TASKS.md` § Audit R2 Backlog D1–D3 |

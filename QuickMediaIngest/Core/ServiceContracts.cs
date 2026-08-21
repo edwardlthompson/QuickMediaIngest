@@ -76,7 +76,7 @@ namespace QuickMediaIngest.Core
         List<ImportItem> Filter(List<ImportItem> items, List<WhitelistRule> rules);
     }
 
-    /// <summary>Result of an update check: <see cref="DownloadUrl"/> is set when a newer release is available.</summary>
+    /// <summary>Result of an update check: <see cref="DownloadUrl"/> is set when a newer product asset is available. <see cref="RemoteVersionTag"/> is the filename product version (not the git tag).</summary>
     public readonly record struct UpdateCheckResult(string? DownloadUrl, string? RemoteVersionTag);
 
     /// <summary>

@@ -26,7 +26,7 @@ namespace QuickMediaIngest.ViewModels
                         _loadingConfig = true;
                         try
                         {
-                            UpdateIntervalHours = config.UpdateIntervalHours;
+                            UpdateIntervalHours = config.UpdateIntervalHours < 0 ? -1 : 24;
                             if (!string.IsNullOrEmpty(config.DestinationRoot)) DestinationRoot = config.DestinationRoot;
                             DeleteAfterImport = config.DeleteAfterImport;
                             DeleteAfterImportPromptDismissed = config.DeleteAfterImportPromptDismissed;
@@ -123,7 +123,7 @@ namespace QuickMediaIngest.ViewModels
                             ConfirmCancelImportRequest = config.ConfirmCancelImportRequest ?? true;
                             ImportCooldownBetweenFilesMs = Math.Max(0, config.ImportCooldownBetweenFilesMs);
                             ImportSingleThreaded = config.ImportSingleThreaded;
-                            LastNotifiedUpdateTag = config.LastNotifiedUpdateTag ?? string.Empty;
+                            LastNotifiedUpdateTag = string.Empty;
                             if (!string.IsNullOrWhiteSpace(config.DestinationPreset)) DestinationPreset = config.DestinationPreset;
                             if (!string.IsNullOrWhiteSpace(config.LastSessionDestinationRoot)) LastSessionDestinationRoot = config.LastSessionDestinationRoot;
                             SuppressExcludedFolderScanReminders = config.SuppressExcludedFolderScanReminders;

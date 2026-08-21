@@ -350,8 +350,8 @@ namespace QuickMediaIngest.Tests
                   "html_url": "https://example.com/releases/v99.0.0",
                   "assets": [
                     {
-                      "name": "QuickMediaIngest.exe",
-                      "browser_download_url": "https://example.com/QuickMediaIngest.exe"
+                      "name": "QuickMediaIngest-99.0.0-x64.exe",
+                      "browser_download_url": "https://example.com/QuickMediaIngest-99.0.0-x64.exe"
                     }
                   ]
                 }
@@ -363,12 +363,16 @@ namespace QuickMediaIngest.Tests
                     Content = new StringContent(json)
                 }));
             var logger = new Mock<ILogger<UpdateService>>();
-            var svc = new UpdateService(http, logger.Object);
+            var store = new Mock<IUpdateDonateStore>();
+            store.Setup(s => s.Load()).Returns(new UpdateDonatePreferences());
+            var clock = new Mock<ISystemClock>();
+            clock.SetupGet(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+            var svc = new UpdateService(http, logger.Object, store.Object, clock.Object, new Version(1, 0, 0));
 
             UpdateCheckResult result = await svc.CheckForUpdateAsync(intervalHours: 24, force: true, packageType: "Portable");
 
-            Assert.Equal("https://example.com/QuickMediaIngest.exe", result.DownloadUrl);
-            Assert.Equal("v99.0.0", result.RemoteVersionTag);
+            Assert.Equal("https://example.com/QuickMediaIngest-99.0.0-x64.exe", result.DownloadUrl);
+            Assert.Equal("99.0.0", result.RemoteVersionTag);
         }
 
         [Fact]
@@ -377,7 +381,11 @@ namespace QuickMediaIngest.Tests
             using var http = new HttpClient(new StubHandler(_ =>
                 throw new HttpRequestException("network down")));
             var logger = new Mock<ILogger<UpdateService>>();
-            var svc = new UpdateService(http, logger.Object);
+            var store = new Mock<IUpdateDonateStore>();
+            store.Setup(s => s.Load()).Returns(new UpdateDonatePreferences());
+            var clock = new Mock<ISystemClock>();
+            clock.SetupGet(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+            var svc = new UpdateService(http, logger.Object, store.Object, clock.Object, new Version(1, 0, 0));
 
             UpdateCheckResult result = await svc.CheckForUpdateAsync(force: true);
             Assert.Null(result.DownloadUrl);

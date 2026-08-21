@@ -123,14 +123,25 @@ jobs:
           throw "Failed to push tag $tag"
         }
 
+    - name: Copy versioned installer names
+      shell: pwsh
+      run: |
+        $version = "${{ env.VERSION }}"
+        Copy-Item ./publish/portable/QuickMediaIngest.exe "./publish/QuickMediaIngest-$version-x64.exe"
+        Copy-Item ./publish/QuickMediaIngest.msi "./publish/QuickMediaIngest-$version-x64-setup.msi"
+        if (-not (Test-Path "./publish/QuickMediaIngest-$version-x64.exe")) { throw "Missing versioned portable exe" }
+        if (-not (Test-Path "./publish/QuickMediaIngest-$version-x64-setup.msi")) { throw "Missing versioned setup msi" }
+
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v7
       with:
         name: QuickMediaIngest-Build-${{ env.VERSION }}
         path: |
           ./publish/portable/QuickMediaIngest.exe
+          ./publish/QuickMediaIngest-${{ env.VERSION }}-x64.exe
           ./publish/QuickMediaIngest-Portable.zip
           ./publish/QuickMediaIngest.msi
+          ./publish/QuickMediaIngest-${{ env.VERSION }}-x64-setup.msi
           ./publish/QuickMediaIngest-${{ env.VERSION }}.cyclonedx.json
 
     - name: Ensure Release Exists
@@ -165,8 +176,10 @@ jobs:
 
         $assets = @(
           "./publish/portable/QuickMediaIngest.exe",
+          "./publish/QuickMediaIngest-${{ env.VERSION }}-x64.exe",
           "./publish/QuickMediaIngest-Portable.zip",
-          "./publish/QuickMediaIngest.msi"
+          "./publish/QuickMediaIngest.msi",
+          "./publish/QuickMediaIngest-${{ env.VERSION }}-x64-setup.msi"
         )
         if (Test-Path $sbom) {
           $assets += $sbom

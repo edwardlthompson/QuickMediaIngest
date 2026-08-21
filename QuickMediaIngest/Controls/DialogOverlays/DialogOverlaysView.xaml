@@ -350,7 +350,8 @@
                         <Button Content="{loc:Loc About_OpenLogsFolder}" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
                         <Button Content="{loc:Loc About_ReportBug}" Command="{Binding ReportBugCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
                         <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" />
+                        <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
+                        <Button Content="{loc:Loc About_DonateVenmo}" Command="{Binding OpenDonateVenmoCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="80"/>
@@ -360,6 +361,52 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{loc:Loc Btn_Close}" Command="{Binding ToggleAboutCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+    <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowDonateNudgeDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="980">
+        <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
+            </Rectangle.Fill>
+            <Rectangle.Effect>
+                <BlurEffect Radius="14" RenderingBias="Performance"/>
+            </Rectangle.Effect>
+        </Rectangle>
+        <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Width="480" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc DonateNudge_Title}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Loc DonateNudge_Body}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{loc:Loc About_DonateVenmo}" Command="{Binding AcceptDonateNudgeCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                        <Button Content="{loc:Loc DonateNudge_NotNow}" Command="{Binding DeclineDonateNudgeCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+    <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowUpdatePromptDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="970">
+        <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
+            </Rectangle.Fill>
+            <Rectangle.Effect>
+                <BlurEffect Radius="14" RenderingBias="Performance"/>
+            </Rectangle.Effect>
+        </Rectangle>
+        <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Width="480" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc UpdatePrompt_Title}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{loc:Loc UpdatePrompt_Install}" Command="{Binding InstallPendingUpdateCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
+                        <Button Content="{loc:Loc UpdatePrompt_Later}" Command="{Binding LaterPendingUpdateCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

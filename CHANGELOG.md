@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.3.27] — 2026-08-21
+
+### Added
+
+- **Donate via Venmo**: quiet button in About (public Venmo link). Optional one-time note after a version change; never on the update dialog and never on a daily timer.
+- **Filename-version updates**: daily GitHub check compares product versions in asset names (`QuickMediaIngest-X.Y.Z-x64.exe` / `-x64-setup.msi`), not git tags. **Install** opens the asset URL; **Later** silences that product version. Failed or same-version checks stay silent.
+- Device-local `%AppData%\QuickMediaIngest\update-donate.json` for last-check, dismiss, and donate-nudge state (not stored in `config.json`).
+
+### Changed
+
+- Automatic update interval is daily or Off. Weekly/Monthly no longer gate background checks.
+- Release workflow also publishes versioned installer copies alongside the existing unversioned EXE/MSI names.
+
 ## [1.3.26] — 2026-08-10
 
 ### Fixed
@@ -401,4 +414,3 @@ See git history and tags prior to `v1.2.0` for incremental changes. The pre-1.2.
 ## Unreleased
 
 _(Nothing staged.)_
-

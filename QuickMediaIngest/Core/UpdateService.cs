@@ -1,145 +1,150 @@
 #nullable enable
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using QuickMediaIngest.Core.Logging;
 
 namespace QuickMediaIngest.Core
 {
     public class UpdateService : IUpdateService
     {
-        private const string RepoOwner = "edwardlthompson";
-        private const string RepoName = "QuickMediaIngest";
-        private readonly string _cacheFile;
+        private const string LatestReleaseUrl = "https://api.github.com/repos/edwardlthompson/QuickMediaIngest/releases/latest";
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+
         private readonly HttpClient _httpClient;
         private readonly ILogger<UpdateService> _logger;
+        private readonly IUpdateDonateStore _store;
+        private readonly ISystemClock _clock;
+        private readonly Version _currentVersion;
 
-        public UpdateService(HttpClient httpClient, ILogger<UpdateService> logger)
+        public UpdateService(
+            HttpClient httpClient,
+            ILogger<UpdateService> logger,
+            IUpdateDonateStore store,
+            ISystemClock clock,
+            Version? currentVersion = null)
         {
             _httpClient = httpClient;
             _logger = logger;
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string appFolder = Path.Combine(appData, "QuickMediaIngest");
-            Directory.CreateDirectory(appFolder);
-            _cacheFile = Path.Combine(appFolder, "last_update_check.txt");
+            _store = store;
+            _clock = clock;
+            _currentVersion = ReleaseAssetVersion.ToProduct(
+                currentVersion ?? typeof(UpdateService).Assembly.GetName().Version ?? new Version(1, 0, 0));
         }
 
         public async Task<UpdateCheckResult> CheckForUpdateAsync(int intervalHours = 24, bool force = false, string packageType = "Portable")
         {
-            if (!force && !ShouldCheck(intervalHours))
+            UpdateDonatePreferences prefs = _store.Load();
+            DateTimeOffset now = _clock.UtcNow;
+
+            if (!force)
             {
-                return default;
-            }
-
-            try
-            {
-                _logger.LogInformation("Checking for updates. Force={Force}, IntervalHours={IntervalHours}, PackageType={PackageType}", force, intervalHours, packageType);
-                var response = await _httpClient.GetStringAsync($"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest");
-                var doc = JsonDocument.Parse(response);
-
-                string remoteTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-
-                // Find the preferred asset based on package type selection.
-                // Portable should prioritize the standalone .exe, Installer should use .msi.
-                string targetName = packageType == "Installer" ? "QuickMediaIngest.msi" : "QuickMediaIngest.exe";
-                string fallbackExt = packageType == "Installer" ? ".msi" : ".exe";
-                string downloadUrl = string.Empty;
-                if (doc.RootElement.TryGetProperty("assets", out var assets))
-                {
-                    // First pass: exact asset match.
-                    foreach (var asset in assets.EnumerateArray())
-                    {
-                        string name = asset.GetProperty("name").GetString() ?? "";
-                        if (string.Equals(name, targetName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
-                            break;
-                        }
-                    }
-
-                    // Second pass: extension fallback for non-standard asset names.
-                    if (string.IsNullOrEmpty(downloadUrl))
-                    {
-                        foreach (var asset in assets.EnumerateArray())
-                        {
-                            string name = asset.GetProperty("name").GetString() ?? "";
-                            if (name.EndsWith(fallbackExt, StringComparison.OrdinalIgnoreCase))
-                            {
-                                downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (string.IsNullOrEmpty(downloadUrl))
-                {
-                    downloadUrl = doc.RootElement.GetProperty("html_url").GetString() ?? "";
-                }
-
-                SaveLastCheck();
-
-                var localVersion = typeof(UpdateService).Assembly.GetName().Version;
-                if (localVersion == null)
+                if (intervalHours < 0)
                 {
                     return default;
                 }
 
-                string versionText = remoteTag.TrimStart('v');
-
-                if (Version.TryParse(versionText, out var remoteVersion))
+                if (!UpdateDonateState.ShouldCheckForUpdate(now, prefs.LastUpdateCheckUtc))
                 {
-                    if (remoteVersion > localVersion)
-                    {
-                        _logger.LogInformation("Update available. LocalVersion={LocalVersion}, RemoteVersion={RemoteVersion}", localVersion, remoteVersion);
-                        return new UpdateCheckResult(downloadUrl, remoteTag);
-                    }
+                    return default;
                 }
+            }
+
+            try
+            {
+                _logger.LogInformation("Checking for updates. Force={Force}, PackageType={PackageType}", force, packageType);
+                using var cts = new CancellationTokenSource(RequestTimeout);
+                using var request = new HttpRequestMessage(HttpMethod.Get, LatestReleaseUrl);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                string body = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+
+                prefs.LastUpdateCheckUtc = now;
+                _store.Save(prefs);
+
+                using JsonDocument doc = JsonDocument.Parse(body);
+                if (!TrySelectNewestMatchingAsset(doc.RootElement, packageType, out Version remote, out string downloadUrl))
+                {
+                    return default;
+                }
+
+                bool prompt = force
+                    ? UpdateDonateState.IsNewerProductVersion(remote, _currentVersion)
+                    : UpdateDonateState.ShouldPromptUpdate(remote, _currentVersion, prefs.DismissedProductVersion);
+                if (!prompt)
+                {
+                    return default;
+                }
+
+                if (string.IsNullOrWhiteSpace(downloadUrl)
+                    && doc.RootElement.TryGetProperty("html_url", out JsonElement html)
+                    && html.GetString() is string page
+                    && !string.IsNullOrWhiteSpace(page))
+                {
+                    downloadUrl = page;
+                }
+
+                if (string.IsNullOrWhiteSpace(downloadUrl))
+                {
+                    return default;
+                }
+
+                string product = remote.ToString(3);
+                _logger.LogInformation("Update available. LocalVersion={LocalVersion}, ProductVersion={ProductVersion}", _currentVersion, product);
+                return new UpdateCheckResult(downloadUrl, product);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Update check failed.");
+                return default;
             }
-
-            return default;
         }
 
-        private bool ShouldCheck(int intervalHours)
+        private static bool TrySelectNewestMatchingAsset(JsonElement root, string packageType, out Version remote, out string downloadUrl)
         {
-            if (intervalHours < 0) return false; // -1 means Off / Manual Check Only
-            if (intervalHours == 0) return true; // 0 means always check on startup
-            if (!File.Exists(_cacheFile)) return true;
+            remote = new Version(0, 0, 0);
+            downloadUrl = string.Empty;
+            Version? best = null;
+            string bestUrl = string.Empty;
 
-            try
+            if (!root.TryGetProperty("assets", out JsonElement assets) || assets.ValueKind != JsonValueKind.Array)
             {
-                string text = File.ReadAllText(_cacheFile);
-                if (DateTime.TryParse(text, out var lastCheck))
+                return false;
+            }
+
+            foreach (JsonElement asset in assets.EnumerateArray())
+            {
+                string name = asset.TryGetProperty("name", out JsonElement nameEl) ? nameEl.GetString() ?? "" : "";
+                Version? parsed = ReleaseAssetVersion.TryParse(name);
+                if (parsed == null || !ReleaseAssetVersion.MatchesPackage(name, packageType))
                 {
-                    return (DateTime.Now - lastCheck).TotalHours >= intervalHours;
+                    continue;
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Could not read last update check timestamp; will check again.");
+
+                if (best != null && !ReleaseAssetVersion.IsNewer(parsed, best) && !ReleaseAssetVersion.SameProduct(parsed, best))
+                {
+                    continue;
+                }
+
+                if (best != null && ReleaseAssetVersion.SameProduct(parsed, best) && !string.IsNullOrWhiteSpace(bestUrl))
+                {
+                    continue;
+                }
+
+                best = parsed;
+                bestUrl = asset.TryGetProperty("browser_download_url", out JsonElement urlEl) ? urlEl.GetString() ?? "" : "";
             }
 
+            if (best == null)
+            {
+                return false;
+            }
+
+            remote = best;
+            downloadUrl = bestUrl;
             return true;
-        }
-
-        private void SaveLastCheck()
-        {
-            try
-            {
-                File.WriteAllText(_cacheFile, DateTime.Now.ToString("o"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not write last update check cache: {Path}.", LogPathSanitizer.AppData(_cacheFile));
-            }
         }
     }
 }

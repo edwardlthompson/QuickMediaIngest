@@ -2,6 +2,20 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-21 — Donate + filename-version updates (v1.3.27)
+
+**Status:** Accepted
+**Context:** Continuum Calendar method: quiet Venmo, one optional donate note after a version change, and GitHub update checks that must not use git/template tags (those can diverge from the product installer).
+
+**Decision:**
+- Compare product versions parsed from release asset filenames; ignore `tag_name`.
+- Store last-check, dismiss, and donate-nudge state in device-local `update-donate.json`, not `config.json`.
+- Automatic prompt is Install (open asset URL) | Later (silence that product version). About keeps Check now + in-app download.
+- Publish additional versioned assets (`QuickMediaIngest-X.Y.Z-x64.exe` / `-x64-setup.msi`) alongside existing unversioned names.
+
+**Validation:** 252 Release tests; `prerelease-autofix` + `pre-release-gate` (CI/Security/CodeQL on prior HEAD; zero Critical/High Dependabot); human sign-off automation.
+
+---
 ## 2026-08-10 — PreferAdb pipe-drain + already-imported recovery (v1.3.26)
 
 **Status:** Accepted

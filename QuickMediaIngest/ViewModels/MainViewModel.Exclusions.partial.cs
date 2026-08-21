@@ -183,6 +183,18 @@ namespace QuickMediaIngest.ViewModels
         /// <summary>Escape / Cancel: closes the topmost in-app overlay. Does not cancel an in-progress import (only its dialog is tied to import completion).</summary>
         private void DismissTopOverlay()
         {
+            if (ShowDonateNudgeDialog)
+            {
+                DeclineDonateNudge();
+                return;
+            }
+
+            if (ShowUpdatePromptDialog)
+            {
+                LaterPendingUpdate();
+                return;
+            }
+
             if (ShowScanExclusionsPanel)
             {
                 ShowScanExclusionsPanel = false;
