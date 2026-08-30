@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Core Directives
 
-On session start, read docs/START_HERE.md, pick Cursor mode via docs/CURSOR_MODES.md, then edit.
+On session start, read docs/START_HERE.md, pick Cursor mode via docs/CURSOR_MODES.md, name dirty `[Unreleased]` and the next 🔲 `[AGENT]` row, then edit.
 
 ## Plan First, Code Second
 
@@ -37,7 +37,7 @@ Update only at session start, milestone boundary, or architectural pivot.
 
 ## Token Economy
 
-WPF adapted limits: .xaml 800, ViewModels/*.xaml.cs 400, Core/ 200 lines. Read active module only (`modules/dotnet-wpf`).
+Max 300 lines static data (UI + i18n), 150 lines pure logic. Read active module/example only.
 
 ## Local Compute
 

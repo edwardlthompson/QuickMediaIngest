@@ -1,14 +1,24 @@
 # Bootstrap Alignment — QuickMediaIngest ↔ agent-project-bootstrap
 
 > Alignment of this live .NET 8 WPF repo with upstream
-> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v0.16.0**.
+> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v1.0.0**.
 > Not a fresh bootstrap. Application code and `modules/dotnet-wpf` are preserved.
 
-**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `0.16.0` (gates green)
+**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `1.0.0` (Canon + Mixed catch-up)
 
 ---
 
 
+
+## 1.0.0 sync (2026-08-30)
+
+Catch-up from process `0.16.0` to upstream release **v1.0.0**:
+
+- Copied Canon: `.cursor/commands/` (incl. `/upgrade`, `/coach`, `/tour`, `/adr`, `/update-deps`), `.cursor/rules/` (kept `wpf-mvvm.mdc`), `docs/help/`, `docs/CURSOR_MODES.md`, `docs/BATCH_COMMANDS.md`, new template scripts, Golden Path schemas, example stubs
+- Merged Mixed: `bootstrap.config.json` (QMI values), `.gitignore`, `.env.example`, `TEMPLATE_INDEX.json`, `PROJECT_CHECKLIST.md`, `validate-bootstrap.sh` (still skips web-only artifacts)
+- Synced adapters via `bootstrap-lifecycle.sh --sync-adapters` (did not rewrite Sacred `AGENTS.md`)
+- Created `branding/product.json` with `mode: product` and QMI name/tagline/pitch
+- Skipped: `examples/**`, release-please/Pages, `docs/spec.md` / `docs/plan.md` stubs, product app under `QuickMediaIngest/`
 
 ## 0.16.0 sync (2026-08-10)
 

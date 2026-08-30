@@ -9,20 +9,27 @@ alwaysApply: true
 
 - Pure FOSS under MIT license
 - No proprietary closed-source SDKs in production path
+- Android: no Google Play Services, Firebase, or closed telemetry trackers
 
 ## Distribution
 
-- GitHub Releases as primary channel (portable EXE + WiX MSI)
+- GitHub Releases as primary channel
+- Platform-appropriate: F-Droid, Winget, GitHub Pages, package indexes
 
 ## Privacy & Telemetry
 
 - Opt-in only telemetry — never enabled by default
+- GDPR/CCPA compliant data handling
 - No PII in logs without explicit user consent
-- Update checks contact GitHub Releases API only when user initiates
 
 ## Security
 
 - Secrets never committed (Gitleaks pre-commit enforced)
 - Dependency scanning via CodeQL and Trivy
-- FTP credentials stored in Windows Credential Manager, not plain text
-- Input validation at all file path and FTP boundaries
+- Input validation at all data boundaries
+
+## Android FOSS (when Module A active)
+
+- Use UnifiedPush or native OS providers instead of proprietary push
+- Reproducible builds with SOURCE_DATE_EPOCH
+- Lock compiler toolchains with cryptographic hashes

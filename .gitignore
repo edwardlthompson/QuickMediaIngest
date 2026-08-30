@@ -52,3 +52,34 @@ build_errors.md
 ## Test output
 TestResults/
 **/TestResults/
+
+## Template / agent extras (merged from agent-project-bootstrap)
+.venv/
+*.py[cod]
+.uv/
+.coverage
+htmlcov/
+.DS_Store
+.cursor/worktrees/
+.cursor/environment.json
+.cursor/sandbox.json
+CURSOR_RADAR_REPORT.md
+CURSOR_RADAR_BACKLOG.md
+CURSOR_RADAR_SUGGESTIONS.md
+.cursor/gates-status.md
+.cursor/upd-status.md
+.cursor/encoding-strict
+.env.*
+!.env.example
+.app-update.json
+donations.json
+openvex.json
+target/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+result
+.direnv/
+scratchpad.md
+.cursor/handoff-*.md

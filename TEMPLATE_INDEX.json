@@ -1,5 +1,5 @@
 {
-  "template_version": "0.16.0",
+  "template_version": "1.0.0",
   "entry_points": {
     "bootstrap": "docs/START_HERE.md",
     "reference": "docs/FOR_AGENTS.md",
@@ -7,7 +7,11 @@
     "cursor_modes": "docs/CURSOR_MODES.md",
     "batch_commands_help": "docs/help/BATCH_COMMANDS.md",
     "batch_commands_catalog": "docs/BATCH_COMMANDS.md",
-    "alignment": "docs/BOOTSTRAP_ALIGNMENT.md"
+    "alignment": "docs/BOOTSTRAP_ALIGNMENT.md",
+    "upgrade": "docs/help/UPGRADE.md",
+    "tour": "docs/help/TOUR.md",
+    "coach": "docs/help/COACH.md",
+    "glossary": "docs/help/GLOSSARY.md"
   },
   "files": [
     {
@@ -632,6 +636,160 @@
       "read_when": "prompt_needed",
       "update_when": "milestone_boundary",
       "owner": "agent+human"
+    },
+    {
+      "path": "docs/help/UPGRADE.md",
+      "purpose": "Child /upgrade recipe (gap plan; Canon/Mixed/Sacred/Golden Path)",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/help/TOUR.md",
+      "purpose": "First-run tour (portable twin of /tour)",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/help/COACH.md",
+      "purpose": "Next-action coach (portable twin of /coach)",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/help/GLOSSARY.md",
+      "purpose": "Sacred/Canon/AGENT labels glossary",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/AGENT_PORTABILITY.md",
+      "purpose": "Thin adapter pointers; AGENTS.md is Sacred source of truth",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "docs/features/_handoff.md",
+      "purpose": "Parallel-agent handoff stub",
+      "read_when": "prompt_needed",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scratchpad.md.example",
+      "purpose": "Working-memory stub (live scratchpad.md is Sacred/gitignored)",
+      "read_when": "prompt_needed",
+      "update_when": "never",
+      "owner": "maintainer"
+    },
+    {
+      "path": "bootstrap.config.json",
+      "purpose": "Child-stamped project card (name/purpose/stack); Mixed on upgrade",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "schemas/golden-path/upgrade-policy.json",
+      "purpose": "Canon/Mixed/Sacred globs for check-template-gaps",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "schemas/golden-path/feature-catalog.json",
+      "purpose": "Stack-filtered Golden Path feature detect list",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/check-template-gaps.sh",
+      "purpose": "Plan-only template vs child gap JSON",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "scripts/bootstrap-lifecycle.sh",
+      "purpose": "Adapter sync without rewriting Sacred AGENTS.md",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": "PROJECT_CHECKLIST.md",
+      "purpose": "Child setup checklist; keep progress on Mixed merge",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "agent+human"
+    },
+    {
+      "path": "branding/product.json",
+      "purpose": "Product identity (mode: product); Sacred name/tagline/pitch",
+      "read_when": "session_start",
+      "update_when": "milestone_boundary",
+      "owner": "human"
+    },
+    {
+      "path": ".cursor/commands/coach.md",
+      "purpose": "Slash command /coach",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/tour.md",
+      "purpose": "Slash command /tour",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/ideas.md",
+      "purpose": "Slash command /ideas",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/allideas.md",
+      "purpose": "Slash command /allideas",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/update-deps.md",
+      "purpose": "Slash command /update-deps",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/best-of-n.md",
+      "purpose": "Slash command /best-of-n",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/emulator.md",
+      "purpose": "Slash command /emulator (Android; unused on WPF)",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
+    },
+    {
+      "path": ".cursor/commands/adr.md",
+      "purpose": "Slash command /adr",
+      "read_when": "prompt_needed",
+      "update_when": "milestone_boundary",
+      "owner": "maintainer"
     }
   ],
   "modules": {
@@ -667,7 +825,15 @@
       ".cursor/commands/verify.md",
       ".cursor/commands/build.md",
       ".cursor/commands/ship.md",
-      ".cursor/commands/maintain.md"
+      ".cursor/commands/maintain.md",
+      ".cursor/commands/coach.md",
+      ".cursor/commands/tour.md",
+      ".cursor/commands/ideas.md",
+      ".cursor/commands/allideas.md",
+      ".cursor/commands/update-deps.md",
+      ".cursor/commands/best-of-n.md",
+      ".cursor/commands/emulator.md",
+      ".cursor/commands/adr.md"
     ]
   }
 }

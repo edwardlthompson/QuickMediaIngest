@@ -2,6 +2,22 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — Template catch-up to agent-project-bootstrap v1.0.0
+
+**Status:** Accepted
+**Context:** Child repo was at process `0.16.0`; upstream latest release is `v1.0.0`. Goal: gain `/upgrade` and current Golden Path gate machinery without overwriting the WPF product.
+
+**Decision:**
+- Copy Canon (commands, rules, help docs, new template scripts, schemas, example stubs).
+- Merge Mixed (`bootstrap.config.json`, `.gitignore`, `.env.example`, `TEMPLATE_INDEX.json`, `PROJECT_CHECKLIST.md`, `validate-bootstrap.sh`).
+- Leave Sacred untouched (`AGENTS.md`, `docs/INITIALIZATION_PROMPT.md`, LICENSE, product app). Do not create `docs/spec.md` / `docs/plan.md` from the template stub.
+- Keep child-only scripts and WPF file-limit / feature-gate / license checks.
+- Do not add release-please, Pages, or copy `examples/` over the app.
+- Stamp `branding/product.json` as `mode: product` with Quick Media Ingest identity.
+
+**Validation:** `validate-bootstrap.sh --quick`; `feature-gate.sh --stack dotnet-wpf`.
+
+---
 ## 2026-08-21 — Donate + filename-version updates (v1.3.27)
 
 **Status:** Accepted

@@ -70,11 +70,12 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 | 2026-08-21 | Release v1.3.27 | Quiet Venmo donate + filename-version GitHub update prompt; device-local prefs | Next `workflow_dispatch` must upload versioned EXE/MSI names |
 | 2026-08-10 | Release v1.3.26 | ADB pipe-drain + already-imported recovery + `Point & Shoot` delete quoting | Watch PreferAdb dual-FTP alias duplicate batches |
 | 2026-08-10 | Release v1.3.25 | Phone DateTaken: ADB mtime + EXIF MetadataReader rewired | PreferAdb phone shoot folders should match capture, not scan-time UTC |
+| 2026-08-30 | Template align → 1.0.0 | Canon/Mixed catch-up; `/upgrade` + Golden Path gates; kept WPF app | HUMAN: spec.md/plan.md still unset; no Golden Path WPF slices in catalog |
 | 2026-07-21 | Template align → 0.16.0 | FOSS Cursor pack + BUILD_PLAN markers; kept WPF module/`build.yml` | HUMAN: deferred CI (release-please/pages/automerge) |
 
 ## Template Provenance
 
 - **Source template:** `edwardlthompson/agent-project-bootstrap`
-- **Template version:** `0.16.0` (see `.template-version`)
+- **Template version:** `1.0.0` (see `.template-version`)
 - **Alignment:** `docs/BOOTSTRAP_ALIGNMENT.md`
 - **Last update check:** See `.template-update.json`
