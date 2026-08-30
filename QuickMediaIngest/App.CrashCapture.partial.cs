@@ -1,4 +1,5 @@
 #nullable enable
+using System.IO;
 using System.Text.Json;
 using QuickMediaIngest.Core.CrashCapture;
 using QuickMediaIngest.Core.PrivacyReport;

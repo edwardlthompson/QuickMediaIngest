@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+using System.Threading;
 using QuickMediaIngest.Core.PrivacyReport;
 
 namespace QuickMediaIngest.Core.CrashCapture;

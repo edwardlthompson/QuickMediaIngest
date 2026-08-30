@@ -1,4 +1,6 @@
 #nullable enable
+using System.Collections.Generic;
+
 namespace QuickMediaIngest.Core.PrivacyReport;
 
 /// <summary>Sanitized markdown for a GitHub crash/bug/feature report.</summary>

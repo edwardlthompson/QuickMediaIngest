@@ -1,4 +1,6 @@
 #nullable enable
+using System.Collections.Generic;
+
 namespace QuickMediaIngest.Core.DisplayRefresh;
 
 public readonly record struct DisplayModeInfo(int Width, int Height, int RefreshHz);

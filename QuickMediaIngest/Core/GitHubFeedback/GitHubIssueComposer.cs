@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
 using QuickMediaIngest.Core.PrivacyReport;
 
 namespace QuickMediaIngest.Core.GitHubFeedback;
@@ -59,10 +61,10 @@ public static class GitHubIssueComposer
         if (body.Length <= SmallBodyLimit)
         {
             string url = $"{baseUrl}?template={Uri.EscapeDataString(template)}&title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(body)}";
-            return new GitHubIssueLink(EnsureHttps(url), useClipboard: false, body);
+            return new GitHubIssueLink(EnsureHttps(url), UseClipboard: false, body);
         }
 
-        return new GitHubIssueLink(EnsureHttps(baseUrl), useClipboard: true, body);
+        return new GitHubIssueLink(EnsureHttps(baseUrl), UseClipboard: true, body);
     }
 
     public static IReadOnlyList<string> SearchDuplicatesFailSoft() => Array.Empty<string>();

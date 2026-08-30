@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using QuickMediaIngest.Core.DisplayRefresh;
 using Xunit;
 
