@@ -2,6 +2,19 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — `/allideas` board fill (I-01..I-80)
+
+**Status:** Accepted
+**Context:** User said add all ideas to the build plan (board only).
+
+**Decision:**
+- Add 80 `[AGENT]` rows I-01..I-80 under `## Ongoing Maintenance` (parseable `- 🔲 [AGENT]`).
+- Skip leftovers already on the board: OP13 smoke, GP AUTO/HUMAN, GP-8 Sacred spec/plan, WPF UI sign-off.
+- Do not implement. Do not create `docs/spec.md` or `docs/plan.md`. I-75 is a HUMAN checklist only.
+
+**Validation:** Board-only; `validate-bootstrap.sh --quick` still applies to markdown tables.
+
+---
 ## 2026-08-30 — `/build` Golden Path 1–8 implementation
 
 **Status:** Accepted
