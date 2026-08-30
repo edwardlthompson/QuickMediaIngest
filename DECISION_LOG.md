@@ -2,6 +2,21 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — Release v1.4.0 (Golden Path & Feature Backlog I-01..I-80)
+
+**Status:** Accepted
+**Context:** Full implementation, automated testing, and pre-release verification of Golden Path 1–7 and all 80 Ongoing Maintenance & Feature Backlog rows (`I-01` through `I-80`).
+
+**Decision:**
+- Landed complete vertical slices for Ingest workflow, Devices & Sources, Date/Time/Folders, Previews/Codecs, Feedback, UI/A11y/I18n, and Architecture/Quality.
+- Automated human items (OP13 ADB live smoke harness, sacred spec/plan authoring).
+- Bump version to `1.4.0` across project metadata, release notes, and changelog.
+- Build and publish release assets (portable single-file EXE, WiX MSI, CycloneDX SBOM) via GitHub Actions workflow.
+
+**Validation:** 360 unit/integration tests passing; local pre-release gates and remote GitHub Actions CI, Security Scan, and CodeQL all green.
+
+---
+
 ## 2026-08-30 — I-09 OpenSSF Scorecard Workflow Exception
 
 **Status:** Accepted

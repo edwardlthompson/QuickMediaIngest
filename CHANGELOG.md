@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-08-30
+
+### Added
+
+- **Ingest & Workflow Hardening (I-11..I-28)**: Safe eject/dismount, dry-run import simulation, pick/reject culling, star ratings & color labels, per-source naming templates, copyright/creator stamps & XMP sidecar generator, destination free-space forecasting, pre-copy collision reporting, pending import plan resume, import history search/export CSV, SHA-256 checksum manifests, 3-2-1 secondary destination copies, watch-folder auto-scanning, and shoot-title batch renamer.
+- **Sources & Devices (I-29..I-38)**: Windows Portable Device (WPD/MTP) and iPhone USB scanning, camera Wi-Fi connection profile presets (Sony, Canon, Nikon, Fujifilm, Panasonic), PTP/USB tethering scanner, FTP bandwidth throttler, and transport badges (Local, FTP, ADB, Hybrid).
+- **Date, Time & Folders (I-39..I-42)**: Timezone adjustments for DateTaken, shoot split and merge capabilities, custom destination folder template tokens, and persistent cull state across rescans.
+- **Previews, Codecs & Visual Inspection (I-43..I-48)**: Direct HEIC/HEIF decoding via LibRaw/Vips, video proxy generator & first-frame preview mode, optional FFmpeg transcoding on import, side-by-side photo comparison view, thumbnail disk cache capping & purge, and ICC color profile detection.
+- **Feedback & UI/A11y/I18n (I-49..I-61)**: GitHub duplicate issue search with fail-soft cooldown, Windows dark/light system theme detection, accessibility high-contrast and reduced-motion support, keyboard shortcuts for feedback (`Esc`, `Ctrl+Enter`, `F9`) and eject (`Ctrl+E`), discarded crash fingerprint filtering, and German (`de`) and Japanese (`ja`) localizations with dynamic runtime language switching.
+- **Architecture & Diagnostics (I-62..I-80)**: Structured JSONL file logger, app distribution channel detection (portable vs installer), and complete product specifications and architecture blueprints (`docs/spec.md`, `docs/plan.md`, `docs/FIRST_30_DAYS.md`).
+
 ### Security
 
 - **Magick.NET 14.16.0**: bump from 14.14.0 to clear NU1901/NU1902 and CVE-2026-64685 (BGR decoder over-read). Existing thumbnail/glitch tests still cover decode.

@@ -12,7 +12,7 @@
 | MVVM | CommunityToolkit.Mvvm | 8.4.2 | Partial ViewModels |
 | DI | Microsoft.Extensions.DependencyInjection | 10.0.9 | Registered in `App.xaml.cs` |
 | FTP | FluentFTP | 54.2.0 | Thread-safe connections |
-| Images | Magick.NET-Q16-AnyCPU | 14.14.0 | Thumbnails, RAW sidecars |
+| Images | Magick.NET-Q16-AnyCPU | 14.16.0 | Thumbnails, RAW sidecars |
 | Metadata | MetadataExtractor | 2.9.3 | EXIF read/write |
 | Storage | System.Data.SQLite.Core | 1.0.119 | VACUUM maintenance; single-file extract required |
 | Testing | xUnit + Moq | 2.5.0 / 4.20.70 | `QuickMediaIngest.Tests/` |
