@@ -2,6 +2,19 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — Golden Path BUILD_PLAN rows 1–8
+
+**Status:** Accepted
+**Context:** After the v1.0.0 catch-up, the human named items 1–8 (not “do all”) to add board rows only.
+
+**Decision:**
+- Add Sequential Golden Path rows GP-1..GP-7 as one later `/feature` each; GP-8 is `[HUMAN]` Sacred `docs/spec.md` + `docs/plan.md`.
+- Do not implement slices in this change. Do not copy `examples/` over the WPF app.
+- About (1) and Settings (3) are align-existing; crash/feedback/github-feedback/privacy/display-refresh are new WPF ports of catalog specs.
+
+**Validation:** Board-only edit; `validate-bootstrap.sh --quick` still applies to process files.
+
+---
 ## 2026-08-30 — Template catch-up to agent-project-bootstrap v1.0.0
 
 **Status:** Accepted
