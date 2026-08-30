@@ -5,7 +5,19 @@
 
 ## Open
 
-_None — Align-0.15 human items cleared._
+Automation deferred Golden Path HUMAN rows (stay 🔲 on BUILD_PLAN until a human finishes them):
+
+| Deferred | Sprint | Owner | Task | Reason |
+|----------|--------|-------|------|--------|
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About donate / Check now after align | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke: setting off = no persist; setting on = one sanitized record | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke theme persist + crash-save toggle (after GP-2) | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Report a bug / Request a feature from About | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Open GitHub uses https only; offline Copy still works | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Confirm crash/feedback text never keeps tokens/home paths | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About/Settings scroll on a high-refresh display | Linux agent has no WPF UI; needs Windows desktop |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Author docs/spec.md and docs/plan.md for Quick Media Ingest. Sacred — do not paste the template stub. Agent must not create or refresh these files. | Sacred product docs — agent must not create or refresh from the template stub |
+| 2026-08-30 | Human & device | HUMAN | WPF UI sign-off via scripts/run-human-signoffs.ps1 when shipping product changes | Linux agent cannot run WPF human sign-off script |
 
 ## Resolved by automation
 

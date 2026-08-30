@@ -41,10 +41,11 @@ namespace QuickMediaIngest
                     string logsDir = Path.Combine(baseDir, "logs");
                     Directory.CreateDirectory(logsDir);
                     string fatalPath = Path.Combine(baseDir, "fatal.log");
-                    File.AppendAllText(fatalPath, $"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n");
+                    File.AppendAllText(fatalPath, SanitizeCrashDump($"[UI] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.Exception}\n"));
                     string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
                     string configDump = TryGetAppConfigDump();
-                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n\nAppConfig:\n{configDump}\n");
+                    File.WriteAllText(crashFile, SanitizeCrashDump($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled UI exception:\n{e.Exception}\n\nAppConfig:\n{configDump}\n"));
+                    CaptureGoldenPathCrash(e.Exception);
                 }
                 catch (Exception logEx)
                 {
@@ -67,10 +68,11 @@ namespace QuickMediaIngest
                     string logsDir = Path.Combine(baseDir, "logs");
                     Directory.CreateDirectory(logsDir);
                     string fatalPath = Path.Combine(baseDir, "fatal.log");
-                    File.AppendAllText(fatalPath, $"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n");
+                    File.AppendAllText(fatalPath, SanitizeCrashDump($"[Domain] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - {e.ExceptionObject}\n"));
                     string crashFile = Path.Combine(logsDir, $"crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
                     string configDump = TryGetAppConfigDump();
-                    File.WriteAllText(crashFile, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n\nAppConfig:\n{configDump}\n");
+                    File.WriteAllText(crashFile, SanitizeCrashDump($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Unhandled domain exception:\n{e.ExceptionObject}\n\nAppConfig:\n{configDump}\n"));
+                    CaptureGoldenPathCrash(e.ExceptionObject as Exception);
                 }
                 catch (Exception logEx)
                 {

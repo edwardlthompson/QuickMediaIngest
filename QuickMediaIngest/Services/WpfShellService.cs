@@ -27,6 +27,12 @@ namespace QuickMediaIngest.Services
 
         public void OpenUrl(string url)
         {
+            if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Blocked non-https URL open.");
+                return;
+            }
+
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }

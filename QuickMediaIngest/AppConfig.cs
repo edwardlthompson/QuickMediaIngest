@@ -43,6 +43,8 @@ namespace QuickMediaIngest
         public string ScanPath { get; set; } = string.Empty;
         public bool SelectAll { get; set; } = true;
         public bool? IsDarkTheme { get; set; }
+        /// <summary>Opt-in Golden Path crash queue. Default off; never auto-sends.</summary>
+        public bool SaveCrashDetails { get; set; }
         public double ThumbnailSize { get; set; } = 120;
         public bool ScanIncludeSubfolders { get; set; } = true;
         public int TimeBetweenShootsHours { get; set; } = 4;

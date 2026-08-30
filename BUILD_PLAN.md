@@ -48,67 +48,69 @@ Format: `🔲 [OWNER] Description`
 
 ## Golden Path catch-up (named 1–8)
 
-User named items **1–8** after the v1.0.0 template upgrade. These are **board rows only** — one `/feature` task later per AGENT feature. Port into existing QMI folders. **Never** copy `examples/` over `QuickMediaIngest/`. Thin wiring only (≤10 lines in `App.xaml.cs`). WPF limits: `.xaml` 800 · ViewModels 400 · `Core/` 200.
+`/build 1-8` implemented AGENT slices in existing QMI folders. **Never** copy `examples/` over `QuickMediaIngest/`. Thin wiring only. WPF limits: `.xaml` 800 · ViewModels 400 · `Core/` 200.
+
+AUTO `feature-gate.sh --stack dotnet-wpf` stays open: this Linux agent has no .NET 8 SDK / cannot compile `net8.0-windows`. HUMAN smoke + Sacred spec stay open (`HUMAN_BACKLOG.md`).
 
 ### 1 — About (`docs/features/donations-updates.md`)
 
-Already shipped (Venmo + filename-version updates). Align leftover Golden Path About patterns only.
+Already shipped (Venmo + filename-version updates). Added Request a feature + feedback entry from About.
 
-🔲 `[AGENT]` `/feature` GP-1: gap existing About overlay vs spec; port into current About folders + `QuickMediaIngest.Tests`; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke About donate / Check now after align
+- ✅ [AGENT] /feature GP-1: gap existing About overlay vs spec; port into current About folders + QuickMediaIngest.Tests; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke About donate / Check now after align
 
 ### 2 — Crash capture (`docs/features/crash-capture.md`)
 
 Opt-in local crash queue; never auto-send. Catalog stacks exclude WPF — port patterns into a QMI feature folder.
 
-🔲 `[AGENT]` `/feature` GP-2: WPF crash-capture vertical slice from spec (opt-in, sanitize-before-persist, at-most-one); tests; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke: setting off = no persist; setting on = one sanitized record
+- ✅ [AGENT] /feature GP-2: WPF crash-capture vertical slice from spec (opt-in, sanitize-before-persist, at-most-one); tests; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke: setting off = no persist; setting on = one sanitized record
 
 ### 3 — Settings (`docs/features/settings.md`)
 
 Settings overlay already exists. Align theme persist + optional save-crash toggle vs spec.
 
-🔲 `[AGENT]` `/feature` GP-3: gap existing Preferences/Settings vs spec; port into current Settings folders; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke theme persist + crash-save toggle (after GP-2)
+- ✅ [AGENT] /feature GP-3: gap existing Preferences/Settings vs spec; port into current Settings folders; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke theme persist + crash-save toggle (after GP-2)
 
 ### 4 — Feedback (`docs/features/feedback.md`)
 
 About **Report a bug** currently opens the GitHub issues URL only. Need review dialogs (escaped preview, Copy, Open GitHub, Discard).
 
-🔲 `[AGENT]` `/feature` GP-4: WPF feedback dialogs from spec; wire from existing About; tests; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke Report a bug / Request a feature from About
+- ✅ [AGENT] /feature GP-4: WPF feedback dialogs from spec; wire from existing About; tests; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke Report a bug / Request a feature from About
 
 ### 5 — GitHub issue composer (`docs/features/github-feedback.md`)
 
 Compose issue-form URLs + clipboard fallback + fail-soft search. Logic-only container.
 
-🔲 `[AGENT]` `/feature` GP-5: WPF/Core github-feedback composer from spec; tests; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke Open GitHub uses `https` only; offline Copy still works
+- ✅ [AGENT] /feature GP-5: WPF/Core github-feedback composer from spec; tests; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke Open GitHub uses https only; offline Copy still works
 
 ### 6 — Privacy sanitizer (`docs/features/privacy-report.md`)
 
 Shared sanitize / fingerprint / markdown. No UI, no network. Run before persist and before Copy / Open GitHub.
 
-🔲 `[AGENT]` `/feature` GP-6: Core privacy-report sanitizer from spec + unit tests; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Confirm crash/feedback text never keeps tokens/home paths
+- ✅ [AGENT] /feature GP-6: Core privacy-report sanitizer from spec + unit tests; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Confirm crash/feedback text never keeps tokens/home paths
 
 ### 7 — Display refresh (`docs/features/display-refresh.md`)
 
 Android-only catalog slice. Optional WPF port: request highest same-resolution refresh for About/Settings scroll when the OS allows it.
 
-🔲 `[AGENT]` `/feature` GP-7: WPF display-refresh port from spec (reference Android stub only); tests or documented fallback; no `examples/` copy
-🔲 `[AUTO]` `feature-gate.sh --stack dotnet-wpf`
-🔲 `[HUMAN]` Smoke About/Settings scroll on a high-refresh display
+- ✅ [AGENT] /feature GP-7: WPF display-refresh port from spec (reference Android stub only); tests or documented fallback; no examples/ copy
+- 🔲 [AUTO] feature-gate.sh --stack dotnet-wpf
+- 🔲 [HUMAN] Smoke About/Settings scroll on a high-refresh display
 
 ### 8 — Sacred product spec / plan
 
-🔲 `[HUMAN]` Author `docs/spec.md` and `docs/plan.md` for Quick Media Ingest. Sacred — do **not** paste the template stub. Agent must not create or refresh these files.
+- 🔲 [HUMAN] Author docs/spec.md and docs/plan.md for Quick Media Ingest. Sacred — do not paste the template stub. Agent must not create or refresh these files.
 
 ---
 
@@ -120,7 +122,7 @@ _(none — Sequential Golden Path rows first; `/scope` only after a feature’s 
 
 ## Human & device (after automation)
 
-🔲 `[HUMAN]` WPF UI sign-off via `.\scripts\run-human-signoffs.ps1` when shipping product changes
+- 🔲 [HUMAN] WPF UI sign-off via scripts/run-human-signoffs.ps1 when shipping product changes
 
 ---
 

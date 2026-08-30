@@ -99,6 +99,7 @@ namespace QuickMediaIngest.ViewModels
                                 IsDarkTheme = config.IsDarkTheme.Value;
                                 App.ApplyTheme(!IsDarkTheme);
                             }
+                            SaveCrashDetails = config.SaveCrashDetails;
                             if (config.ThumbnailSize > 0) ThumbnailSize = config.ThumbnailSize;
                             ScanIncludeSubfolders = config.ScanIncludeSubfolders;
                             TimeBetweenShootsHours = Math.Clamp(config.TimeBetweenShootsHours <= 0 ? 4 : config.TimeBetweenShootsHours, 1, 24);

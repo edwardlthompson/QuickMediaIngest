@@ -162,9 +162,6 @@ namespace QuickMediaIngest.ViewModels
             }
         }
 
-        [RelayCommand]
-        private void ReportBug() => _shellService.OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/issues");
-
         [RelayCommand] private void OpenChangelog() => _shellService.OpenUrl("https://github.com/edwardlthompson/QuickMediaIngest/blob/main/CHANGELOG.md");
         [RelayCommand]
         private void OpenGitHub()

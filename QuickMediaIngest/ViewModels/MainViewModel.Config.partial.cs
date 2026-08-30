@@ -69,6 +69,7 @@ namespace QuickMediaIngest.ViewModels
                     ScanPath = ScanPath,
                     SelectAll = SelectAll,
                     IsDarkTheme = IsDarkTheme,
+                    SaveCrashDetails = SaveCrashDetails,
                     ThumbnailSize = ThumbnailSize,
                     ScanIncludeSubfolders = ScanIncludeSubfolders,
                     TimeBetweenShootsHours = TimeBetweenShootsHours,

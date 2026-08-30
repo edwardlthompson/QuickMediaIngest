@@ -2,6 +2,21 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — `/build` Golden Path 1–8 implementation
+
+**Status:** Accepted
+**Context:** User invoked `/build 1-8`. Status parser did not see backtick GP rows; execute anyway. Linux agent has no .NET 8 / WPF.
+
+**Decision:**
+- Port catalog specs into existing QMI folders. Never copy `examples/`.
+- Order: privacy-report → github-feedback → crash-capture → settings toggle → feedback UI → About Request-a-feature → display-refresh vote (no `ChangeDisplaySettings`).
+- Crash persist is opt-in (`SaveCrashDetails` default false). Existing `fatal.log` / `crash_*.log` stay but are sanitized.
+- GP-8 Sacred: do not create `docs/spec.md` or `docs/plan.md`. Backlog HUMAN smoke + spec authoring.
+- Mark AGENT GP-1..7 done after implementation. Leave AUTO feature-gate open (environment block). Do not archive.
+
+**Validation:** `validate-bootstrap.sh --quick`. `feature-gate.sh --stack dotnet-wpf` expected exit 2 on this Linux VM.
+
+---
 ## 2026-08-30 — Golden Path BUILD_PLAN rows 1–8
 
 **Status:** Accepted
