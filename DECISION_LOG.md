@@ -2,6 +2,16 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — I-01 Magick.NET 14.16.0
+
+**Status:** Accepted
+**Context:** `/build` next row I-01. CI had NU1901/NU1902 on 14.14.0; CVE-2026-64685 fixed in 14.15.0+.
+
+**Decision:** Bump `Magick.NET-Q16-AnyCPU` to 14.16.0 (app, tests lockfile, DngProbe). Add assembly-version floor test. Do not copy `examples/`.
+
+**Validation:** `dotnet restore --force-evaluate -p:EnableWindowsTargeting=true` on Linux; Windows CI `dotnet test` for Magick decode tests.
+
+---
 ## 2026-08-30 — `/allideas` board fill (I-01..I-80)
 
 **Status:** Accepted

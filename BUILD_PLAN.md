@@ -120,7 +120,7 @@ Rows from `/allideas` (2026-08-30). One `[AGENT]` row per idea. Skipped leftover
 
 ### Security and privacy
 
-- 🔲 [AGENT] /feature I-01: bump Magick.NET past current GHSA set; tests; no examples/ copy
+- ✅ [AGENT] /feature I-01: bump Magick.NET past current GHSA set; tests; no examples/ copy
 - 🔲 [AGENT] /feature I-02: LibRaw/libvips-first decode path for common RAW; tests; no examples/ copy
 - 🔲 [AGENT] /feature I-03: GPS/PII strip option on embed-keywords / copy; tests; no examples/ copy
 - 🔲 [AGENT] /feature I-04: settings JSON export/import matching PRIVACY.md; schema version; tests; no examples/ copy
