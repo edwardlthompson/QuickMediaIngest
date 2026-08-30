@@ -6,6 +6,7 @@ namespace QuickMediaIngest
     /// <summary>Serializable preferences (FTP password is stored in Windows Credential Manager, not in config.json).</summary>
     public sealed class AppConfig
     {
+        public int SchemaVersion { get; set; } = 1;
         public int UpdateIntervalHours { get; set; } = 24;
         public string UpdatePackageType { get; set; } = "Portable";
         public string DestinationRoot { get; set; } = string.Empty;
@@ -55,6 +56,9 @@ namespace QuickMediaIngest
         public string VerificationMode { get; set; } = "Fast";
         public string UiLanguage { get; set; } = string.Empty;
         public bool EmbedKeywordsOnImport { get; set; }
+        /// <summary>When true, removes GPS and location tags when embedding or copying.</summary>
+        public bool StripGpsAndPiiOnEmbed { get; set; }
+        public bool EjectAfterImport { get; set; }
         public bool ConfirmBeforeImport { get; set; }
         public bool SuppressExcludedFolderScanReminders { get; set; }
         /// <summary>Legacy; merged into <see cref="SettingsPrefsImportSettingsExpanded"/>. Still read from disk for migration.</summary>
@@ -83,6 +87,8 @@ namespace QuickMediaIngest
         public List<string> SelectedDriveDeviceIds { get; set; } = new();
         public List<string> SelectedDrivePaths { get; set; } = new();
         public Dictionary<string, List<string>> SkippedFoldersBySource { get; set; } = new();
+        /// <summary>Per-source custom naming template overrides (keyed by source ID / path / host).</summary>
+        public Dictionary<string, string> NamingTemplateBySource { get; set; } = new();
         public List<SavedFtpSourceEntry> SavedFtpSources { get; set; } = new();
     }
 

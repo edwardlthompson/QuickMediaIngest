@@ -74,7 +74,7 @@ jobs:
         Compress-Archive -Path ./publish/portable/* -DestinationPath ./publish/QuickMediaIngest-Portable.zip
 
     - name: Generate SBOM (CycloneDX via Syft)
-      uses: anchore/sbom-action@v0.24.0
+      uses: anchore/sbom-action@v0.24.2
       with:
         path: ./publish/portable
         format: cyclonedx-json

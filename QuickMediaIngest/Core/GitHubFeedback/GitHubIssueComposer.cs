@@ -67,7 +67,68 @@ public static class GitHubIssueComposer
         return new GitHubIssueLink(EnsureHttps(baseUrl), UseClipboard: true, body);
     }
 
-    public static IReadOnlyList<string> SearchDuplicatesFailSoft() => Array.Empty<string>();
+    private static DateTime _lastSearchUtc = DateTime.MinValue;
+    private static IReadOnlyList<string> _cachedSearchResults = Array.Empty<string>();
+    private static readonly object _searchLock = new();
+
+    public static async System.Threading.Tasks.Task<IReadOnlyList<string>> SearchDuplicatesFailSoftAsync(string query, string ownerRepo = DefaultOwnerRepo)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return Array.Empty<string>();
+
+        lock (_searchLock)
+        {
+            if ((DateTime.UtcNow - _lastSearchUtc).TotalSeconds < 60)
+            {
+                return _cachedSearchResults;
+            }
+        }
+
+        try
+        {
+            string repo = IsPlaceholderRepo(ownerRepo) ? DefaultOwnerRepo : ownerRepo.Trim();
+            string encodedQ = Uri.EscapeDataString($"repo:{repo} {query} in:title,body is:issue");
+            string apiUrl = $"https://api.github.com/search/issues?q={encodedQ}&per_page=5";
+
+            using var client = new System.Net.Http.HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("QuickMediaIngest-App");
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var resp = await client.GetAsync(apiUrl).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode)
+            {
+                return Array.Empty<string>();
+            }
+
+            string json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var results = new List<string>();
+
+            if (doc.RootElement.TryGetProperty("items", out var itemsElement) && itemsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var item in itemsElement.EnumerateArray())
+                {
+                    if (item.TryGetProperty("html_url", out var urlProp) && item.TryGetProperty("title", out var titleProp))
+                    {
+                        results.Add($"{titleProp.GetString()} - {urlProp.GetString()}");
+                    }
+                }
+            }
+
+            lock (_searchLock)
+            {
+                _lastSearchUtc = DateTime.UtcNow;
+                _cachedSearchResults = results;
+            }
+
+            return results;
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    public static IReadOnlyList<string> SearchDuplicatesFailSoft() => _cachedSearchResults;
 
     private static string EnsureHttps(string url)
     {

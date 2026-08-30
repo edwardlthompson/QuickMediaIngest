@@ -1,31 +1,19 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using System.Diagnostics;
 using System.IO;
-using System.Collections.Generic;
-using System.Text;
 using System.Linq;
-using System.Media;
-using System.Net;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Application = System.Windows.Application;
-using Clipboard = System.Windows.Clipboard;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
-using QuickMediaIngest.Localization;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
+using QuickMediaIngest.Localization;
 using QuickMediaIngest.Services;
-using QuickMediaIngest;
 
 
 namespace QuickMediaIngest.ViewModels

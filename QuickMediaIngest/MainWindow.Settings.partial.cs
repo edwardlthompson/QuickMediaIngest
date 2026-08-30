@@ -54,21 +54,6 @@ namespace QuickMediaIngest
             }
         }
 
-        internal void ReportBug_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/edwardlthompson/QuickMediaIngest/issues")
-                {
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to open bug report URL.");
-            }
-        }
-
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (DataContext is MainViewModel vm)

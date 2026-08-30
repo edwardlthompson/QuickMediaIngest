@@ -13,6 +13,10 @@ ROW_NUMBERED = re.compile(
 ROW_BULLET = re.compile(
     rf"^- {OPEN} \[(?P<owner>AGENT|AUTO|HUMAN|ADB)\]\s+(?P<task>.+)$"
 )
+# Child product board: optional dash + optional backticks around [OWNER]
+ROW_FLEX = re.compile(
+    rf"^(?:- )?{OPEN}\s+`?\[(?P<owner>AGENT|AUTO|HUMAN|ADB)\]`?\s+(?P<task>.+)$"
+)
 SPRINT_HEADER = re.compile(r"^###\s+Sprint\s+", re.I)
 PARALLEL_HEADER = re.compile(r"^#{3,4}\s+.*Parallel", re.I)
 SEQUENTIAL_HEADER = re.compile(r"^#{3,4}\s+.*Sequential", re.I)

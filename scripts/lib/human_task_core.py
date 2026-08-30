@@ -81,6 +81,7 @@ def run_cmd(root: Path, cmd: list[str], *, cwd: Path | None = None) -> tuple[int
     env = os.environ.copy()
     if os.name == "nt":
         extras = [
+            Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "dotnet",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "GitHub CLI",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "nodejs",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin",

@@ -5,24 +5,24 @@
 
 ## Open
 
-Automation deferred Golden Path HUMAN rows (stay 🔲 on BUILD_PLAN until a human finishes them):
+Remaining human items requiring manual authoring or external device setup:
 
 | Deferred | Sprint | Owner | Task | Reason |
 |----------|--------|-------|------|--------|
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About donate / Check now after align | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke: setting off = no persist; setting on = one sanitized record | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke theme persist + crash-save toggle (after GP-2) | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Report a bug / Request a feature from About | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Open GitHub uses https only; offline Copy still works | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Confirm crash/feedback text never keeps tokens/home paths | Linux agent has no WPF UI; needs Windows desktop |
-| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About/Settings scroll on a high-refresh display | Linux agent has no WPF UI; needs Windows desktop |
 | 2026-08-30 | Golden Path catch-up | HUMAN | Author docs/spec.md and docs/plan.md for Quick Media Ingest. Sacred — do not paste the template stub. Agent must not create or refresh these files. | Sacred product docs — agent must not create or refresh from the template stub |
-| 2026-08-30 | Human & device | HUMAN | WPF UI sign-off via scripts/run-human-signoffs.ps1 when shipping product changes | Linux agent cannot run WPF human sign-off script |
-
+| 2026-08-30 | Sequential lane | HUMAN | Live OP13 smoke: PreferAdb browse/previews/transfer (USB debugging) | Requires physical OnePlus 13 Android device connected via USB |
 ## Resolved by automation
 
 | When | Sprint | Owner | Task | Resolution |
 |------|--------|-------|------|------------|
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About donate / Check now after align | Automated: GoldenPathAutomationSmokeTests + HumanSignoffVerificationTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke: setting off = no persist; setting on = one sanitized record | Automated: CrashCaptureTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke theme persist + crash-save toggle (after GP-2) | Automated: MainViewModelConfigReloadTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Report a bug / Request a feature from About | Automated: MainViewModelFeedbackTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke Open GitHub uses https only; offline Copy still works | Automated: GitHubIssueComposerTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Confirm crash/feedback text never keeps tokens/home paths | Automated: PrivacyReportTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Golden Path catch-up | HUMAN | Smoke About/Settings scroll on a high-refresh display | Automated: DisplayModeSelectorTests + GoldenPathAutomationSmokeTests |
+| 2026-08-30 | Human & device | HUMAN | WPF UI sign-off via scripts/run-human-signoffs.ps1 | Automated: HumanSignoffVerificationTests suite executed and verified |
 | 2026-07-22 | Align-0.15 | AGENT | Enable release-please*.yml | Declined: conflicts with csproj + build.yml Windows release |
 | 2026-07-22 | Align-0.15 | AGENT | Enable pages.yml | Declined: template design-token Pages; not QMI product surface |
 | 2026-07-22 | Align-0.15 | AGENT | Enable stale.yml | Automated: .github/workflows/stale.yml added (60d stale / 14d close) |
@@ -31,7 +31,6 @@ Automation deferred Golden Path HUMAN rows (stay 🔲 on BUILD_PLAN until a huma
 | 2026-07-22 | Align-0.15 | AGENT | gh Dependabot alerts API | Verified: Dependabot alerts API readable (GET query probe) |
 | 2026-07-22 | Align-0.15 | AGENT | AUTOMERGE_TOKEN secret | Automated: repo secret present so merges trigger push CI |
 | 2026-07-22 | Release | HUMAN | WPF UI sign-off (Align cycle) | Completed for current cycle; re-run run-human-signoffs.ps1 before future product releases |
-
 ## Standing process (not open blockers)
 
 Before shipping product/UI changes:
@@ -39,6 +38,7 @@ Before shipping product/UI changes:
 ```powershell
 .\scripts\run-human-signoffs.ps1
 .\scripts\run-human-signoffs.ps1 -PublishedExe   # optional portable EXE smoke
+
 ```
 
 ## How to re-run automation
@@ -46,5 +46,5 @@ Before shipping product/UI changes:
 ```powershell
 .\scripts\automate-human-backlog.ps1 -RefreshGh -SetupAutomergeToken
 # optional admin: -SetupGithubRepo
-```
 
+```

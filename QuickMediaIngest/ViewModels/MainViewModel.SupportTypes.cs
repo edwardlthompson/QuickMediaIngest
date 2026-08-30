@@ -140,6 +140,13 @@ namespace QuickMediaIngest.ViewModels
         public List<string> SelectedSourcePaths { get; set; } = new();
     }
 
+    internal sealed class ImportItemRatingArtifact
+    {
+        public string FileName { get; set; } = string.Empty;
+        public int Rating { get; set; }
+        public string ColorLabel { get; set; } = string.Empty;
+    }
+
     internal sealed class ImportReportArtifact
     {
         public DateTime GeneratedAt { get; set; }
@@ -151,6 +158,7 @@ namespace QuickMediaIngest.ViewModels
         public int FailedFiles { get; set; }
         public string VerificationMode { get; set; } = string.Empty;
         public string DuplicatePolicy { get; set; } = string.Empty;
+        public List<ImportItemRatingArtifact> ItemRatings { get; set; } = new();
         public List<FailedImportRecord> Failed { get; set; } = new();
     }
 

@@ -6,4 +6,6 @@ public interface IPendingCrashStore
     PendingCrash? Load();
     bool Replace(PendingCrash record);
     void Clear();
+    void MarkDiscarded(string fingerprint);
+    bool IsDiscarded(string fingerprint);
 }

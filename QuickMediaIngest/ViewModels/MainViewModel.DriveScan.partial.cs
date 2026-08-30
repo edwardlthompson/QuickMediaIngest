@@ -37,41 +37,6 @@ namespace QuickMediaIngest.ViewModels
             return $"local-device|{ResolveDeviceIdFromLocalPath(localPath)}";
         }
 
-        private void SaveImportHistoryRecord(TimeSpan duration)
-        {
-            try
-            {
-                var record = new ImportHistoryRecord
-                {
-                    StartedAtLocal = _importStartedAtUtc == DateTime.MinValue ? DateTime.Now : _importStartedAtUtc.ToLocalTime(),
-                    DurationSeconds = Math.Max(0, duration.TotalSeconds),
-                    FilesSelected = TotalFilesForImport,
-                    FilesImported = CurrentFileBeingImported,
-                    FailedFiles = FailedFilesForImport,
-                    Source = SelectedSource?.ToString() ?? "Unknown",
-                    Destination = DestinationRoot
-                };
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ImportHistoryRecords.Insert(0, record);
-                    while (ImportHistoryRecords.Count > 50)
-                    {
-                        ImportHistoryRecords.RemoveAt(ImportHistoryRecords.Count - 1);
-                    }
-                });
-
-                string path = GetImportHistoryPath();
-                Directory.CreateDirectory(Path.GetDirectoryName(path) ?? Path.GetTempPath());
-                string json = System.Text.Json.JsonSerializer.Serialize(ImportHistoryRecords.ToList());
-                File.WriteAllText(path, json);
-            }
-            catch
-            {
-                // Ignore history persistence errors.
-            }
-        }
-
         private string BuildSelectedSourceId()
         {
             return SelectedSource switch
@@ -83,76 +48,41 @@ namespace QuickMediaIngest.ViewModels
             };
         }
 
-        private static string GetPendingImportPlanPath()
-        {
-            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
-            Directory.CreateDirectory(folder);
-            return Path.Combine(folder, "pending-import.json");
-        }
-
-        private void SavePendingImportPlan(List<ItemGroup> selectedGroups)
-        {
-            try
-            {
-                var selectedPaths = selectedGroups
-                    .SelectMany(g => g.Items)
-                    .Where(i => i.IsSelected)
-                    .Select(i => i.SourcePath)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                var plan = new PendingImportPlan
-                {
-                    CreatedAt = DateTime.Now,
-                    SourceId = BuildSelectedSourceId(),
-                    SourceDisplay = SelectedSource?.ToString() ?? "Unknown",
-                    DestinationRoot = DestinationRoot,
-                    NamingTemplate = NamingTemplate,
-                    SelectedSourcePaths = selectedPaths
-                };
-                string json = System.Text.Json.JsonSerializer.Serialize(plan, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(GetPendingImportPlanPath(), json);
-            }
-            catch
-            {
-                // Ignore pending plan persistence failures.
-            }
-        }
-
-        private void ClearPendingImportPlan()
-        {
-            try
-            {
-                string path = GetPendingImportPlanPath();
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-            }
-            catch
-            {
-                // Ignore clear failures.
-            }
-        }
-
-        private void ExportImportReportArtifact(TimeSpan duration, List<ItemGroup> selectedGroups)
+        public void ExportImportReportArtifact(TimeSpan duration, List<ItemGroup> selectedGroups)
         {
             try
             {
                 string reportDir = Path.Combine(DestinationRoot, "_ImportReports");
                 Directory.CreateDirectory(reportDir);
                 string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                string rawSource = SelectedSource?.ToString() ?? "Unknown";
+                string sanitizedSource = QuickMediaIngest.Core.PrivacyReport.PrivacyReportSanitize.SanitizeReportText(rawSource);
+                string sanitizedDestination = QuickMediaIngest.Core.PrivacyReport.PrivacyReportSanitize.SanitizeReportText(DestinationRoot);
+
                 var report = new ImportReportArtifact
                 {
                     GeneratedAt = DateTime.Now,
-                    Source = SelectedSource?.ToString() ?? "Unknown",
-                    Destination = DestinationRoot,
+                    Source = sanitizedSource,
+                    Destination = sanitizedDestination,
                     DurationSeconds = duration.TotalSeconds,
                     FilesSelected = TotalFilesForImport,
                     FilesImported = CurrentFileBeingImported,
                     FailedFiles = FailedFilesForImport,
                     VerificationMode = VerificationMode,
                     DuplicatePolicy = DuplicatePolicy,
-                    Failed = FailedImportRecords.ToList()
+                    ItemRatings = selectedGroups.SelectMany(g => g.Items)
+                        .Where(i => i.Rating > 0 || !string.IsNullOrEmpty(i.ColorLabel))
+                        .Select(i => new ImportItemRatingArtifact
+                        {
+                            FileName = QuickMediaIngest.Core.PrivacyReport.PrivacyReportSanitize.SanitizeReportText(i.FileName),
+                            Rating = i.Rating,
+                            ColorLabel = i.ColorLabel
+                        }).ToList(),
+                    Failed = FailedImportRecords.Select(f => new FailedImportRecord
+                    {
+                        FileName = QuickMediaIngest.Core.PrivacyReport.PrivacyReportSanitize.SanitizeReportText(f.FileName),
+                        ErrorMessage = QuickMediaIngest.Core.PrivacyReport.PrivacyReportSanitize.SanitizeReportText(f.ErrorMessage)
+                    }).ToList()
                 };
 
                 string jsonPath = Path.Combine(reportDir, $"import-report-{timestamp}.json");
@@ -167,10 +97,10 @@ namespace QuickMediaIngest.ViewModels
                 text.AppendLine($"Failed: {report.FailedFiles}");
                 text.AppendLine($"Verification: {report.VerificationMode}");
                 text.AppendLine($"DuplicatePolicy: {report.DuplicatePolicy}");
-                if (FailedImportRecords.Count > 0)
+                if (report.Failed.Count > 0)
                 {
                     text.AppendLine("Failed Files:");
-                    foreach (var failure in FailedImportRecords)
+                    foreach (var failure in report.Failed)
                     {
                         text.AppendLine($"- {failure.FileName} | {failure.ErrorMessage}");
                     }
@@ -182,37 +112,6 @@ namespace QuickMediaIngest.ViewModels
             {
                 // Ignore report export errors.
             }
-        }
-
-        private void LoadImportHistory()
-        {
-            try
-            {
-                string path = GetImportHistoryPath();
-                if (!File.Exists(path))
-                {
-                    return;
-                }
-
-                string json = File.ReadAllText(path);
-                var records = System.Text.Json.JsonSerializer.Deserialize<List<ImportHistoryRecord>>(json) ?? new List<ImportHistoryRecord>();
-
-                ImportHistoryRecords.Clear();
-                foreach (var record in records.OrderByDescending(r => r.StartedAtLocal).Take(50))
-                {
-                    ImportHistoryRecords.Add(record);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Import history file could not be loaded.");
-            }
-        }
-
-        private static string GetImportHistoryPath()
-        {
-            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuickMediaIngest");
-            return Path.Combine(folder, "import-history.json");
         }
 
         /// <summary>

@@ -20,6 +20,8 @@ namespace QuickMediaIngest
                 new ShortcutRowVm { Key = "Ctrl+R", Description = Localization.AppLocalizer.Get("Help_ShortcutRefresh") },
                 new ShortcutRowVm { Key = "Ctrl+A", Description = Localization.AppLocalizer.Get("Help_ShortcutSelectAll") },
                 new ShortcutRowVm { Key = "Ctrl+F", Description = Localization.AppLocalizer.Get("Help_ShortcutFilter") },
+                new ShortcutRowVm { Key = "Ctrl+E", Description = "Safely eject / dismount source media" },
+                new ShortcutRowVm { Key = "F9", Description = "Report bug / feedback dialog" },
                 new ShortcutRowVm { Key = "Escape", Description = Localization.AppLocalizer.Get("Help_ShortcutEscape") },
                 new ShortcutRowVm { Key = "F1", Description = Localization.AppLocalizer.Get("Help_ShortcutHelp") },
             ];

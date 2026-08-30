@@ -63,22 +63,17 @@ namespace QuickMediaIngest.ViewModels
 
             try
             {
-                if (SelectedSource is string drive && drive.Length >= 2 && drive[1] == ':')
+                if (EjectAfterImport && SelectedSource is string drive)
                 {
-                    var driveLetter = drive.TrimEnd('\\');
-                    var query = $"SELECT * FROM Win32_Volume WHERE DriveLetter = '{driveLetter}'";
-                    using var searcher = new System.Management.ManagementObjectSearcher(query);
-                    foreach (System.Management.ManagementObject volume in searcher.Get())
+                    bool filesRemain = DeleteAfterImport && selectedGroups.SelectMany(g => g.Items).Any(i => !i.IsFtpSource && File.Exists(i.SourcePath));
+                    if (filesRemain)
                     {
-                        try
-                        {
-                            volume.InvokeMethod("Dismount", null);
-                            volume.InvokeMethod("Remove", null);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogDebug(ex, "WMI dismount/remove failed for volume.");
-                        }
+                        StatusMessage = "Eject paused: unimported/remaining files detected on source media.";
+                        _logger.LogInformation("Eject paused because files remain on source {Drive}.", drive);
+                    }
+                    else
+                    {
+                        RemovableDriveIo.TryEjectVolume(drive, _logger);
                     }
                 }
             }

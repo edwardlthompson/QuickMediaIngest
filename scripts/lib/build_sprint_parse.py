@@ -5,6 +5,7 @@ from build_sprint_model import (
     HUMAN_GROUP_HEADER,
     PARALLEL_HEADER,
     ROW_BULLET,
+    ROW_FLEX,
     ROW_NUMBERED,
     SEQUENTIAL_HEADER,
     SPRINT_HEADER,
@@ -74,6 +75,49 @@ def parse_sprint_blocks(text: str) -> list[tuple[str, list[str]]]:
             continue
         i += 1
     return blocks
+
+
+def _child_product_sprint(header: str) -> str | None:
+    title = header[3:].strip()
+    if title.startswith("Sequential lane"):
+        return "Sequential lane"
+    if title.startswith("Golden Path"):
+        return "Golden Path catch-up"
+    if title.startswith("Ongoing Maintenance"):
+        return "Ongoing Maintenance"
+    if title.lower().startswith("human"):
+        return "Human & device"
+    return None
+
+
+def parse_child_product_rows(text: str) -> list[PlanRow]:
+    """Open rows on the child product board (not Child Repo Playbook sprints)."""
+    rows: list[PlanRow] = []
+    sprint: str | None = None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            sprint = _child_product_sprint(line)
+            continue
+        if sprint is None:
+            continue
+        match = ROW_FLEX.match(line)
+        if not match:
+            continue
+        owner = match.group("owner")
+        phase = (
+            "human_group"
+            if owner in ("HUMAN", "ADB")
+            else "maintenance" if sprint == "Ongoing Maintenance" else "pre_parallel"
+        )
+        rows.append(
+            PlanRow(
+                owner=owner,
+                task=match.group("task").strip(),
+                sprint=sprint,
+                phase=phase,
+            )
+        )
+    return rows
 
 
 def parse_maintenance_rows(text: str) -> tuple[list[PlanRow], list[PlanRow]]:

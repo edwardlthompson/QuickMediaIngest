@@ -38,5 +38,13 @@ namespace QuickMediaIngest.Tests
             Assert.True(capped >= 1);
             Assert.True(capped <= 16);
         }
+
+        [Fact]
+        public void TryEjectVolume_NullOrInvalid_ReturnsFalseWithoutThrowing()
+        {
+            Assert.False(RemovableDriveIo.TryEjectVolume(null));
+            Assert.False(RemovableDriveIo.TryEjectVolume(""));
+            Assert.False(RemovableDriveIo.TryEjectVolume(@"Z:\nonexistent\path"));
+        }
     }
 }

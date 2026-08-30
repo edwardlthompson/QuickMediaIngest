@@ -2,6 +2,18 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — I-09 OpenSSF Scorecard Workflow Exception
+
+**Status:** Accepted
+**Context:** Row I-09 in BUILD_PLAN requires OpenSSF Scorecard workflow review.
+
+**Decision:**
+- `.github/workflows/scorecard.yml` is configured with minimal read-all at workflow level, scoped write permissions for security-events and id-token, and uses official `ossf/scorecard-action@v2.4.3`.
+- Any repository-level Scorecard score variances (e.g. branch protection rules, code review enforcement) are managed via GitHub repository settings and require repository admin rights (`[HUMAN]`), while workflow definition is validated green and compliant with OpenSSF guidelines.
+
+**Validation:** Workflow syntax verified against OpenSSF Scorecard action standards; `check-scorecard-sarif.sh` and local gates pass.
+
+---
 ## 2026-08-30 — I-01 Magick.NET 14.16.0
 
 **Status:** Accepted

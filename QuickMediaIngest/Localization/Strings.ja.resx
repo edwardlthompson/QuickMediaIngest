@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Main_WindowTitle" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_AppName" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_Sources" xml:space="preserve"><value>ソース</value></data>
+  <data name="Sidebar_SettingsHeader" xml:space="preserve"><value>設定</value></data>
+  <data name="Btn_Preferences" xml:space="preserve"><value>環境設定</value></data>
+  <data name="Btn_AddFtpSource" xml:space="preserve"><value>FTPソースの追加</value></data>
+  <data name="Btn_ImportHistory" xml:space="preserve"><value>インポート履歴</value></data>
+  <data name="Btn_AboutUpdates" xml:space="preserve"><value>情報と更新</value></data>
+  <data name="Btn_Exit" xml:space="preserve"><value>終了</value></data>
+  <data name="Toolbar_Import" xml:space="preserve"><value>インポート</value></data>
+  <data name="Toolbar_Refresh" xml:space="preserve"><value>更新</value></data>
+  <data name="Toolbar_SelectAll" xml:space="preserve"><value>すべて選択</value></data>
+  <data name="Toolbar_DeleteAfterImport" xml:space="preserve"><value>インポート後に削除</value></data>
+  <data name="Feedback_Title_Bug" xml:space="preserve"><value>バグを報告</value></data>
+  <data name="Feedback_Title_Feature" xml:space="preserve"><value>機能をリクエスト</value></data>
+  <data name="Feedback_Copy" xml:space="preserve"><value>コピー</value></data>
+  <data name="Feedback_OpenGitHub" xml:space="preserve"><value>GitHubを開く</value></data>
+  <data name="Feedback_Discard" xml:space="preserve"><value>破棄</value></data>
+</root>

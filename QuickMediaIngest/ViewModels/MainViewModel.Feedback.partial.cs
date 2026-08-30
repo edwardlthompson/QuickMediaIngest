@@ -37,12 +37,15 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand]
         private void RequestFeature() => OpenFeedback("feature");
 
+        private string _lastCopiedFeedbackText = string.Empty;
+
         [RelayCommand]
         private void CopyFeedback()
         {
             try
             {
-                Clipboard.SetText(FeedbackPreview ?? string.Empty);
+                _lastCopiedFeedbackText = FeedbackPreview ?? string.Empty;
+                Clipboard.SetText(_lastCopiedFeedbackText);
             }
             catch
             {
@@ -73,6 +76,22 @@ namespace QuickMediaIngest.ViewModels
             FeedbackDescription = string.Empty;
             ShowFeedbackDialog = false;
             new FilePendingCrashStore().Clear();
+
+            try
+            {
+                if (!string.IsNullOrEmpty(_lastCopiedFeedbackText))
+                {
+                    if (Clipboard.ContainsText() && Clipboard.GetText() == _lastCopiedFeedbackText)
+                    {
+                        Clipboard.Clear();
+                    }
+                    _lastCopiedFeedbackText = string.Empty;
+                }
+            }
+            catch
+            {
+                // Clipboard access may fail in headless/restricted environments.
+            }
         }
 
         public void OfferPendingCrashReview()

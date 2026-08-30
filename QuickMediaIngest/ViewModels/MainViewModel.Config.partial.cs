@@ -44,6 +44,7 @@ namespace QuickMediaIngest.ViewModels
 
                 var config = new AppConfig
                 {
+                    SchemaVersion = 1,
                     UpdateIntervalHours = UpdateIntervalHours,
                     DestinationRoot = DestinationRoot,
                     DeleteAfterImport = DeleteAfterImport,
@@ -80,6 +81,8 @@ namespace QuickMediaIngest.ViewModels
                     VerificationMode = VerificationMode,
                     UiLanguage = UiLanguage,
                     EmbedKeywordsOnImport = EmbedKeywordsOnImport,
+                    StripGpsAndPiiOnEmbed = StripGpsAndPiiOnEmbed,
+                    EjectAfterImport = EjectAfterImport,
                     ConfirmBeforeImport = ConfirmBeforeImport,
                     SuppressExcludedFolderScanReminders = SuppressExcludedFolderScanReminders,
                     SidebarCollapsed = SidebarCollapsed,
@@ -98,6 +101,7 @@ namespace QuickMediaIngest.ViewModels
                     IsFirstRun = this.IsFirstRun,
                     SelectedDriveDeviceIds = _selectedDriveDeviceIds.ToList(),
                     SkippedFoldersBySource = _skippedFoldersBySource.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList(), StringComparer.OrdinalIgnoreCase),
+                    NamingTemplateBySource = _namingTemplateBySource.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase),
                     OpenDestinationFolderWhenImportCompletes = OpenDestinationFolderWhenImportCompletes,
                     ShowCompactImportSummaryModal = ShowCompactImportSummaryModal,
                     ConfirmCancelImportRequest = ConfirmCancelImportRequest,

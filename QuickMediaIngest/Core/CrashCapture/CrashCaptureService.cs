@@ -34,9 +34,15 @@ public sealed class CrashCaptureService
 
             string stack = PrivacyReportSanitize.SanitizeReportText(exception.ToString(), stack: true);
             string type = PrivacyReportSanitize.SanitizeReportText(exception.GetType().Name);
+            string fingerprint = PrivacyReportFingerprint.FingerprintCrash(stack, type);
+            if (_store.IsDiscarded(fingerprint))
+            {
+                return false;
+            }
+
             var record = new PendingCrash
             {
-                Fingerprint = PrivacyReportFingerprint.FingerprintCrash(stack, type),
+                Fingerprint = fingerprint,
                 ExceptionType = type,
                 Stack = stack,
                 Description = PrivacyReportSanitize.SanitizeReportText(exception.Message),

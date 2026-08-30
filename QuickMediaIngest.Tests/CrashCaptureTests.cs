@@ -10,6 +10,7 @@ namespace QuickMediaIngest.Tests
         private sealed class MemoryStore : IPendingCrashStore
         {
             public PendingCrash? Item { get; set; }
+            private readonly System.Collections.Generic.HashSet<string> _discarded = new(StringComparer.OrdinalIgnoreCase);
             public PendingCrash? Load() => Item;
             public bool Replace(PendingCrash record)
             {
@@ -17,6 +18,12 @@ namespace QuickMediaIngest.Tests
                 return true;
             }
             public void Clear() => Item = null;
+            public void MarkDiscarded(string fingerprint)
+            {
+                Clear();
+                _discarded.Add(fingerprint);
+            }
+            public bool IsDiscarded(string fingerprint) => _discarded.Contains(fingerprint);
         }
 
         [Fact]
