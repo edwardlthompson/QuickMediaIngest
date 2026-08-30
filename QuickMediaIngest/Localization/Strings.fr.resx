@@ -165,6 +165,17 @@
   <data name="About_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="About_OpenLogsFolder" xml:space="preserve"><value>Ouvrir le dossier des journaux</value></data>
   <data name="About_ReportBug" xml:space="preserve"><value>Signaler un problème</value></data>
+  <data name="About_RequestFeature" xml:space="preserve"><value>Demander une fonctionnalité</value></data>
+  <data name="Settings_SaveCrashDetails" xml:space="preserve"><value>Enregistrer les détails de plantage pour que je les examine</value></data>
+  <data name="Settings_SaveCrashDetailsHint" xml:space="preserve"><value>Désactivé par défaut. Si activé, un seul plantage assaini est stocké localement. Rien n’est envoyé automatiquement.</value></data>
+  <data name="Feedback_BugTitle" xml:space="preserve"><value>Signaler un bug</value></data>
+  <data name="Feedback_FeatureTitle" xml:space="preserve"><value>Demander une fonctionnalité</value></data>
+  <data name="Feedback_CrashTitle" xml:space="preserve"><value>Examiner le plantage capturé</value></data>
+  <data name="Feedback_Preview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="Feedback_Copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="Feedback_OpenGitHub" xml:space="preserve"><value>Ouvrir GitHub</value></data>
+  <data name="Feedback_Discard" xml:space="preserve"><value>Ignorer</value></data>
+  <data name="Feedback_NeedDescription" xml:space="preserve"><value>Ajoutez une description ou une pile pour activer Ouvrir GitHub.</value></data>
   <data name="About_Changelog" xml:space="preserve"><value>Journal des modifications</value></data>
   <data name="About_Releases" xml:space="preserve"><value>Versions publiées</value></data>
   <data name="About_DonateVenmo" xml:space="preserve"><value>Faire un don via Venmo</value></data>

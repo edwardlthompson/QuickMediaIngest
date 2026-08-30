@@ -346,13 +346,14 @@
                     </StackPanel>
                     <Separator Margin="0,12,0,12" />
                     <TextBlock Text="{loc:Loc About_Diagnostics}" FontWeight="SemiBold" Margin="0,0,0,8" />
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                        <Button Content="{loc:Loc About_OpenLogsFolder}" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_ReportBug}" Command="{Binding ReportBugCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,0" />
-                        <Button Content="{loc:Loc About_DonateVenmo}" Command="{Binding OpenDonateVenmoCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" />
-                    </StackPanel>
+                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="{loc:Loc About_OpenLogsFolder}" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
+                        <Button Content="{loc:Loc About_ReportBug}" Command="{Binding ReportBugCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
+                        <Button Content="{loc:Loc About_RequestFeature}" Command="{Binding RequestFeatureCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
+                        <Button Content="{loc:Loc About_Changelog}" Command="{Binding OpenChangelogCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
+                        <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
+                        <Button Content="{loc:Loc About_DonateVenmo}" Command="{Binding OpenDonateVenmoCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,0,8" />
+                    </WrapPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="80"/>
                         <TextBlock Text="{Binding AppVersion}" Width="120"/>

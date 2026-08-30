@@ -91,17 +91,34 @@ namespace QuickMediaIngest.Core
                 return Accept(FfmpegVideoThumbnailDecoder.TryGetThumbnail(tempPath, logger));
             }
 
-            // CompleteFile stills
-            DecodedThumbnail? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, isRaw ? 320 : 240));
-            if (magick != null)
+            // CompleteFile stills — LibRaw/libvips first for common RAW and stills
+            if (isRaw)
             {
-                return magick;
-            }
+                DecodedThumbnail? vipsRaw = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 320, logger));
+                if (vipsRaw != null)
+                {
+                    return vipsRaw;
+                }
 
-            DecodedThumbnail? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, isRaw ? 320 : 240, logger));
-            if (vips != null)
+                DecodedThumbnail? magickRaw = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 320));
+                if (magickRaw != null)
+                {
+                    return magickRaw;
+                }
+            }
+            else
             {
-                return vips;
+                DecodedThumbnail? vips = Accept(VipsThumbnailDecoder.TryGetThumbnail(tempPath, 240, logger));
+                if (vips != null)
+                {
+                    return vips;
+                }
+
+                DecodedThumbnail? magick = Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
+                if (magick != null)
+                {
+                    return magick;
+                }
             }
 
             ThumbnailHints completeHints = new()

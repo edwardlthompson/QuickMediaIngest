@@ -6,6 +6,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+LOCAL=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --local) LOCAL=true; shift ;;
+    *) shift ;;
+  esac
+done
+
 ERRORS=0
 VERSION=""
 STACK="dotnet-wpf"
@@ -13,7 +21,7 @@ if [ -f .cursor/stack-selection.json ]; then
   STACK="$(python -c "import json; print(json.load(open('.cursor/stack-selection.json')).get('stack','dotnet-wpf'))" 2>/dev/null || echo dotnet-wpf)"
 fi
 
-echo "=== Pre-release gate (stack=$STACK) ==="
+echo "=== Pre-release gate (stack=$STACK local=$LOCAL) ==="
 
 if ! bash scripts/feature-gate.sh --stack "$STACK" --strict --json; then
   echo "FAIL: feature-gate.sh"
@@ -22,15 +30,17 @@ else
   echo "OK   feature-gate.sh passed"
 fi
 
-if [ -f scripts/check-security-triage.sh ]; then
-  if ! bash scripts/check-security-triage.sh --wait-ci 300 --strict; then
-    echo "FAIL: check-security-triage.sh --strict"
-    ERRORS=$((ERRORS + 1))
+if [ "$LOCAL" = false ]; then
+  if [ -f scripts/check-security-triage.sh ]; then
+    if ! bash scripts/check-security-triage.sh --wait-ci 300 --strict; then
+      echo "FAIL: check-security-triage.sh --strict"
+      ERRORS=$((ERRORS + 1))
+    else
+      echo "OK   check-security-triage.sh --strict passed"
+    fi
   else
-    echo "OK   check-security-triage.sh --strict passed"
+    echo "WARN: check-security-triage.sh not found — run manual CVE triage per docs/SECURITY_TRIAGE.md"
   fi
-else
-  echo "WARN: check-security-triage.sh not found — run manual CVE triage per docs/SECURITY_TRIAGE.md"
 fi
 
 if [ ! -f .template-version ]; then

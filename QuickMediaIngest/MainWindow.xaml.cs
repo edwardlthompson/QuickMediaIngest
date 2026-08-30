@@ -210,6 +210,12 @@ namespace QuickMediaIngest
             {
                 // Ignore platforms where live regions are unavailable.
             }
+
+            WindowRefresh.TryApply(this);
+            if (DataContext is MainViewModel loadedVm)
+            {
+                loadedVm.OfferPendingCrashReview();
+            }
         }
 
         public void ApplyWindowStateFromViewModel()

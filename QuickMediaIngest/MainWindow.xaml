@@ -753,6 +753,7 @@
         <controls:ImportHistoryOverlayView x:Name="ImportHistoryOverlayViewControl" />
         <!-- Settings: root-level overlay so VisualBrush blur matches other modals (not a child of MainChromeRoot) -->
         <controls:PreferencesOverlayView x:Name="PreferencesOverlayViewControl" />
+        <controls:FeedbackOverlayView x:Name="FeedbackOverlayViewControl" />
 
         <!-- Scan exclusions: root-level overlay (same blur as other modals) -->
         <controls:ScanExclusionsOverlayView x:Name="ScanExclusionsOverlayViewControl" />

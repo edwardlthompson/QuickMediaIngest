@@ -46,6 +46,22 @@ namespace QuickMediaIngest.Thumbnails.Wpf
 
             if (!isVideo)
             {
+                if (isRaw && TryGetSiblingRenderedPath(filePath, out string siblingRenderedPath))
+                {
+                    try
+                    {
+                        DecodedThumbnail? siblingThumb = GetThumbnail(siblingRenderedPath, hints);
+                        if (siblingThumb != null)
+                        {
+                            return siblingThumb;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback to direct RAW decode
+                    }
+                }
+
                 try
                 {
                     DecodedThumbnail? vipsThumb = VipsThumbnailDecoder.TryGetThumbnail(filePath, isRaw ? 320 : 240, _logger);

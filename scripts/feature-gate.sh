@@ -161,14 +161,21 @@ fi
 GATES_PASSED+=("file-limits")
 
 if should_run dotnet-wpf && [ -f QuickMediaIngest-1.sln ]; then
+  DOTNET_BIN="dotnet"
   if ! command -v dotnet >/dev/null 2>&1; then
-    block_env "dotnet SDK not found; install .NET 8 SDK"
+    if command -v dotnet.exe >/dev/null 2>&1; then
+      DOTNET_BIN="dotnet.exe"
+    elif [ -x "/mnt/c/Program Files/dotnet/dotnet.exe" ]; then
+      DOTNET_BIN="/mnt/c/Program Files/dotnet/dotnet.exe"
+    else
+      block_env "dotnet SDK not found; install .NET 8 SDK"
+    fi
   fi
-  run_cmd dotnet-restore dotnet restore QuickMediaIngest-1.sln
-  run_cmd dotnet-build dotnet build QuickMediaIngest-1.sln -c Release --no-restore
-  run_cmd dotnet-test dotnet test QuickMediaIngest-1.sln -c Release --no-build --verbosity minimal
-  run_cmd dotnet-format dotnet format QuickMediaIngest-1.sln --verify-no-changes
-  run_cmd dotnet-vulnerable dotnet list QuickMediaIngest-1.sln package --vulnerable --include-transitive
+  run_cmd dotnet-restore "$DOTNET_BIN" restore QuickMediaIngest-1.sln
+  run_cmd dotnet-build "$DOTNET_BIN" build QuickMediaIngest-1.sln -c Release --no-restore
+  run_cmd dotnet-test "$DOTNET_BIN" test QuickMediaIngest-1.sln -c Release --no-build --verbosity minimal
+  run_cmd dotnet-format "$DOTNET_BIN" format QuickMediaIngest-1.sln --verify-no-changes
+  run_cmd dotnet-vulnerable "$DOTNET_BIN" list QuickMediaIngest-1.sln package --vulnerable --include-transitive
   if [ -f scripts/check-license-compliance.sh ]; then
     run_cmd license bash scripts/check-license-compliance.sh
   fi

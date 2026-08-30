@@ -4,7 +4,7 @@
 
 ## What is this?
 
-**Quick Media Ingest** is a FOSS .NET 8 WPF desktop app for ingesting photos and videos from SD cards, local drives, and FTP into dated shoot-based folders. This repo was bootstrapped from [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) (process aligned to template **v0.16.0**; see `docs/BOOTSTRAP_ALIGNMENT.md`).
+**Quick Media Ingest** is a FOSS .NET 8 WPF desktop app for ingesting photos and videos from SD cards, local drives, and FTP into dated shoot-based folders. This repo was bootstrapped from [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) (process aligned to template **v1.0.0**; see `docs/BOOTSTRAP_ALIGNMENT.md`).
 
 ## Which mode are you in?
 

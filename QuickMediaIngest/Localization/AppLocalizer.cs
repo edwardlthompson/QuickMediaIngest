@@ -35,6 +35,19 @@ namespace QuickMediaIngest.Localization
             }
         }
 
+        public static event System.EventHandler? CultureChanged;
+
+        public static void SetCulture(string? cultureCode)
+        {
+            var culture = string.IsNullOrWhiteSpace(cultureCode)
+                ? CultureInfo.InstalledUICulture
+                : new CultureInfo(cultureCode);
+
+            CultureInfo.CurrentUICulture = culture;
+            CultureInfo.CurrentCulture = culture;
+            CultureChanged?.Invoke(null, System.EventArgs.Empty);
+        }
+
         public static string Format(string key, params object?[] args) =>
             string.Format(CultureInfo.CurrentUICulture, Get(key), args);
     }

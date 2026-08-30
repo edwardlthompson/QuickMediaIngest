@@ -66,5 +66,49 @@ namespace QuickMediaIngest.Core
 
             return groups;
         }
+
+        /// <summary>
+        /// Splits a group into two groups at the specified item index.
+        /// </summary>
+        public static (ItemGroup primary, ItemGroup secondary) SplitGroup(ItemGroup group, int splitIndex, string secondaryTitle)
+        {
+            if (group == null || group.Items.Count <= 1 || splitIndex <= 0 || splitIndex >= group.Items.Count)
+            {
+                throw new ArgumentException("Invalid split index or group size.");
+            }
+
+            var secondaryItems = group.Items.Skip(splitIndex).ToList();
+            group.Items = group.Items.Take(splitIndex).ToList();
+            group.StartDate = group.Items.Min(i => i.DateTaken);
+            group.EndDate = group.Items.Max(i => i.DateTaken);
+
+            var secondaryGroup = new ItemGroup
+            {
+                Title = secondaryTitle,
+                StartDate = secondaryItems.Min(i => i.DateTaken),
+                EndDate = secondaryItems.Max(i => i.DateTaken),
+                Items = secondaryItems
+            };
+
+            return (group, secondaryGroup);
+        }
+
+        /// <summary>
+        /// Merges two item groups into a single combined item group.
+        /// </summary>
+        public static ItemGroup MergeGroups(ItemGroup targetGroup, ItemGroup sourceGroup)
+        {
+            if (targetGroup == null || sourceGroup == null)
+            {
+                throw new ArgumentNullException(nameof(targetGroup));
+            }
+
+            targetGroup.Items.AddRange(sourceGroup.Items);
+            targetGroup.Items = targetGroup.Items.OrderBy(i => i.DateTaken).ToList();
+            targetGroup.StartDate = targetGroup.Items.Min(i => i.DateTaken);
+            targetGroup.EndDate = targetGroup.Items.Max(i => i.DateTaken);
+
+            return targetGroup;
+        }
     }
 }

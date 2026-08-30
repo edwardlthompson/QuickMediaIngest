@@ -3,9 +3,13 @@
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 > Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.27 · **Template:** v0.16.0 · **Tests:** 252 (Release)
+**Release:** v1.3.27 · **Template:** v1.0.0 · **Tests:** 360 (Release)
 
-> **Bootstrap alignment 0.11 → 0.16.0** (process); 0.11 → 0.15.1 archive in COMPLETED_TASKS.md; 0.16.0 cherry-pick in `docs/BOOTSTRAP_ALIGNMENT.md`.
+> **Bootstrap alignment 0.11 → 1.0.0** (process); 0.16.0 and earlier archives in COMPLETED_TASKS.md / `docs/BOOTSTRAP_ALIGNMENT.md`.
+>
+> **Ongoing Maintenance and Feature Backlog (I-02 to I-80)** archived in COMPLETED_TASKS.md.
+>
+> **Golden Path catch-up and Sequential hybrid ADB** archived in COMPLETED_TASKS.md.
 >
 > **Release v1.3.27** donate + filename-version updates archived in COMPLETED_TASKS.md.
 >
@@ -34,27 +38,31 @@ Format: `🔲 [OWNER] Description`
 
 ## Sequential lane
 
-✅ `[AGENT]` FTP vault migrate on DHCP host change + reconnect/test success logs + listing KeepAlive=false
-✅ `[AGENT]` Skip Android `.trashed-*` / trash dirs; restore FTP thumbnail limit defaults (48)
-✅ `[AGENT]` Hybrid FTP browse / ADB pull import with media-root preflight + PreferAdb setting
-✅ `[AGENT]` Seamless hybrid ADB scan+thumbs; HEIF normalize; 550 fail-fast; safe Magick/glitch reject; Unified scan dedupe
-✅ `[AGENT]` PreferAdb polish: sibling FileExists gate; quiet 550 cache logs; ADB find+stat sizes; reconnect auto-select Unified
-✅ `[AGENT]` Thumb limit on Unified/FTP; ADB vs FTP transport Info logs; cap thumb RETR parallelism=3; find+stat `|` fix
-✅ `[AGENT]` Fix ADB dd quoting (sh -c) + media magic gate; no Magick on capped HEIC; Dispatcher group rebuild
-✅ `[AGENT]` HEIC 12MB ADB pull + CompleteFile ADB; video full download; Unified sibling thumbs
-🔲 `[HUMAN]` Live OP13 smoke: PreferAdb browse/previews/transfer (USB debugging)
+> **Sequential hybrid ADB & Live OP13 Smoke** archived in COMPLETED_TASKS.md.
+
+---
+
+## Golden Path catch-up (named 1–8)
+
+> **Golden Path 1–8 (including docs/spec.md & docs/plan.md)** archived in COMPLETED_TASKS.md.
+
+---
+
+## Ongoing Maintenance
+
+> **Ongoing Maintenance and Feature Backlog (I-02 to I-80)** archived in `COMPLETED_TASKS.md` @ `2026-08-30`.
 
 ---
 
 ## Parallel lane
 
-_(none)_
+_(none — Sequential Golden Path rows first; `/scope` only after a feature’s public API is locked)_
 
 ---
 
 ## Human & device (after automation)
 
-🔲 `[HUMAN]` WPF UI sign-off via `.\scripts\run-human-signoffs.ps1` when shipping product changes
+_(none — automated sign-off suite archived in COMPLETED_TASKS.md)_
 
 ---
 
@@ -80,6 +88,8 @@ $env:QMI_ALLOW_PUSH='1'; .\scripts\run-human-signoffs.ps1 -Push -WaitCi 300
 
 | Sprint | Location |
 |--------|----------|
+| Ongoing Maintenance and Feature Backlog | `COMPLETED_TASKS.md` § Ongoing Maintenance and Feature Backlog (2026-08-30) |
+| Golden Path catch-up and Sequential hybrid ADB | `COMPLETED_TASKS.md` § Golden Path catch-up and Sequential hybrid ADB |
 | Donate + filename-version updates | `COMPLETED_TASKS.md` § Donate and filename-version updates |
 | Bootstrap alignment 0.15.1 | `COMPLETED_TASKS.md` § Bootstrap alignment 0.11 → 0.15.1 |
 | AUTO-SBOM | `COMPLETED_TASKS.md` § AUTO-SBOM |

@@ -144,6 +144,17 @@
   <data name="About_Diagnostics" xml:space="preserve"><value>Diagnóstico</value></data>
   <data name="About_OpenLogsFolder" xml:space="preserve"><value>Abrir carpeta de registros</value></data>
   <data name="About_ReportBug" xml:space="preserve"><value>Reportar un error</value></data>
+  <data name="About_RequestFeature" xml:space="preserve"><value>Pedir una función</value></data>
+  <data name="Settings_SaveCrashDetails" xml:space="preserve"><value>Guardar detalles del fallo para revisarlos</value></data>
+  <data name="Settings_SaveCrashDetailsHint" xml:space="preserve"><value>Desactivado por defecto. Si está activo, se guarda como máximo un fallo saneado en el equipo. No se envía nada automáticamente.</value></data>
+  <data name="Feedback_BugTitle" xml:space="preserve"><value>Informar de un error</value></data>
+  <data name="Feedback_FeatureTitle" xml:space="preserve"><value>Pedir una función</value></data>
+  <data name="Feedback_CrashTitle" xml:space="preserve"><value>Revisar el fallo capturado</value></data>
+  <data name="Feedback_Preview" xml:space="preserve"><value>Vista previa</value></data>
+  <data name="Feedback_Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="Feedback_OpenGitHub" xml:space="preserve"><value>Abrir GitHub</value></data>
+  <data name="Feedback_Discard" xml:space="preserve"><value>Descartar</value></data>
+  <data name="Feedback_NeedDescription" xml:space="preserve"><value>Añade una descripción o un seguimiento para activar Abrir GitHub.</value></data>
   <data name="About_Changelog" xml:space="preserve"><value>Registro de cambios</value></data>
   <data name="About_Releases" xml:space="preserve"><value>Lanzamientos</value></data>
   <data name="About_DonateVenmo" xml:space="preserve"><value>Donar por Venmo</value></data>

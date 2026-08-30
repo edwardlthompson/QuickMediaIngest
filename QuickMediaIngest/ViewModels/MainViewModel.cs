@@ -93,6 +93,7 @@ namespace QuickMediaIngest.ViewModels
         private readonly object _importQueueLock = new();
         private readonly HashSet<string> _selectedDriveDeviceIds = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<string>> _skippedFoldersBySource = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _namingTemplateBySource = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _driveDeviceIdByPath = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _drivePathByDeviceId = new(StringComparer.OrdinalIgnoreCase);
         // Sidebar sections for expandable menu
@@ -328,6 +329,8 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool hasUnifiedFtpListingFailures;
         [ObservableProperty] private bool hasLastFtpReconnectFailure;
         [ObservableProperty] private bool showPostDeleteRecoveryBanner;
+        [ObservableProperty] private bool hasPendingImportPlan;
+        [ObservableProperty] private string pendingImportPlanDetails = string.Empty;
 
         [ObservableProperty] private bool deleteAfterImport = false;
         /// <summary>After the user responds once to the delete-after-import safety prompt (OK or Cancel), do not show it again.</summary>
@@ -370,6 +373,9 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private bool groupRawAndRenderedPairs = false;
         [ObservableProperty] private string uiLanguage = string.Empty;
         [ObservableProperty] private bool embedKeywordsOnImport = false;
+        [ObservableProperty] private bool stripGpsAndPiiOnEmbed = false;
+        [ObservableProperty] private bool ejectAfterImport = false;
+        [ObservableProperty] private bool isDryRunImport = false;
         [ObservableProperty] private bool confirmBeforeImport = false;
         /// <summary>When true, sidebar shows the narrow icon rail (persisted).</summary>
         [ObservableProperty] private bool sidebarCollapsed = false;

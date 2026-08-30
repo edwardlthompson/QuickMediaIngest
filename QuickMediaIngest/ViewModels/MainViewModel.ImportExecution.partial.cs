@@ -101,6 +101,8 @@ namespace QuickMediaIngest.ViewModels
                 VerificationMode = verification,
                 ApplyImportKeywords = applyKeywords,
                 ImportKeywords = applyKeywords ? keywords : null,
+                StripGpsAndPii = StripGpsAndPiiOnEmbed,
+                IsDryRun = IsDryRunImport,
                 MaxConcurrentFileCopies = maxCopy,
                 DelayBetweenFilesMilliseconds = delayMs,
                 ByteProgressTracker = _importByteProgressTracker,
@@ -216,10 +218,17 @@ namespace QuickMediaIngest.ViewModels
             var engine = _ingestEngineFactory.Create(provider);
             WireIngestEngineProgress(engine);
 
+            string effectiveNamingTemplate = NamingTemplate;
+            string? sourceKey = SelectedSource?.ToString();
+            if (!string.IsNullOrEmpty(sourceKey) && _namingTemplateBySource.TryGetValue(sourceKey, out string? customTemplate) && !string.IsNullOrWhiteSpace(customTemplate))
+            {
+                effectiveNamingTemplate = customTemplate;
+            }
+
             await engine.IngestGroupAsync(
                 subsetGroup,
                 DestinationRoot,
-                NamingTemplate,
+                effectiveNamingTemplate,
                 cancellationToken,
                 CreateIngestOptions(group, provider),
                 DeleteAfterImport);

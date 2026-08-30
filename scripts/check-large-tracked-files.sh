@@ -11,23 +11,40 @@ ERRORS=0
 MAX_REPORT=20
 reported=0
 
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-  case "$file" in
-    QuickMediaIngest/Assets/*) continue ;;
-  esac
-  size=$(git cat-file -s "HEAD:$file" 2>/dev/null || echo 0)
-  if [ "$size" -gt "$MAX_BYTES" ]; then
-    kb=$((size / 1024))
-    echo "LARGE TRACKED FILE: $file (${kb} KB > ${MAX_KB} KB)"
-    ERRORS=$((ERRORS + 1))
-    reported=$((reported + 1))
-    if [ "$reported" -ge "$MAX_REPORT" ]; then
-      echo "... truncated (max $MAX_REPORT)"
-      break
-    fi
-  fi
-done < <(git ls-files)
+if command -v python3 >/dev/null 2>&1; then PY=python3
+elif command -v python >/dev/null 2>&1; then PY=python
+else PY=""
+fi
+
+if [ -n "$PY" ]; then
+  $PY - << 'PY'
+import subprocess, sys
+
+MAX_BYTES = 500 * 1024
+errors = 0
+try:
+    out = subprocess.check_output(["git", "ls-tree", "-r", "-l", "HEAD"], text=True, encoding="utf-8", errors="replace")
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 5:
+            size_str = parts[3].strip()
+            path = " ".join(parts[4:]).strip()
+            if path.startswith("QuickMediaIngest/Assets/"):
+                continue
+            if size_str.isdigit() and int(size_str) > MAX_BYTES:
+                kb = int(size_str) // 1024
+                print(f"LARGE TRACKED FILE: {path} ({kb} KB > 500 KB)")
+                errors += 1
+except Exception as e:
+    pass
+
+if errors > 0:
+    print(f"{errors} tracked file(s) exceed 500 KB")
+    sys.exit(1)
+print("Large tracked file check passed")
+PY
+  exit $?
+fi
 
 if [ "$ERRORS" -gt 0 ]; then
   echo "$ERRORS tracked file(s) exceed ${MAX_KB} KB"

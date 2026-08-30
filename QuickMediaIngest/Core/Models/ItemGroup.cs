@@ -84,6 +84,21 @@ namespace QuickMediaIngest.Core.Models
         }
 
         /// <summary>
+        /// Indicates the underlying transport method for items in this shoot (e.g. Local, FTP, ADB).
+        /// </summary>
+        public string TransportDisplay
+        {
+            get
+            {
+                if (Items.Count == 0) return "Local";
+                if (Items.All(i => i.IsFtpSource)) return "FTP";
+                if (Items.Any(i => i.SourcePath.StartsWith("adb://", StringComparison.OrdinalIgnoreCase) || i.SourceId.StartsWith("adb:", StringComparison.OrdinalIgnoreCase))) return "ADB";
+                if (Items.Any(i => i.IsFtpSource)) return "Hybrid (FTP/Local)";
+                return "Local";
+            }
+        }
+
+        /// <summary>
         /// The total size (in bytes) of all selected items in the group.
         /// </summary>
         public long TotalSize => Items.FindAll(i => i.IsSelected).ConvertAll(i => i.FileSize).Sum();

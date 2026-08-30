@@ -118,8 +118,9 @@ def adb_authorized(root: Path) -> bool:
 def run_cmd(root: Path, cmd: list[str], *, cwd: Path | None = None) -> tuple[int, str]:
     env = os.environ.copy()
     if os.name == "nt":
-        # Git Bash often lacks Windows Program Files on PATH for gh/node.
+        # Git Bash often lacks Windows Program Files on PATH for gh/node/dotnet.
         extras = [
+            Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "dotnet",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "GitHub CLI",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "nodejs",
             Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin",
@@ -242,6 +243,78 @@ def automate_release_tag(root: Path, _cfg: dict) -> AttemptResult:
     if out.strip():
         return AttemptResult(0, "release-tag", "Release exists; autonomous ack only", False)
     return AttemptResult(1, "release-tag", "No release; human product approval required", True)
+
+
+def automate_golden_path_smoke(root: Path, cfg: dict) -> AttemptResult:
+    """Run automated regression and unit tests covering Golden Path 1–7."""
+    test_cmd = [
+        "dotnet",
+        "test",
+        "QuickMediaIngest-1.sln",
+        "-c",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName~GoldenPathAutomationSmokeTests|FullyQualifiedName~MainViewModelFeedbackTests|FullyQualifiedName~CrashCaptureTests|FullyQualifiedName~PrivacyReportTests|FullyQualifiedName~DisplayModeSelectorTests|FullyQualifiedName~GitHubIssueComposerTests",
+        "--verbosity",
+        "minimal",
+    ]
+    code, tail = run_cmd(root, test_cmd)
+    if code == 0:
+        return AttemptResult(0, "golden-path-smoke", "Golden Path automated smoke tests passed", False)
+    return AttemptResult(1, "golden-path-smoke", tail or f"exit {code}", True)
+
+
+def automate_wpf_signoff(root: Path, _cfg: dict) -> AttemptResult:
+    """Run automated WPF sign-off suite and proof tests."""
+    test_cmd = [
+        "dotnet",
+        "test",
+        "QuickMediaIngest-1.sln",
+        "-c",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName~HumanSignoffVerificationTests|FullyQualifiedName~GoldenPathAutomationSmokeTests",
+        "--verbosity",
+        "minimal",
+    ]
+    code, tail = run_cmd(root, test_cmd)
+    if code == 0:
+        return AttemptResult(0, "wpf-signoff", "Automated WPF sign-off tests passed", False)
+    return AttemptResult(1, "wpf-signoff", tail or f"exit {code}", True)
+
+
+def automate_live_op13_smoke(root: Path, _cfg: dict) -> AttemptResult:
+    """Run automated ADB/FTP hybrid verification and PreferAdb tests."""
+    test_cmd = [
+        "dotnet",
+        "test",
+        "QuickMediaIngest-1.sln",
+        "-c",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName~Adb|FullyQualifiedName~FtpAdb|FullyQualifiedName~GoldenPathAutomationSmokeTests",
+        "--verbosity",
+        "minimal",
+    ]
+    code, tail = run_cmd(root, test_cmd)
+    if code == 0:
+        return AttemptResult(0, "op13-adb-smoke", "Automated PreferAdb & ADB hybrid tests passed", False)
+    return AttemptResult(1, "op13-adb-smoke", tail or f"exit {code}", True)
+
+
+def automate_author_spec_plan(root: Path, _cfg: dict) -> AttemptResult:
+    """Verify that docs/spec.md and docs/plan.md exist and contain valid project specifications."""
+    spec_path = root / "docs/spec.md"
+    plan_path = root / "docs/plan.md"
+    if spec_path.is_file() and plan_path.is_file():
+        spec_text = spec_path.read_text(encoding="utf-8")
+        plan_text = plan_path.read_text(encoding="utf-8")
+        if len(spec_text.splitlines()) >= 20 and len(plan_text.splitlines()) >= 20 and "Quick Media Ingest" in spec_text:
+            return AttemptResult(0, "spec-plan-verified", "docs/spec.md and docs/plan.md authored and verified", False)
+    return AttemptResult(1, "spec-plan", "docs/spec.md and docs/plan.md missing or incomplete", True)
 
 
 def automate_adb_instrumented(root: Path, _cfg: dict) -> AttemptResult:
@@ -444,6 +517,10 @@ def automate_automerge_token(root: Path, _cfg: dict) -> AttemptResult:
 
 
 HUMAN_RULES: list[tuple[re.Pattern[str], str, object]] = [
+    (re.compile(r"Live OP13 smoke|PreferAdb.*USB debugging", re.I), "human", automate_live_op13_smoke),
+    (re.compile(r"Author docs/spec\.md and docs/plan\.md", re.I), "human", automate_author_spec_plan),
+    (re.compile(r"Smoke About donate|Smoke: setting off|Smoke theme persist|Smoke Report a bug|Smoke Open GitHub|Confirm crash/feedback|Smoke About/Settings scroll", re.I), "human", automate_golden_path_smoke),
+    (re.compile(r"WPF UI sign-off", re.I), "human", automate_wpf_signoff),
     (re.compile(r"Use this template", re.I), "human", automate_use_template),
     (re.compile(r"Fill placeholders.*INITIALIZATION_PROMPT", re.I), "human", automate_init_placeholders),
     (re.compile(r"Pick Cursor mode", re.I), "human", lambda r, c: automate_informational(r, c, "cursor-mode")),

@@ -2,6 +2,85 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-08-30 — I-09 OpenSSF Scorecard Workflow Exception
+
+**Status:** Accepted
+**Context:** Row I-09 in BUILD_PLAN requires OpenSSF Scorecard workflow review.
+
+**Decision:**
+- `.github/workflows/scorecard.yml` is configured with minimal read-all at workflow level, scoped write permissions for security-events and id-token, and uses official `ossf/scorecard-action@v2.4.3`.
+- Any repository-level Scorecard score variances (e.g. branch protection rules, code review enforcement) are managed via GitHub repository settings and require repository admin rights (`[HUMAN]`), while workflow definition is validated green and compliant with OpenSSF guidelines.
+
+**Validation:** Workflow syntax verified against OpenSSF Scorecard action standards; `check-scorecard-sarif.sh` and local gates pass.
+
+---
+## 2026-08-30 — I-01 Magick.NET 14.16.0
+
+**Status:** Accepted
+**Context:** `/build` next row I-01. CI had NU1901/NU1902 on 14.14.0; CVE-2026-64685 fixed in 14.15.0+.
+
+**Decision:** Bump `Magick.NET-Q16-AnyCPU` to 14.16.0 (app, tests lockfile, DngProbe). Add assembly-version floor test. Do not copy `examples/`.
+
+**Validation:** `dotnet restore --force-evaluate -p:EnableWindowsTargeting=true` on Linux; Windows CI `dotnet test` for Magick decode tests.
+
+---
+## 2026-08-30 — `/allideas` board fill (I-01..I-80)
+
+**Status:** Accepted
+**Context:** User said add all ideas to the build plan (board only).
+
+**Decision:**
+- Add 80 `[AGENT]` rows I-01..I-80 under `## Ongoing Maintenance` (parseable `- 🔲 [AGENT]`).
+- Skip leftovers already on the board: OP13 smoke, GP AUTO/HUMAN, GP-8 Sacred spec/plan, WPF UI sign-off.
+- Do not implement. Do not create `docs/spec.md` or `docs/plan.md`. I-75 is a HUMAN checklist only.
+
+**Validation:** Board-only; `validate-bootstrap.sh --quick` still applies to markdown tables.
+
+---
+## 2026-08-30 — `/build` Golden Path 1–8 implementation
+
+**Status:** Accepted
+**Context:** User invoked `/build 1-8`. Status parser did not see backtick GP rows; execute anyway. Linux agent has no .NET 8 / WPF.
+
+**Decision:**
+- Port catalog specs into existing QMI folders. Never copy `examples/`.
+- Order: privacy-report → github-feedback → crash-capture → settings toggle → feedback UI → About Request-a-feature → display-refresh vote (no `ChangeDisplaySettings`).
+- Crash persist is opt-in (`SaveCrashDetails` default false). Existing `fatal.log` / `crash_*.log` stay but are sanitized.
+- GP-8 Sacred: do not create `docs/spec.md` or `docs/plan.md`. Backlog HUMAN smoke + spec authoring.
+- Mark AGENT GP-1..7 done after implementation. Leave AUTO feature-gate open (environment block). Do not archive.
+
+**Validation:** `validate-bootstrap.sh --quick`. `feature-gate.sh --stack dotnet-wpf` expected exit 2 on this Linux VM.
+
+---
+## 2026-08-30 — Golden Path BUILD_PLAN rows 1–8
+
+**Status:** Accepted
+**Context:** After the v1.0.0 catch-up, the human named items 1–8 (not “do all”) to add board rows only.
+
+**Decision:**
+- Add Sequential Golden Path rows GP-1..GP-7 as one later `/feature` each; GP-8 is `[HUMAN]` Sacred `docs/spec.md` + `docs/plan.md`.
+- Do not implement slices in this change. Do not copy `examples/` over the WPF app.
+- About (1) and Settings (3) are align-existing; crash/feedback/github-feedback/privacy/display-refresh are new WPF ports of catalog specs.
+
+**Validation:** Board-only edit; `validate-bootstrap.sh --quick` still applies to process files.
+
+---
+## 2026-08-30 — Template catch-up to agent-project-bootstrap v1.0.0
+
+**Status:** Accepted
+**Context:** Child repo was at process `0.16.0`; upstream latest release is `v1.0.0`. Goal: gain `/upgrade` and current Golden Path gate machinery without overwriting the WPF product.
+
+**Decision:**
+- Copy Canon (commands, rules, help docs, new template scripts, schemas, example stubs).
+- Merge Mixed (`bootstrap.config.json`, `.gitignore`, `.env.example`, `TEMPLATE_INDEX.json`, `PROJECT_CHECKLIST.md`, `validate-bootstrap.sh`).
+- Leave Sacred untouched (`AGENTS.md`, `docs/INITIALIZATION_PROMPT.md`, LICENSE, product app). Do not create `docs/spec.md` / `docs/plan.md` from the template stub.
+- Keep child-only scripts and WPF file-limit / feature-gate / license checks.
+- Do not add release-please, Pages, or copy `examples/` over the app.
+- Stamp `branding/product.json` as `mode: product` with Quick Media Ingest identity.
+
+**Validation:** `validate-bootstrap.sh --quick`; `feature-gate.sh --stack dotnet-wpf`.
+
+---
 ## 2026-08-21 — Donate + filename-version updates (v1.3.27)
 
 **Status:** Accepted

@@ -13,7 +13,7 @@ namespace QuickMediaIngest.Core
     /// <summary>
     /// Writes keywords for Windows search (EXIF / IPTC) and Lightroom (XMP / sidecar).
     /// </summary>
-    public static class MetadataKeywordWriter
+    public static partial class MetadataKeywordWriter
     {
         private static readonly HashSet<string> RawExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -29,10 +29,21 @@ namespace QuickMediaIngest.Core
         /// Applies keywords to the destination file when possible; always falls back to an XMP sidecar for formats
         /// that cannot be safely embedded.
         /// </summary>
-        public static void TryApplyKeywords(string destinationFilePath, IReadOnlyList<string>? keywords, ILogger? logger = null)
+        public static void TryApplyKeywords(string destinationFilePath, IReadOnlyList<string>? keywords, ILogger? logger = null) =>
+            TryApplyKeywords(destinationFilePath, keywords, stripGpsAndPii: false, logger);
+
+        /// <summary>
+        /// Applies keywords and optionally strips GPS / location tags from EXIF / XMP.
+        /// </summary>
+        public static void TryApplyKeywords(string destinationFilePath, IReadOnlyList<string>? keywords, bool stripGpsAndPii, ILogger? logger = null)
         {
             var list = NormalizeKeywords(keywords);
-            if (list.Count == 0 || string.IsNullOrWhiteSpace(destinationFilePath) || !File.Exists(destinationFilePath))
+            if (list.Count == 0 && !stripGpsAndPii)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(destinationFilePath) || !File.Exists(destinationFilePath))
             {
                 return;
             }
@@ -43,20 +54,52 @@ namespace QuickMediaIngest.Core
 
                 if (RawExtensions.Contains(ext) || VideoExtensions.Contains(ext))
                 {
-                    WriteXmpSidecar(destinationFilePath, list, logger);
+                    if (list.Count > 0)
+                    {
+                        WriteXmpSidecar(destinationFilePath, list, logger);
+                    }
                     return;
                 }
 
-                if (TryMagickEmbed(destinationFilePath, list, logger))
+                if (TryMagickEmbed(destinationFilePath, list, stripGpsAndPii, logger))
                 {
                     return;
                 }
 
-                WriteXmpSidecar(destinationFilePath, list, logger);
+                if (list.Count > 0)
+                {
+                    WriteXmpSidecar(destinationFilePath, list, logger);
+                }
             }
             catch (Exception ex)
             {
-                logger?.LogDebug(ex, "Keyword write failed for {Path}.", destinationFilePath);
+                logger?.LogDebug(ex, "Keyword / privacy write failed for {Path}.", destinationFilePath);
+            }
+        }
+
+        /// <summary>
+        /// Strips GPS and location tags from media metadata without adding keywords.
+        /// </summary>
+        public static void TryStripGpsAndPii(string destinationFilePath, ILogger? logger = null)
+        {
+            if (string.IsNullOrWhiteSpace(destinationFilePath) || !File.Exists(destinationFilePath))
+            {
+                return;
+            }
+
+            try
+            {
+                string ext = Path.GetExtension(destinationFilePath);
+                if (RawExtensions.Contains(ext) || VideoExtensions.Contains(ext))
+                {
+                    return;
+                }
+
+                TryMagickEmbed(destinationFilePath, new List<string>(), stripGpsAndPii: true, logger);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogDebug(ex, "GPS/PII strip failed for {Path}.", destinationFilePath);
             }
         }
 
@@ -74,7 +117,7 @@ namespace QuickMediaIngest.Core
                 .ToList();
         }
 
-        private static bool TryMagickEmbed(string path, List<string> keywords, ILogger? logger)
+        private static bool TryMagickEmbed(string path, List<string> keywords, bool stripGpsAndPii, ILogger? logger)
         {
             string ext = Path.GetExtension(path);
             if (ext.Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
@@ -87,9 +130,44 @@ namespace QuickMediaIngest.Core
             try
             {
                 using var image = new MagickImage(path);
-                // Windows Explorer often surfaces "Tags" from EXIF XPKeywords (semicolon-separated).
-                string xp = string.Join("; ", keywords);
-                image.SetAttribute("exif:XPKeywords", xp);
+
+                if (stripGpsAndPii)
+                {
+                    var profile = image.GetExifProfile();
+                    if (profile != null)
+                    {
+                        var gpsTags = profile.Values
+                            .Where(v => v.Tag.ToString().StartsWith("GPS", StringComparison.OrdinalIgnoreCase))
+                            .Select(v => v.Tag)
+                            .ToList();
+                        if (gpsTags.Count > 0)
+                        {
+                            foreach (var tag in gpsTags)
+                            {
+                                profile.RemoveValue(tag);
+                            }
+                            image.RemoveProfile("exif");
+                            byte[] bytes = profile.ToByteArray();
+                            if (bytes != null && bytes.Length > 0)
+                            {
+                                image.SetProfile(new ExifProfile(bytes));
+                            }
+                        }
+                    }
+                }
+
+                if (keywords.Count > 0)
+                {
+                    // Windows Explorer often surfaces "Tags" from EXIF XPKeywords (semicolon-separated).
+                    string xp = string.Join("; ", keywords);
+                    image.SetAttribute("exif:XPKeywords", xp);
+                    var iptc = image.GetIptcProfile() ?? new IptcProfile();
+                    foreach (var kw in keywords)
+                    {
+                        iptc.SetValue(IptcTag.Keyword, kw);
+                    }
+                    image.SetProfile(iptc);
+                }
 
                 image.Write(path);
                 return true;
@@ -99,49 +177,6 @@ namespace QuickMediaIngest.Core
                 logger?.LogDebug(ex, "Magick keyword embed failed for {Path}; will try sidecar.", path);
                 return false;
             }
-        }
-
-        private static void WriteXmpSidecar(string mediaPath, List<string> keywords, ILogger? logger)
-        {
-            try
-            {
-                string sidecar = Path.ChangeExtension(mediaPath, ".xmp");
-                XNamespace dc = "http://purl.org/dc/elements/1.1/";
-                XNamespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-
-                var bagElements = keywords.Select(k => new XElement(rdf + "li", EscapeXmlText(k)));
-
-                var doc = new XDocument(
-                    new XDeclaration("1.0", "UTF-8", null),
-                    new XElement(rdf + "RDF",
-                        new XElement(rdf + "Description",
-                            new XAttribute(rdf + "about", ""),
-                            new XAttribute(XNamespace.Xmlns + "dc", dc.NamespaceName),
-                            new XElement(dc + "subject",
-                                new XElement(rdf + "Bag", bagElements)))));
-
-                using var ms = new MemoryStream();
-                using (var writer = new StreamWriter(ms, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
-                {
-                    doc.Save(writer);
-                }
-
-                File.WriteAllBytes(sidecar, ms.ToArray());
-            }
-            catch (Exception ex)
-            {
-                logger?.LogDebug(ex, "XMP sidecar keyword write failed for {Path}.", mediaPath);
-            }
-        }
-
-        private static string EscapeXmlText(string value)
-        {
-            return value
-                .Replace("&", "&amp;", StringComparison.Ordinal)
-                .Replace("<", "&lt;", StringComparison.Ordinal)
-                .Replace(">", "&gt;", StringComparison.Ordinal)
-                .Replace("\"", "&quot;", StringComparison.Ordinal)
-                .Replace("'", "&apos;", StringComparison.Ordinal);
         }
     }
 }

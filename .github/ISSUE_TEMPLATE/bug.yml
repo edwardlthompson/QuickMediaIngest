@@ -1,0 +1,28 @@
+name: Bug Report
+description: File a bug report or error log for Quick Media Ingest
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for filing an issue to help improve Quick Media Ingest!
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What were you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, camera format, and Quick Media Ingest version.
+    validations:
+      required: false

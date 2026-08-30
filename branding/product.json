@@ -1,0 +1,38 @@
+{
+  "mode": "product",
+  "name": "Quick Media Ingest",
+  "short_name": "QMI",
+  "tagline": "Ingest photos and videos into dated, shoot-based folders",
+  "pitch": "Quick Media Ingest is a FOSS .NET 8 WPF desktop app for photographers and videographers. It imports photos and videos from SD cards, local drives, and FTP into dated shoot-based destination folders with configurable naming, metadata options, and safety checks.",
+  "features": [
+    "SD card, local drive, and FTP ingest with Unified source view",
+    "Dated shoot-based folders with configurable file naming",
+    "Duplicate policies, verification, and delete-after-import safety",
+    "Material Design dark/light theme with RAW-aware thumbnails",
+    "Portable EXE and WiX MSI via GitHub Releases"
+  ],
+  "quick_start": [
+    "Clone the repo and open QuickMediaIngest-1.sln in Visual Studio or `dotnet build`.",
+    "Read `docs/START_HERE.md` (Reference mode). First-time walk: `docs/help/TOUR.md`.",
+    "Run `python3 scripts/agent-run.py validate-bootstrap --quick` then `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`."
+  ],
+  "install": "Windows with .NET 8 SDK. Product installers: GitHub Releases portable EXE and WiX MSI. See `modules/dotnet-wpf/MODULE.md`.",
+  "usage": "Use `/verify` before merge and `/ship` to publish. Do not run `init-project.sh` or prune on this child product. Stack is `dotnet-wpf` only.",
+  "urls": {
+    "docs": "docs/START_HERE.md",
+    "contributing": "CONTRIBUTING.md",
+    "security": "SECURITY.md",
+    "license": "LICENSE",
+    "branding": "branding/product.json",
+    "github_repo": "edwardlthompson/QuickMediaIngest"
+  },
+  "badge": {
+    "primary": "e94560",
+    "secondary": "4A5F82",
+    "license": "2ea043",
+    "foss": "656d76"
+  },
+  "stacks": [
+    "dotnet-wpf"
+  ]
+}

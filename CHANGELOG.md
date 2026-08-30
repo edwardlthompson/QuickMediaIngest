@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Security
+
+- **Magick.NET 14.16.0**: bump from 14.14.0 to clear NU1901/NU1902 and CVE-2026-64685 (BGR decoder over-read). Existing thumbnail/glitch tests still cover decode.
+
 ## [1.3.27] — 2026-08-21
 
 ### Added

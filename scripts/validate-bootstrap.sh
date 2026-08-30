@@ -63,12 +63,48 @@ REQUIRED=(
   .cursor-session-state.example.json
   CODE_REVIEW.md.example
   RELEASE_NOTES.md.example
+  scratchpad.md.example
+  docs/features/_handoff.md
+  docs/help/UPGRADE.md
+  docs/help/TOUR.md
+  docs/help/IDEAS.md
+  docs/help/ALLIDEAS.md
+  docs/help/GLOSSARY.md
+  docs/help/COACH.md
+  docs/help/DEBUG.md
+  docs/help/ADR.md
+  docs/help/batch-commands-print.html
+  docs/AGENT_PORTABILITY.md
+  docs/UPGRADING_FROM_TEMPLATE.md
+  schemas/golden-path/upgrade-policy.json
+  schemas/golden-path/feature-catalog.json
+  schemas/batch-commands-print.json
+  schemas/features/feature-spec.schema.json
+  schemas/features/feature-spec.contract.json
+  bootstrap.config.json
+  bootstrap.config.json.example
+  PROJECT_CHECKLIST.md
+  env.schema.json
+  branding/product.json
+  .cursor/rules/local-deps.mdc
+  .cursor/rules/main.mdc
+  .cursor/commands/upgrade.md
+  .cursor/commands/coach.md
+  .cursor/commands/adr.md
+  CLAUDE.md
+  GEMINI.md
+  CONVENTIONS.md
+  .clinerules
+  .github/copilot-instructions.md
+  .windsurf/rules/agents-pointer.md
+  .continue/rules/agents.md
 )
 
 BATCH_COMMANDS=(
   audit cleanup debug gates triage dependabot push prerelease regress
   feature fix init prune ci docs upgrade setup plan restore compact scope
-  bootstrap verify build ship maintain
+  bootstrap verify build ship maintain coach tour ideas allideas
+  codex-review update-deps best-of-n emulator adr
 )
 
 for cmd in "${BATCH_COMMANDS[@]}"; do
@@ -138,6 +174,8 @@ PARALLEL_CHECKS=(
   check-cursor-hooks.sh
   check-template-version-sync.sh
   validate-template-index.sh
+  check-agent-adapters.sh
+  check-env.sh
 )
 if [ -f scripts/lib/run_checks_parallel.py ]; then
   if ! "$PY" scripts/lib/run_checks_parallel.py "${PARALLEL_CHECKS[@]}"; then

@@ -1,5 +1,6 @@
 ---
 description: Test coverage budgets and snapshot conventions
+alwaysApply: false
 globs:
   - "examples/**"
   - "tests/**"
@@ -18,9 +19,10 @@ globs:
 
 ## When to Add Tests
 
+- **Test-first:** every `[AGENT]` feature task includes tests, or the feature spec states why tests are not feasible and names the fallback validation command
 - Golden Path features: unit + one integration/e2e path
 - Bug fixes: regression test required
-- Template-only doc changes: no new tests
+- Template-only doc changes: no new tests unless a gate/script changed
 
 ## Per-feature smoke gate (test pyramid)
 
@@ -29,7 +31,7 @@ globs:
 - **E2E (few):** Playwright/Lighthouse at milestone gates, not every feature
 
 ```bash
-python3 scripts/agent-run.py watch-agent-gates --once --autofix
+python3 scripts/agent-run.py watch-agent-gates --once --autofix --scope auto
 ```
 
 Do not start feature B until feature A passes gates and `[HUMAN]` approves.

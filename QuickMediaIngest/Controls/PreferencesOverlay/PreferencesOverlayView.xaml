@@ -150,6 +150,11 @@
                                           DisplayMemberPath="Label"
                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{loc:Loc Settings_LanguageRestartHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82"/>
+                                <CheckBox Content="{loc:Loc Settings_SaveCrashDetails}"
+                                          IsChecked="{Binding SaveCrashDetails, Mode=TwoWay}"
+                                          Margin="0,12,0,4"
+                                          AutomationProperties.Name="{loc:Loc Settings_SaveCrashDetails}"/>
+                                <TextBlock Text="{loc:Loc Settings_SaveCrashDetailsHint}" Style="{StaticResource AppCaptionTextStyle}" TextWrapping="Wrap" Opacity="0.82"/>
                             </StackPanel>
                         </Expander>
 

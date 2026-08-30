@@ -8,7 +8,7 @@
         Background="{DynamicResource MaterialDesignPaper}">
     <ScrollViewer Padding="16">
         <StackPanel>
-            <TextBlock Text="{loc:Loc Help_ShortcutsIntro}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+            <TextBlock Text="{loc:Loc Help_ShortcutsIntro}" Style="{DynamicResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
             <ItemsControl ItemsSource="{Binding Rows, RelativeSource={RelativeSource AncestorType=Window}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

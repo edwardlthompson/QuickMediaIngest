@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace QuickMediaIngest.Core
 {
@@ -45,9 +46,50 @@ namespace QuickMediaIngest.Core
         }
 
         /// <summary>
-        /// Caps concurrent file copies. When <paramref name="requested"/> is 0 (engine default),
-        /// removable media is forced to <see cref="MaxConcurrentCopies"/>.
+        /// Attempts to safely eject / dismount a drive volume.
         /// </summary>
+        public static bool TryEjectVolume(string? driveOrPath, Microsoft.Extensions.Logging.ILogger? logger = null)
+        {
+            if (string.IsNullOrWhiteSpace(driveOrPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                string? root = Path.GetPathRoot(Path.GetFullPath(driveOrPath));
+                if (string.IsNullOrEmpty(root) || root.Length < 2 || root[1] != ':')
+                {
+                    return false;
+                }
+
+                string driveLetter = root.TrimEnd('\\');
+                if (OperatingSystem.IsWindows())
+                {
+                    var query = $"SELECT * FROM Win32_Volume WHERE DriveLetter = '{driveLetter}'";
+                    using var searcher = new System.Management.ManagementObjectSearcher(query);
+                    foreach (System.Management.ManagementObject volume in searcher.Get())
+                    {
+                        try
+                        {
+                            volume.InvokeMethod("Dismount", null);
+                            volume.InvokeMethod("Remove", null);
+                            return true;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogDebug(ex, "WMI dismount/remove failed for volume {DriveLetter}.", driveLetter);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.LogDebug(ex, "Safe volume eject failed for {Drive}.", driveOrPath);
+            }
+
+            return false;
+        }
         public static int CapConcurrentCopies(int requested, string? samplePath)
         {
             if (!IsOnRemovableDrive(samplePath))

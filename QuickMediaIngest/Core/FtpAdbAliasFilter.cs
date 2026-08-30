@@ -110,5 +110,25 @@ namespace QuickMediaIngest.Core
 
             return items.Where(i => !missing.Contains(i.SourcePath)).ToList();
         }
+
+        /// <summary>
+        /// Deduplicates dual FTP / ADB aliases pointing to identical media files across simultaneous mounts.
+        /// </summary>
+        public static List<ImportItem> DeduplicateDualFtpAliases(IEnumerable<ImportItem> items)
+        {
+            var result = new List<ImportItem>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in items)
+            {
+                string key = $"{Path.GetFileName(item.FileName)}|{item.FileSize}|{item.DateTaken:yyyyMMddHHmmss}";
+                if (seen.Add(key))
+                {
+                    result.Add(item);
+                }
+            }
+
+            return result;
+        }
     }
 }

@@ -32,86 +32,76 @@ namespace QuickMediaIngest.Core
 
         public static DecodedThumbnail? TryLoad(string cachePath)
         {
-            if (!File.Exists(cachePath))
-            {
-                return null;
-            }
-
+            if (!File.Exists(cachePath)) return null;
             try
             {
                 byte[] bytes = File.ReadAllBytes(cachePath);
-                if (bytes.Length == 0)
-                {
+                if (bytes.Length == 0 || !JpegSofDimensionParser.TryGetDimensions(bytes, out int width, out int height))
                     return null;
-                }
-
-                if (!JpegSofDimensionParser.TryGetDimensions(bytes, out int width, out int height))
-                {
-                    return null;
-                }
-
                 return new DecodedThumbnail(bytes, width, height);
             }
-            catch
-            {
-                return null;
-            }
+            catch { return null; }
         }
 
         public static DecodedThumbnail? TryLoadFtp(string host, int port, string remotePath, long fileSize)
         {
             string cachePath = GetFtpCachePath(host, port, remotePath, fileSize);
             DecodedThumbnail? thumb = TryLoad(cachePath);
-            if (thumb == null)
-            {
-                return null;
-            }
-
-            if (ThumbnailPreviewValidator.IsAcceptable(thumb))
-            {
-                return thumb;
-            }
-
-            try
-            {
-                if (File.Exists(cachePath))
-                {
-                    File.Delete(cachePath);
-                }
-            }
-            catch
-            {
-                // Ignore stale cache purge failures.
-            }
-
+            if (thumb == null) return null;
+            if (ThumbnailPreviewValidator.IsAcceptable(thumb)) return thumb;
+            try { if (File.Exists(cachePath)) File.Delete(cachePath); } catch { }
             return null;
         }
 
-        public static void TrySave(DecodedThumbnail thumb, string cachePath)
-        {
-            File.WriteAllBytes(cachePath, thumb.JpegBytes);
-        }
-
-        public static void TrySave(byte[] jpegBytes, string cachePath)
-        {
-            File.WriteAllBytes(cachePath, jpegBytes);
-        }
+        public static void TrySave(DecodedThumbnail thumb, string cachePath) => File.WriteAllBytes(cachePath, thumb.JpegBytes);
+        public static void TrySave(byte[] jpegBytes, string cachePath) => File.WriteAllBytes(cachePath, jpegBytes);
 
         public static void TrySaveFtp(DecodedThumbnail thumb, string host, int port, string remotePath, long fileSize)
         {
-            if (!ThumbnailPreviewValidator.IsAcceptable(thumb))
-            {
-                return;
-            }
+            if (!ThumbnailPreviewValidator.IsAcceptable(thumb)) return;
+            try { TrySave(thumb, GetFtpCachePath(host, port, remotePath, fileSize)); } catch { }
+        }
 
+        public static long GetCurrentCacheSizeBytes()
+        {
             try
             {
-                TrySave(thumb, GetFtpCachePath(host, port, remotePath, fileSize));
+                string dir = GetCacheDirectory();
+                if (!Directory.Exists(dir)) return 0;
+                long sum = 0;
+                foreach (var file in new DirectoryInfo(dir).EnumerateFiles("*.*", SearchOption.AllDirectories))
+                    sum += file.Length;
+                return sum;
             }
-            catch
+            catch { return 0; }
+        }
+
+        public static void PurgeCache(long maxBytesCap = 0)
+        {
+            try
             {
-                // Ignore cache write failures.
+                string dir = GetCacheDirectory();
+                if (!Directory.Exists(dir)) return;
+                var di = new DirectoryInfo(dir);
+                var files = di.GetFiles("*.*", SearchOption.AllDirectories);
+                if (maxBytesCap <= 0)
+                {
+                    foreach (var f in files) { try { f.Delete(); } catch { } }
+                    return;
+                }
+                long total = 0;
+                foreach (var f in files) total += f.Length;
+                if (total > maxBytesCap)
+                {
+                    Array.Sort(files, (a, b) => a.LastWriteTimeUtc.CompareTo(b.LastWriteTimeUtc));
+                    foreach (var f in files)
+                    {
+                        if (total <= maxBytesCap) break;
+                        try { long len = f.Length; f.Delete(); total -= len; } catch { }
+                    }
+                }
             }
+            catch { }
         }
 
         private static string GetCacheKey(string filePath)

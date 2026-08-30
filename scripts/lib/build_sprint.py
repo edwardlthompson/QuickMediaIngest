@@ -15,6 +15,10 @@ ROW_NUMBERED = re.compile(
 ROW_BULLET = re.compile(
     rf"^- {OPEN} \[(?P<owner>AGENT|AUTO|HUMAN|ADB)\]\s+(?P<task>.+)$"
 )
+# Child product board: optional dash + optional backticks around [OWNER]
+ROW_FLEX = re.compile(
+    rf"^(?:- )?{OPEN}\s+`?\[(?P<owner>AGENT|AUTO|HUMAN|ADB)\]`?\s+(?P<task>.+)$"
+)
 SPRINT_HEADER = re.compile(r"^###\s+Sprint\s+", re.I)
 PARALLEL_HEADER = re.compile(r"^#{3,4}\s+.*Parallel", re.I)
 SEQUENTIAL_HEADER = re.compile(r"^#{3,4}\s+.*Sequential", re.I)
@@ -180,6 +184,103 @@ def parse_sprint_blocks(text: str) -> list[tuple[str, list[str]]]:
             continue
         i += 1
     return blocks
+
+
+def _child_product_sprint(header: str) -> str | None:
+    title = header[3:].strip()
+    if title.startswith("Sequential lane"):
+        return "Sequential lane"
+    if title.startswith("Golden Path"):
+        return "Golden Path catch-up"
+    if title.startswith("Ongoing Maintenance"):
+        return "Ongoing Maintenance"
+    if title.lower().startswith("human"):
+        return "Human & device"
+    return None
+
+
+def parse_child_product_rows(text: str) -> list[PlanRow]:
+    """Open rows on the child product board (not Child Repo Playbook sprints)."""
+    rows: list[PlanRow] = []
+    sprint: str | None = None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            sprint = _child_product_sprint(line)
+            continue
+        if sprint is None:
+            continue
+        match = ROW_FLEX.match(line)
+        if not match:
+            continue
+        owner = match.group("owner")
+        phase = (
+            "human_group"
+            if owner in ("HUMAN", "ADB")
+            else "maintenance" if sprint == "Ongoing Maintenance" else "pre_parallel"
+        )
+        rows.append(
+            PlanRow(
+                owner=owner,
+                task=match.group("task").strip(),
+                sprint=sprint,
+                phase=phase,
+            )
+        )
+    return rows
+
+
+def _child_product_status(text: str, backlog_keys: set[str]) -> dict | None:
+    product = parse_child_product_rows(text)
+    if not product:
+        return None
+    aa = [r for r in product if r.owner in ("AGENT", "AUTO")]
+    ha = [r for r in product if r.owner in ("HUMAN", "ADB")]
+    next_aa = next_actionable_row(aa, backlog_keys)
+    next_ha = next_actionable_row(ha, backlog_keys) if not next_aa else None
+    nxt = next_aa or next_ha
+    backlogged = [r for r in ha if f"{r.sprint}|{r.task}" in backlog_keys]
+    if nxt is None:
+        return {
+            "lane": "child",
+            "sprint": product[0].sprint,
+            "sprint_agent_auto_complete": True,
+            "sprint_complete": len(ha) == 0,
+            "open_agent_auto": 0,
+            "open_human_adb": len(ha),
+            "halt": False,
+            "halt_reason": None,
+            "next_row": None,
+            "action": None,
+            "chain_continue": False,
+            "all_sprints_agent_auto_complete": True,
+            "backlogged_human_adb": [
+                {"owner": r.owner, "task": r.task, "sprint": r.sprint} for r in backlogged
+            ],
+        }
+    act = row_action(nxt.owner) if nxt.owner in ("HUMAN", "ADB") else "execute"
+    return {
+        "lane": "child",
+        "sprint": nxt.sprint,
+        "sprint_agent_auto_complete": False,
+        "sprint_complete": False,
+        "open_agent_auto": len(aa),
+        "open_human_adb": len(ha),
+        "halt": False,
+        "halt_reason": None,
+        "next_row": {
+            "owner": nxt.owner,
+            "task": nxt.task,
+            "sprint": nxt.sprint,
+            "phase": nxt.phase,
+            "action": act,
+        },
+        "action": act,
+        "chain_continue": False,
+        "all_sprints_agent_auto_complete": False,
+        "backlogged_human_adb": [
+            {"owner": r.owner, "task": r.task, "sprint": r.sprint} for r in backlogged
+        ],
+    }
 
 
 def parse_maintenance_rows(text: str) -> tuple[list[PlanRow], list[PlanRow]]:
@@ -385,6 +486,10 @@ def _child_status(text: str, progress: dict, backlog_keys: set[str]) -> dict:
             status["chain_continue"] = status["sprint_agent_auto_complete"]
             status["all_sprints_agent_auto_complete"] = False
             return status
+
+    product = _child_product_status(text, backlog_keys)
+    if product is not None:
+        return product
 
     return {
         "lane": "child",

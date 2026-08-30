@@ -59,6 +59,15 @@ namespace QuickMediaIngest.Core
                     return;
                 }
 
+                if (options.IsDryRun)
+                {
+                    success = true;
+                    errorMessage = "Dry run (simulated)";
+                    tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);
+                    itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage, isStarted: false));
+                    return;
+                }
+
                 IProgress<long>? copyProgress = tracker == null
                     ? null
                     : new Progress<long>(bytes => tracker.ReportBytes(sourceKey, bytes));
@@ -67,9 +76,44 @@ namespace QuickMediaIngest.Core
                 success = true;
                 logger.LogDebug("Imported file {FileName} to {DestinationPath}.", item.FileName, destPath);
 
-                if (success && File.Exists(destPath) && options.ApplyImportKeywords && options.ImportKeywords is { Count: > 0 })
+                if (success && File.Exists(destPath))
                 {
-                    MetadataKeywordWriter.TryApplyKeywords(destPath, options.ImportKeywords, logger);
+                    if (!string.IsNullOrWhiteSpace(options.SecondaryDestinationRoot))
+                    {
+                        try
+                        {
+                            string relShootDir = Path.GetFileName(targetDir);
+                            string secShootDir = Path.Combine(options.SecondaryDestinationRoot, relShootDir);
+                            Directory.CreateDirectory(secShootDir);
+                            string secDestPath = Path.Combine(secShootDir, Path.GetFileName(destPath));
+                            File.Copy(destPath, secDestPath, overwrite: true);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed secondary 3-2-1 destination copy for {File}.", item.FileName);
+                        }
+                    }
+
+                    if (options.WriteXmpSidecarsOnly || !string.IsNullOrWhiteSpace(options.CreatorStamp) || !string.IsNullOrWhiteSpace(options.CopyrightStamp))
+                    {
+                        MetadataKeywordWriter.WriteXmpSidecarMetadata(
+                            destPath,
+                            options.ApplyImportKeywords ? options.ImportKeywords : null,
+                            options.CreatorStamp,
+                            options.CopyrightStamp,
+                            logger);
+                    }
+                    else if (options.ApplyImportKeywords || options.StripGpsAndPii)
+                    {
+                        if (options.ApplyImportKeywords && options.ImportKeywords is { Count: > 0 })
+                        {
+                            MetadataKeywordWriter.TryApplyKeywords(destPath, options.ImportKeywords, options.StripGpsAndPii, logger);
+                        }
+                        else if (options.StripGpsAndPii)
+                        {
+                            MetadataKeywordWriter.TryStripGpsAndPii(destPath, logger);
+                        }
+                    }
                 }
 
                 await TryDeleteSourceAfterImportAsync(
@@ -126,44 +170,5 @@ namespace QuickMediaIngest.Core
             tracker?.RegisterFileCompleted(sourceKey, fileSizeBytes, success);
             itemProcessed?.Invoke(BuildProgressInfo(group, targetDir, item, itemIndex, total, destPath, success, errorMessage, isStarted: false));
         }
-
-        private static async Task TryDeleteSourceAfterImportAsync(
-            ImportItem item,
-            string destPath,
-            bool deleteAfterImport,
-            bool success,
-            IFileProvider provider,
-            IngestOptions options,
-            ILogger logger,
-            CancellationToken cancellationToken)
-        {
-            if (!deleteAfterImport || !success || !File.Exists(destPath))
-            {
-                return;
-            }
-
-            try
-            {
-                if (IngestVerification.IsPostImportVerifiedForDelete(item, destPath, options, logger, out string? verifyNote))
-                {
-                    await provider.DeleteAsync(item.SourcePath, cancellationToken).ConfigureAwait(false);
-                    logger.LogInformation(
-                        "Deleted source file {SourcePath} after successful import and verification.",
-                        LogPathSanitizer.Local(item.SourcePath));
-                }
-                else
-                {
-                    logger.LogWarning(
-                        "Source and destination did not pass post-import verification for {FileName}. {Details} Skipping delete.",
-                        item.FileName,
-                        verifyNote ?? string.Empty);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error verifying or deleting source file {SourcePath} after import.", LogPathSanitizer.Local(item.SourcePath));
-            }
-        }
-
     }
 }

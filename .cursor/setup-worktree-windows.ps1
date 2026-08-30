@@ -46,6 +46,39 @@ if ($RootSrc -and (Test-Path -LiteralPath $RootSrc -PathType Container)) {
   Write-Host 'SKIP env examples (ROOT_WORKTREE_PATH unset or missing)'
 }
 
+$env:ROOT_WORKTREE_PATH = $RootSrc
+function Resolve-PythonExe {
+  $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+  if ($pyLauncher) {
+    try {
+      $exe = & py -3 -c "import sys; print(sys.executable)" 2>$null
+      if ($exe -and ($exe -notmatch 'WindowsApps')) { return $exe }
+    } catch {}
+  }
+  foreach ($name in @('python3', 'python')) {
+    $cmd = Get-Command $name -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and ($cmd.Source -notmatch 'WindowsApps')) {
+      return $cmd.Source
+    }
+  }
+  return 'python3'
+}
+$Python = Resolve-PythonExe
+& $Python -c @"
+from pathlib import Path
+import os, sys
+root = os.environ.get('ROOT_WORKTREE_PATH') or ''
+try:
+    ok = bool(root) and Path(root).is_dir() and Path(root).resolve() != Path('.').resolve()
+except OSError:
+    ok = False
+raise SystemExit(0 if ok else 1)
+"@
+if ($LASTEXITCODE -ne 0) {
+  Write-Host 'SKIP stack install (not a Cursor worktree; set ROOT_WORKTREE_PATH to the primary repo)'
+  exit 0
+}
+
 $StackFile = Join-Path $Wt '.cursor\stack-selection.json'
 if (-not (Test-Path -LiteralPath $StackFile) -and $RootSrc) {
   $alt = Join-Path $RootSrc '.cursor\stack-selection.json'
@@ -82,8 +115,14 @@ function Install-NpmDir([string]$Dir) {
   }
   Push-Location $Dir
   try {
-    npm ci
-    if ($LASTEXITCODE -eq 0) { Write-Host "OK npm ci in $Dir" } else { Write-Host "SKIP npm ci failed in $Dir (non-fatal)" }
+    npm ci --prefer-offline --no-audit --no-fund
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "OK npm ci in $Dir"
+    } else {
+      Write-Host "WARN npm ci --prefer-offline failed in $Dir; retry without offline"
+      npm ci --no-audit --no-fund
+      if ($LASTEXITCODE -eq 0) { Write-Host "OK npm ci in $Dir" } else { Write-Host "SKIP npm ci failed in $Dir (non-fatal)" }
+    }
   } catch {
     Write-Host "SKIP npm ci failed in $Dir (non-fatal)"
   } finally {
@@ -111,16 +150,46 @@ function Install-UvDir([string]$Dir) {
   }
 }
 
+function Resolve-GradleOfflinePy {
+  foreach ($base in @($Wt, $RootSrc)) {
+    if (-not $base) { continue }
+    $candidate = Join-Path $base 'scripts\lib\gradle_offline.py'
+    if (Test-Path -LiteralPath $candidate) { return $candidate }
+  }
+  return $null
+}
+
 function Install-GradleDir([string]$Dir) {
   $gw = Join-Path $Dir 'gradlew.bat'
   if (-not (Test-Path -LiteralPath $gw)) {
     Write-Host "SKIP gradle in $Dir (no gradlew.bat)"
     return
   }
+  $helper = Resolve-GradleOfflinePy
+  $offline = $false
+  if ($helper -and $RootSrc) {
+    $extra = & $Python $helper --args --root $RootSrc 2>$null
+    if ($extra -match '--offline') { $offline = $true }
+  }
   Push-Location $Dir
   try {
+    if ($offline) {
+      & .\gradlew.bat --offline --version
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "OK gradle wrapper in $Dir (offline)"
+        return
+      }
+      Write-Host "WARN gradle --offline failed in $Dir; retry online"
+    }
     & .\gradlew.bat --version
-    if ($LASTEXITCODE -eq 0) { Write-Host "OK gradle wrapper in $Dir" } else { Write-Host "SKIP gradle failed in $Dir (non-fatal)" }
+    if ($LASTEXITCODE -eq 0) {
+      if ($helper -and $RootSrc) {
+        & $Python $helper --mark --root $RootSrc 2>$null
+      }
+      Write-Host "OK gradle wrapper in $Dir"
+    } else {
+      Write-Host "SKIP gradle failed in $Dir (non-fatal)"
+    }
   } catch {
     Write-Host "SKIP gradle failed in $Dir (non-fatal)"
   } finally {

@@ -107,6 +107,50 @@ namespace QuickMediaIngest.Core.Models
             set { _thumbnailPreviewStatus = value; OnPropertyChanged(); }
         }
 
+        private int _rating = 0;
+        /// <summary>Star rating 0-5.</summary>
+        public int Rating
+        {
+            get => _rating;
+            set { _rating = Math.Clamp(value, 0, 5); OnPropertyChanged(); }
+        }
+
+        private string _colorLabel = string.Empty;
+        /// <summary>Color label (e.g., "Red", "Yellow", "Green", "Blue", "Purple", "None").</summary>
+        public string ColorLabel
+        {
+            get => _colorLabel;
+            set { _colorLabel = value; OnPropertyChanged(); }
+        }
+
+        private bool _isRejected = false;
+        /// <summary>Flagged as rejected during review cull.</summary>
+        public bool IsRejected
+        {
+            get => _isRejected;
+            set
+            {
+                _isRejected = value;
+                if (_isRejected)
+                {
+                    IsSelected = false;
+                }
+                OnPropertyChanged();
+            }
+        }
+
+        public void Pick()
+        {
+            IsRejected = false;
+            IsSelected = true;
+        }
+
+        public void Reject()
+        {
+            IsRejected = true;
+            IsSelected = false;
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {

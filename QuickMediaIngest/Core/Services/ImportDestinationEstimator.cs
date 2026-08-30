@@ -12,6 +12,20 @@ namespace QuickMediaIngest.Core.Services
         public static long SumSelectedBytes(IEnumerable<ItemGroup> groups) =>
             groups.SelectMany(g => g.Items).Where(i => i.IsSelected).Sum(i => (long)Math.Max(0, i.FileSize));
 
+        /// <summary>Calculates forecasted remaining free space after importing selected items.</summary>
+        public static (long selectedBytes, long? availableFreeBytes, long? forecastRemainingBytes, bool isSufficientSpace) ForecastSpace(IEnumerable<ItemGroup> groups, string destinationRoot)
+        {
+            long selectedBytes = SumSelectedBytes(groups);
+            long? freeBytes = TryGetFreeBytes(destinationRoot);
+            if (!freeBytes.HasValue)
+            {
+                return (selectedBytes, null, null, true);
+            }
+
+            long remaining = freeBytes.Value - selectedBytes;
+            return (selectedBytes, freeBytes.Value, remaining, remaining >= 0);
+        }
+
         /// <summary>Best-effort free space on the volume hosting <paramref name="destinationRoot"/>.</summary>
         public static long? TryGetFreeBytes(string destinationRoot)
         {

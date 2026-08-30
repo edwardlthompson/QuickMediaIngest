@@ -5,10 +5,10 @@ Framework: AGENT/HUMAN/ADB/AUTO; semver via Release Please / `.template-version`
 
 ## Step 1 — Pre-release validation
 
-- **Child repo (QMI):** `validate-bootstrap.sh --quick`, `feature-gate.sh --stack dotnet-wpf`, `check-license-compliance.sh` after locked installs; WPF sign-offs via `.\scripts\run-human-signoffs.ps1`
-- **Template maintainer repos only:** `run-maintainer-gates.sh` and `pre-release-gate.sh` (not required for this product repo)
+- **Child repo:** `validate-bootstrap.sh --quick`, `feature-gate.sh --stack <active>`, `check-license-compliance.sh` after locked installs
+- **Template maintainer:** also `run-maintainer-gates.sh` and `pre-release-gate.sh` per @docs/MAINTAINING_THE_TEMPLATE.md
 - Verify @README.md via `check-readme-health.sh`
-- Update @CHANGELOG.md `[Unreleased]`
+- Fold any `[Unreleased]` notes into the versioned CHANGELOG section (or leave them for Release Please). Do **not** `git push` with a dirty Unreleased.
 
 ## Step 2 — Release notes
 
@@ -18,7 +18,14 @@ Create/update RELEASE_NOTES.md from CHANGELOG, BUILD_PLAN rows, recent commits (
 
 - Stage **explicit paths only** (never `git add .`)
 - Commit: `chore(release): prepare vX.Y.Z release` with key changes in body
-- `git push origin main`
+- Halt unless this exits 0 (Unreleased must be empty):
+
+```bash
+python3 scripts/agent-run.py check-changelog-unreleased -- --require-empty
+
+```
+
+- Only then: `git push origin main`
 - `python3 scripts/agent-run.py check-github-ci --wait 600`
 - Zero open Critical/High Dependabot alerts
 
