@@ -17,20 +17,16 @@ reported=0
 check_pattern() {
   local label="$1"
   local pattern="$2"
-  local matches
-  matches="$(git ls-files | grep -E "$pattern" || true)"
-  if [ -n "$matches" ]; then
-    while IFS= read -r file; do
-      [ -z "$file" ] && continue
-      echo "TRACKED FORBIDDEN [$label]: $file"
-      ERRORS=$((ERRORS + 1))
-      reported=$((reported + 1))
-      if [ "$reported" -ge "$MAX_REPORT" ]; then
-        echo "... truncated (max $MAX_REPORT)"
-        return
-      fi
-    done <<< "$matches"
-  fi
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    echo "TRACKED FORBIDDEN [$label]: $file"
+    ERRORS=$((ERRORS + 1))
+    reported=$((reported + 1))
+    if [ "$reported" -ge "$MAX_REPORT" ]; then
+      echo "... truncated (max $MAX_REPORT)"
+      return
+    fi
+  done < <(git ls-files | grep -E "$pattern" || true)
 }
 
 check_pattern "node_modules" 'node_modules/'

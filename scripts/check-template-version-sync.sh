@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Fail when .template-version drifts from .release-please-manifest.json
+# QMI merge: keep template-version + TEMPLATE_INDEX + manifest. Do not require
+# CITATION.cff / plugin.json (template-maintainer files; this child is not the template).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

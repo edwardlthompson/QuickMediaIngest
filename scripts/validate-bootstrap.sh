@@ -43,8 +43,11 @@ REQUIRED=(
   docs/PARALLEL_AGENT_SCOPES.md
   docs/CURSOR_INTEGRATIONS.md
   .cursor/rules/cursor-modes.mdc
+  .cursor/rules/product-brief.mdc
   .cursor/rules/local-compute.mdc
   .cursor/rules/wpf-mvvm.mdc
+  AGENT.md.example
+  AGENT.md
   docs/SECURITY_TRIAGE.md
   docs/THREAT_MODEL.md
   docs/PRIVACY.md
@@ -102,7 +105,7 @@ REQUIRED=(
 
 BATCH_COMMANDS=(
   audit cleanup debug gates triage dependabot push prerelease regress
-  feature fix init prune ci docs upgrade setup plan restore compact scope
+  feature fix init prune ci docs upgrade setup plan restore compact resume scope
   bootstrap verify build ship maintain coach tour ideas allideas
   codex-review update-deps best-of-n emulator adr
 )
@@ -174,6 +177,8 @@ PARALLEL_CHECKS=(
   check-cursor-hooks.sh
   check-template-version-sync.sh
   validate-template-index.sh
+  check-agent-brief.sh
+  check-build-plan-tally.sh
   check-agent-adapters.sh
   check-env.sh
 )

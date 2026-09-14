@@ -2,7 +2,7 @@
 
 > Technical catalog for agents and maintainers. **Humans:** start with [docs/help/BATCH_COMMANDS.md](help/BATCH_COMMANDS.md).
 
-35 slash commands: **30 atomic** workflows + **5 super** orchestrators. Bare-word triggers: `.cursor/rules/batch-commands.mdc`. Other IDEs: paste the matching file under `docs/help/` (start with `docs/help/TOUR.md`, `docs/help/IDEAS.md`, or `docs/help/ALLIDEAS.md`). Novice print sheet: [`docs/help/batch-commands-print.html`](help/batch-commands-print.html).
+36 slash commands: **31 atomic** workflows + **5 super** orchestrators. Bare-word triggers: `.cursor/rules/batch-commands.mdc`. Other IDEs: paste the matching file under `docs/help/` (start with `docs/help/TOUR.md`, `docs/help/IDEAS.md`, or `docs/help/ALLIDEAS.md`). Novice print sheet: [`docs/help/batch-commands-print.html`](help/batch-commands-print.html).
 
 ## Super commands
 
@@ -10,7 +10,7 @@
 |---------|-------|-------------|----------------|-------|
 | `/bootstrap` | init → prune → setup → gates | Agent | 42 | No |
 | `/verify` | docs → gates → ci | Agent | 43 | No |
-| `/build` | Autonomous BUILD_PLAN sprint chain — per-row `--scope auto` gates; wrap-up `/gates` is full | Agent | 44 | No |
+| `/build` | Autonomous BUILD_PLAN sprint chain — per-row `--scope auto` gates; wrap-up `smoke-sprint --require` then `/gates` | Agent | 44 | No |
 | `/ship` | update-deps → prerelease (`--local`) → push → regress | Agent | 45 | **Yes** |
 | `/maintain` | triage → update-deps → dependabot → audit | Agent | 46 | No |
 ## Atomic commands
@@ -18,7 +18,7 @@
 | Command | Workflow | Super parent | PROMPT_LIBRARY |
 |---------|----------|--------------|----------------|
 | `/audit` | Full repo review → BUILD_PLAN → execute → cleanup | maintain | 22 |
-| `/codex-review` | Optional Codex read-only review → CODE_REVIEW.md → BUILD_PLAN + `/fix` | prerelease, ship | — |
+| `/codex-review` | Advanced/optional read-only review → CODE_REVIEW.md → BUILD_PLAN + `/fix` (not first-time; not `/ship`) | — | — |
 | `/cleanup` | Archive ✅ BUILD_PLAN rows → COMPLETED_TASKS.md | build, audit, push, init | — |
 | `/debug` | Defect investigation | — | 20 |
 | `/gates` | Local validation suite (always canvas status overview) | bootstrap, verify, build | 4/5 |
@@ -42,6 +42,7 @@
 | `/adr` | Write the next numbered `docs/adr/` record | — | — |
 | `/restore` | Restore from `.cursor-session-state.json` | — | 13 |
 | `/compact` | Save session state before clearing chat | — | 13 |
+| `/resume` | After Cloud Agent: fetch + sync open Dependabot/release PRs + list `cursor/*` PRs + next AGENT row | — | — |
 | `/scope` | Parallel manifest + auto Task dispatch | — | 14 |
 | `/coach` | Project health + next action + industry why (BEST_PRACTICES) | bootstrap | — |
 | `/tour` | 10-minute first-run walk (START_HERE → why → Golden Path → Week 1) | bootstrap | — |
@@ -60,6 +61,7 @@ Weekly maintenance? → /maintain (heavy) or /triage + /update-deps (light)
 Template catch-up?   → /upgrade (child: plan only; this template: sim)
 Bug with evidence?  → /debug  (not /audit)
 Long chat session?  → /compact before clear · /restore after
+Back from Cloud?    → /resume (fetch + open PRs + next AGENT row)
 
 ```
 
@@ -86,3 +88,12 @@ Long chat session?  → /compact before clear · /restore after
 | `docs/features/_handoff.md` | Parallel-agent handoff stub |
 | `scripts/check-batch-commands.sh` | Registry ↔ filesystem sync |
 Validation: `bash scripts/check-batch-commands.sh` (also via `validate-bootstrap.sh --quick`).
+
+## `/allideas` → board → `/build` recipe
+
+1. `/allideas` (or `docs/help/ALLIDEAS.md`) — dump in-scope ideas; do not implement yet.
+2. Say `board` / `add all` / name numbers — agent adds 🔲 `[AGENT]` rows to `BUILD_PLAN.md` (cap per sprint; archive prior milestone first).
+3. `/build` — autonomous execution with `--scope auto` gates; HUMAN/ADB attempted after AGENT/AUTO, failures → `HUMAN_BACKLOG.md`.
+4. Sprint wrap: `smoke-sprint --require` → `/gates` → `/cleanup` archive.
+
+Human cheat sheet: [`docs/help/BATCH_COMMANDS.md`](help/BATCH_COMMANDS.md).

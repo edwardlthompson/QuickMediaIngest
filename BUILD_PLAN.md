@@ -1,9 +1,19 @@
 # Build Plan
 
+<!-- remaining-tally -->
+**Remaining:** AGENT 0 · AUTO 1 · HUMAN 1 · ADB 0 · **2 open**
+<!-- /remaining-tally -->
 > Prioritized task board. Finished milestones and sprint detail live in `COMPLETED_TASKS.md`.
 > Alignment record: `docs/BOOTSTRAP_ALIGNMENT.md`.
 
-**Release:** v1.3.27 · **Template:** v1.0.0 · **Tests:** 360 (Release)
+**Release:** v1.4.0 · **Template:** v1.5.0 · **Tests:** 360 (Release)
+
+<!-- product-brief-sync:begin -->
+> Read `AGENT.md` before any sprint row.
+
+**One-liner:** Ingest photos and videos into dated, shoot-based folders
+**Do not drift:** ingest, photos, videos, wpf, foss
+<!-- product-brief-sync:end -->
 
 > **Bootstrap alignment 0.11 → 1.0.0** (process); 0.16.0 and earlier archives in COMPLETED_TASKS.md / `docs/BOOTSTRAP_ALIGNMENT.md`.
 >
@@ -39,6 +49,21 @@ Format: `🔲 [OWNER] Description`
 ## Sequential lane
 
 > **Sequential hybrid ADB & Live OP13 Smoke** archived in COMPLETED_TASKS.md.
+
+### Template catch-up v1.0.0 → v1.5.0 (named 1–14)
+
+Canon copy + Mixed merge. Sacred and the WPF app are never overwritten. Golden Path 15–19 wait for named numbers (not on this board).
+
+1. ✅ [AGENT] T1 Fetch `edwardlthompson/agent-project-bootstrap` tag `v1.5.0`; snapshot child-only scripts; sacred denylist
+2. ✅ [AGENT] T2 Canon 1: copy `.cursor/commands/` including `resume.md` with `docs/BATCH_COMMANDS.md` + `docs/help/BATCH_COMMANDS.md`
+3. ✅ [AGENT] T3 Canon 2–3: copy `.cursor/rules/` including `product-brief.mdc` (keep `wpf-mvvm.mdc`); copy `docs/CURSOR_MODES.md` + `docs/help/`
+4. ✅ [AGENT] T4 Canon 4–5: additive template scripts + example stubs; merge (do not replace) `feature-gate.sh`, `validate-bootstrap.sh`, `check-license-compliance.sh`, `watch-agent-gates.sh`; keep WPF 800/400/200
+5. ✅ [AGENT] T5 Mixed 7–12: workflows additive only (no Pages/release-please; open-PR sync as workflow-example); union `.gitignore`; merge `bootstrap.config.json`, `TEMPLATE_INDEX.json` keys, `.env.example`, `PROJECT_CHECKLIST.md`
+6. ✅ [AGENT] T6 Mixed 13: stamp `AGENT.md` + `BUILD_PLAN` `product-brief-sync` from `branding/product.json` (not the template About stub)
+7. ✅ [AGENT] T7 Canon 6: `bash scripts/bootstrap-lifecycle.sh --sync-adapters`; empty diff on Sacred + `QuickMediaIngest/`
+8. ✅ [AUTO] T8 `validate-bootstrap --quick` then stamp `.template-version` / `TEMPLATE_INDEX` / `.template-update.json` to `1.5.0`
+9. ❌ [AUTO] T9 `feature-gate --stack dotnet-wpf` — environment block on this host (no .NET 8 SDK); Windows `dotnet` job in `ci.yml` unchanged
+10. 🔲 [HUMAN] T10 Review additive gitleaks/semgrep if not made required (Trivy stays the Security Scan bar)
 
 ---
 

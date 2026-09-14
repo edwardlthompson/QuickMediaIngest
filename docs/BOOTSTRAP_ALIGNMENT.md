@@ -1,14 +1,23 @@
 # Bootstrap Alignment — QuickMediaIngest ↔ agent-project-bootstrap
 
 > Alignment of this live .NET 8 WPF repo with upstream
-> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v1.0.0**.
+> [agent-project-bootstrap](https://github.com/edwardlthompson/agent-project-bootstrap) **v1.5.0**.
 > Not a fresh bootstrap. Application code and `modules/dotnet-wpf` are preserved.
 
-**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `1.0.0` (Canon + Mixed catch-up)
+**Started:** 2026-07-21 · **From:** template `0.11.0` · **Aligned process level:** `1.5.0` (Canon + Mixed catch-up)
 
 ---
 
+## 1.5.0 sync (2026-09-14)
 
+Catch-up from process `1.0.0` to upstream release **v1.5.0**:
+
+- Copied Canon: `.cursor/commands/` (incl. `/resume`), `.cursor/rules/` (kept `wpf-mvvm.mdc`, added `product-brief.mdc`), `docs/help/` (`CLINE.md`, `DONATIONS.md`, `SETTINGS_ASCII_TOUR.md`, `UPGRADE.md`), additive template scripts (`resume-handoff`, template-gaps/open-PR sync as scripts + workflow-example), example stubs, `AGENT.md.example`
+- Merged Mixed: `bootstrap.config.json` (`crash_inbox`), `.gitignore`, `.env.example`, `TEMPLATE_INDEX.json` project card, `PROJECT_CHECKLIST.md`, `validate-bootstrap.sh` (still skips web-only artifacts; restored child template-index/hygiene/large-file WPF skips)
+- Stamped `AGENT.md` + BUILD_PLAN `product-brief-sync` from `branding/product.json` (not the template About stub)
+- Synced adapters via `bootstrap-lifecycle.sh --sync-adapters` (did not rewrite Sacred `AGENTS.md`)
+- Security: Trivy stays required; gitleaks/semgrep added as `continue-on-error` (HUMAN T10)
+- Skipped: `examples/**`, Pages/release-please as active CI, `docs/spec.md` / `docs/plan.md` stubs, product app under `QuickMediaIngest/`
 
 ## 1.0.0 sync (2026-08-30)
 

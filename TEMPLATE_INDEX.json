@@ -1,5 +1,5 @@
 {
-  "template_version": "1.0.0",
+  "template_version": "1.5.0",
   "entry_points": {
     "bootstrap": "docs/START_HERE.md",
     "reference": "docs/FOR_AGENTS.md",
@@ -11,7 +11,13 @@
     "upgrade": "docs/help/UPGRADE.md",
     "tour": "docs/help/TOUR.md",
     "coach": "docs/help/COACH.md",
-    "glossary": "docs/help/GLOSSARY.md"
+    "glossary": "docs/help/GLOSSARY.md",
+    "ideas": "docs/help/IDEAS.md",
+    "allideas": "docs/help/ALLIDEAS.md",
+    "adr": "docs/help/ADR.md",
+    "donations": "docs/help/DONATIONS.md",
+    "agent_portability": "docs/AGENT_PORTABILITY.md",
+    "batch_commands_print": "docs/help/batch-commands-print.html"
   },
   "files": [
     {
@@ -835,5 +841,10 @@
       ".cursor/commands/emulator.md",
       ".cursor/commands/adr.md"
     ]
+  },
+  "project": {
+    "name": "Quick Media Ingest",
+    "purpose": "FOSS .NET 8 WPF desktop app for ingesting photos and videos from SD cards, local drives, and FTP into dated shoot-based folders",
+    "stack": "dotnet-wpf"
   }
 }

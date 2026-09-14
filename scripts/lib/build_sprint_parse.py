@@ -5,7 +5,6 @@ from build_sprint_model import (
     HUMAN_GROUP_HEADER,
     PARALLEL_HEADER,
     ROW_BULLET,
-    ROW_FLEX,
     ROW_NUMBERED,
     SEQUENTIAL_HEADER,
     SPRINT_HEADER,
@@ -77,49 +76,6 @@ def parse_sprint_blocks(text: str) -> list[tuple[str, list[str]]]:
     return blocks
 
 
-def _child_product_sprint(header: str) -> str | None:
-    title = header[3:].strip()
-    if title.startswith("Sequential lane"):
-        return "Sequential lane"
-    if title.startswith("Golden Path"):
-        return "Golden Path catch-up"
-    if title.startswith("Ongoing Maintenance"):
-        return "Ongoing Maintenance"
-    if title.lower().startswith("human"):
-        return "Human & device"
-    return None
-
-
-def parse_child_product_rows(text: str) -> list[PlanRow]:
-    """Open rows on the child product board (not Child Repo Playbook sprints)."""
-    rows: list[PlanRow] = []
-    sprint: str | None = None
-    for line in text.splitlines():
-        if line.startswith("## "):
-            sprint = _child_product_sprint(line)
-            continue
-        if sprint is None:
-            continue
-        match = ROW_FLEX.match(line)
-        if not match:
-            continue
-        owner = match.group("owner")
-        phase = (
-            "human_group"
-            if owner in ("HUMAN", "ADB")
-            else "maintenance" if sprint == "Ongoing Maintenance" else "pre_parallel"
-        )
-        rows.append(
-            PlanRow(
-                owner=owner,
-                task=match.group("task").strip(),
-                sprint=sprint,
-                phase=phase,
-            )
-        )
-    return rows
-
-
 def parse_maintenance_rows(text: str) -> tuple[list[PlanRow], list[PlanRow]]:
     auto_rows: list[PlanRow] = []
     human_rows: list[PlanRow] = []
@@ -152,30 +108,35 @@ def parse_maintenance_rows(text: str) -> tuple[list[PlanRow], list[PlanRow]]:
     return auto_rows, human_rows
 
 
-def parse_maintainer_active_board(text: str) -> tuple[list[PlanRow], list[PlanRow]]:
+def parse_numbered_board(
+    text: str, *, require_maintainer_header: bool = False
+) -> tuple[list[PlanRow], list[PlanRow]]:
     aa: list[PlanRow] = []
     ha: list[PlanRow] = []
-    in_board = False
-    sprint = "Template Maintainer"
+    has_header = any(line.startswith("## Template Maintainer") for line in text.splitlines())
+    if require_maintainer_header and not has_header:
+        return [], []
+    started = not has_header
+    sprint = "Board"
     for line in text.splitlines():
         if line.startswith("## Template Maintainer"):
-            in_board = True
+            started = True
             continue
-        if in_board and line.startswith("## ") and not line.startswith("## Template Maintainer"):
+        if not started:
+            continue
+        if line.startswith("## Ongoing Maintenance") or line.startswith("## Archive"):
             break
-        if not in_board:
-            continue
         if line.startswith("### "):
             sprint = line.strip().lstrip("#").strip()
             continue
-        match = ROW_NUMBERED.match(line)
+        match = ROW_NUMBERED.match(line) or ROW_BULLET.match(line)
         if not match:
             continue
         row = PlanRow(
             owner=match.group("owner"),
             task=match.group("task").strip(),
             sprint=sprint,
-            phase="maintainer_board",
+            phase="board",
         )
         if row.owner in ("HUMAN", "ADB"):
             ha.append(row)
@@ -183,8 +144,7 @@ def parse_maintainer_active_board(text: str) -> tuple[list[PlanRow], list[PlanRo
             aa.append(row)
     return aa, ha
 
-
-def parse_maintainer_queue(text: str) -> tuple[list[PlanRow], list[PlanRow]]:
-    board_aa, board_ha = parse_maintainer_active_board(text)
+def parse_board_queue(text: str, *, maintainer: bool) -> tuple[list[PlanRow], list[PlanRow]]:
+    board_aa, board_ha = parse_numbered_board(text, require_maintainer_header=maintainer)
     maint_auto, maint_human = parse_maintenance_rows(text)
     return board_aa + maint_auto, board_ha + maint_human

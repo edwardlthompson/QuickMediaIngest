@@ -8,10 +8,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# shellcheck source=scripts/lib/resolve-gh.sh
-. "$ROOT/scripts/lib/resolve-gh.sh"
-
-if ! qmi_gh_available; then
+if ! command -v gh >/dev/null 2>&1; then
   echo "ERROR: gh CLI required"
   exit 1
 fi

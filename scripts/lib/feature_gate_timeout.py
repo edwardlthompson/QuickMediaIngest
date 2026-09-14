@@ -12,6 +12,7 @@ DEFAULTS = {
     "rust": 300,
     "go": 180,
     "lightroom": 120,
+    "blender": 240,
     "docs": 180,
     "multi": 900,
 }
@@ -24,6 +25,7 @@ STAGE_PREFIXES = (
     "rust",
     "go",
     "lightroom",
+    "blender",
 )
 
 

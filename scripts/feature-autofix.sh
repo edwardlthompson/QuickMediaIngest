@@ -6,9 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if command -v python3 >/dev/null 2>&1; then PY=python3
-elif command -v python >/dev/null 2>&1; then PY=python
-else PY=python3; fi
+# shellcheck source=lib/resolve-python.sh
+. "$(cd "$(dirname "$0")" && pwd)/lib/resolve-python.sh"
 
 DRY=false
 PATHS=""
@@ -46,10 +45,6 @@ should_run() {
   local s="$1"
   [ "$STACK" = "multi" ] || [ "$STACK" = "none" ] || [ "$STACK" = "$s" ]
 }
-
-if should_run dotnet-wpf && [ -f QuickMediaIngest-1.sln ] && command -v dotnet >/dev/null 2>&1; then
-  run_fix dotnet-format dotnet format QuickMediaIngest-1.sln || true
-fi
 
 if should_run python && [ -f examples/python/pyproject.toml ] && command -v uv >/dev/null 2>&1; then
   (cd examples/python && run_fix ruff-check-fix uv run ruff check --fix .) || true
@@ -98,6 +93,10 @@ if command -v pre-commit >/dev/null 2>&1; then
     # shellcheck disable=SC2086
     run_fix pre-commit-whitespace pre-commit run trailing-whitespace end-of-file-fixer --files $FILES || true
   fi
+fi
+
+if [ -f scripts/refresh-build-plan-tally.sh ]; then
+  run_fix build-plan-tally bash scripts/refresh-build-plan-tally.sh || true
 fi
 
 if [ -f scripts/normalize-markdown-whitespace.py ]; then

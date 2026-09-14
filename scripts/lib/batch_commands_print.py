@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+from batch_commands_print_audit import audit_html
+
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = ROOT / "schemas" / "batch-commands-print.json"
 HTML_PATH = ROOT / "docs" / "help" / "batch-commands-print.html"
@@ -17,6 +19,7 @@ GROUPS = (
     ("hardware", "Local hardware"),
     ("maintain", "Maintenance"),
     ("session", "Long sessions"),
+    ("advanced", "Advanced (optional)"),
 )
 HEAD = """<!DOCTYPE html>
 <html lang="en">
@@ -45,7 +48,7 @@ footer { font-size: 0.9rem; margin-top: 1.5rem; }
 <body>
 <p class="no-print"><strong>How to print:</strong> open this file in a browser, then use Print (Ctrl+P or Cmd+P). Landscape is optional.</p>
 <h1>Agent shortcuts</h1>
-<p class="lead">Type <code>/</code> in Cursor Agent chat, then pick a name. Slash commands are Cursor-only; other tools read the matching file under <code>docs/help/</code>.</p>
+<p class="lead">Type <code>/</code> in Cursor Agent chat, then pick a name. Slash commands are Cursor-only; other tools read the matching file under <code>docs/help/</code>. First-time autonomous work: Cline in Cursor (review every diff). Do not paste API keys.</p>
 <div class="warn"><strong>Publishing:</strong> <code>/push</code> and <code>/ship</code> send code to GitHub. Run them only when you intend to publish.</div>
 """
 FOOT = """<footer>Other IDEs: paste <code>Read docs/help/TOUR.md and walk me through it.</code> Bookmark the on-screen list at <code>docs/help/BATCH_COMMANDS.md</code>.</footer>
@@ -68,7 +71,10 @@ def render(cmds: dict) -> str:
         if not rows:
             continue
         heading = '<h2 class="break">' if group == "start" else "<h2>"
-        parts.append(f"{heading}{title}</h2>\n<table>\n<tr><th>Type this</th><th>When to use it</th></tr>\n")
+        parts.append(
+            f"{heading}{title}</h2>\n<table>\n"
+            '<tr><th scope="col">Type this</th><th scope="col">When to use it</th></tr>\n'
+        )
         for name, meta in rows:
             cap = str(meta.get("caption") or "").replace("<", "&lt;")
             parts.append(f"<tr><td><code>/{name}</code></td><td>{cap}</td></tr>\n")
@@ -99,6 +105,7 @@ def check(root: Path, names: set[str]) -> list[str]:
     expected = render(cmds)
     if html.replace("\r\n", "\n") != expected.replace("\r\n", "\n"):
         errors.append("print HTML stale; run: python3 scripts/lib/batch_commands_print.py --write")
+    errors.extend(audit_html(html, cmds))
     return errors
 
 

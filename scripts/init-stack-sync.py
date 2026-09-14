@@ -9,29 +9,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 MODULE_LINES = {
-    "dotnet-wpf": ".NET / WPF",
     "android": "Android / F-Droid",
     "web": "Web / PWA",
     "python": "Python",
     "node": "Node API",
     "lightroom": "Lightroom Classic",
+    "blender": "Blender icon factory",
     "rust": "Rust",
     "go": "Go",
 }
 
-MODULE_PATHS = {
-    "dotnet-wpf": "modules/dotnet-wpf/MODULE.md",
+MODULE_EXAMPLE_DIRS = {
     "android": "examples/android",
     "web": "examples/web",
     "python": "examples/python",
     "node": "examples/node",
     "lightroom": "examples/lightroom",
+    "blender": "examples/blender",
     "rust": "examples/rust",
     "go": "examples/go",
 }
 
 PARALLEL_NOTES = {
-    "dotnet-wpf": "Sprint 1 Parallel: WPF scope only (`QuickMediaIngest/**`, `QuickMediaIngest.Tests/**`)",
     "web": "Sprint 1 Parallel: Web PWA scope only (`examples/web/**`)",
     "python": "Sprint 1 Parallel: Python CLI scope only (`examples/python/**`)",
     "android": "Sprint 1 Parallel: Android FOSS scope only (`examples/android/**`)",
@@ -42,8 +41,8 @@ PARALLEL_NOTES = {
 
 
 def module_exists(root: Path, key: str) -> bool:
-    rel = MODULE_PATHS.get(key)
-    return rel is not None and (root / rel).exists()
+    rel = MODULE_EXAMPLE_DIRS.get(key)
+    return rel is not None and (root / rel).is_dir()
 
 
 def active_modules(stack: str, root: Path) -> list[str]:
@@ -57,19 +56,9 @@ def sync_agent_memory(root: Path, stack: str) -> None:
     text = path.read_text(encoding="utf-8")
     active = set(active_modules(stack, root))
     for key, label in MODULE_LINES.items():
-        mark = "x" if key in active else " "
-        # Match checkbox lines with optional suffix after label
-        pattern = rf"^- \[[ x]\] {re.escape(label)}.*$"
-        replacement = f"- [{mark}] {label}" + (
-            f" (`modules/{key}/MODULE.md`)" if key == "dotnet-wpf" and key in active
-            else " — not applicable" if key not in active
-            else ""
-        )
-        if key == "dotnet-wpf" and key in active:
-            replacement = f"- [{mark}] {label} (`modules/dotnet-wpf/MODULE.md`)"
-        elif key not in active:
-            replacement = f"- [ ] {label} — not applicable"
-        text = re.sub(pattern, replacement, text, count=1)
+        mark = "✅" if key in active else "❌"
+        pattern = rf"^- [✅❌] {re.escape(label)}"
+        text = re.sub(pattern, f"- {mark} {label}", text, count=1)
     path.write_text(text, encoding="utf-8")
 
 

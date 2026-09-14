@@ -1,6 +1,6 @@
 # Project Checklist
 
-> Child product checklist (merged from template v1.0.0). Status: 🔲 open · ✅ done · ❌ blocked.
+> Child product checklist (merged from template v1.5.0). Status: 🔲 open · ✅ done · ❌ blocked.
 > Project: **Quick Media Ingest** · Stack: `dotnet-wpf` · License: `MIT`
 
 ## Setup
@@ -22,6 +22,7 @@
 ## Agent adapters
 
 - ✅ `AGENTS.md` reviewed for this product (Sacred — do not overwrite from template)
+- ✅ `AGENT.md` holds the original product brief (stamped from `branding/product.json`; not the template About stub)
 - ✅ Adapters current (`bash scripts/bootstrap-lifecycle.sh --sync-adapters`)
   - `.cursor/rules/main.mdc`
   - `CLAUDE.md`

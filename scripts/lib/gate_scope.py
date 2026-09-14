@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-STACKS = ("android", "go", "lightroom", "node", "python", "rust", "web")
+STACKS = ("android", "blender", "go", "lightroom", "node", "python", "rust", "web")
 HINTS = tuple((f"examples/{s}/", (s,)) for s in STACKS) + (
     ("design-tokens/", ("web", "android")),
     ("branding/", ("web", "android")),
@@ -29,7 +29,7 @@ DOCS_NAMES = frozenset(
     "BUILD_PLAN.md CHANGELOG.md AGENT_MEMORY.md DECISION_LOG.md "
     "COMPLETED_TASKS.md HUMAN_BACKLOG.md README.md SUPPORT.md CITATION.cff "
     "PROMPT_LIBRARY.md KNOWLEDGE_BASE.md LICENSE CODE_OF_CONDUCT.md "
-    "SECURITY.md CODEOWNERS".split()
+    "SECURITY.md CODEOWNERS AGENT.md AGENT.md.example".split()
 )
 EPHEMERAL = (
     "/.gradle/", "/node_modules/", "/__pycache__/", "/.pytest_cache/",
