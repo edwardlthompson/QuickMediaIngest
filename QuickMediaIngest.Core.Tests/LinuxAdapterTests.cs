@@ -32,7 +32,23 @@ public sealed class LinuxAdapterTests
     {
         Assert.Equal(500, PathWatchTimings.DebounceMilliseconds);
         Assert.Equal(3000, PathWatchTimings.PollMilliseconds);
-        using var watcher = new DebouncedPathWatcher(Path.GetTempPath(), () => { });
+        string dir = Path.Combine(Path.GetTempPath(), "qmi-watch-" + Path.GetRandomFileName());
+        Directory.CreateDirectory(dir);
+        try
+        {
+            using var watcher = new DebouncedPathWatcher(dir, () => { });
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch
+            {
+                // temp
+            }
+        }
     }
 
     [Fact]

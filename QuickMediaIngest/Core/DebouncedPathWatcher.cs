@@ -56,9 +56,28 @@ namespace QuickMediaIngest.Core
 
         public void Dispose()
         {
-            _watcher?.Dispose();
+            try
+            {
+                if (_watcher != null)
+                {
+                    _watcher.EnableRaisingEvents = false;
+                }
+            }
+            catch
+            {
+                // inotify/ReadDirectoryChanges can already be torn down
+            }
+
             _poll.Dispose();
             _debounce.Dispose();
+            try
+            {
+                _watcher?.Dispose();
+            }
+            catch
+            {
+                // Windows FileSystemWatcher.Dispose can throw after EnableRaisingEvents=false
+            }
         }
     }
 }

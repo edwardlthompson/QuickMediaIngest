@@ -75,15 +75,35 @@ namespace QuickMediaIngest.Core.Services
 
         public void StopWatching()
         {
+            FileSystemWatcher? watcher;
             lock (_lock)
             {
-                if (_watcher != null)
-                {
-                    _watcher.EnableRaisingEvents = false;
-                    _watcher.Created -= OnCreated;
-                    _watcher.Dispose();
-                    _watcher = null;
-                }
+                watcher = _watcher;
+                _watcher = null;
+            }
+
+            if (watcher == null)
+            {
+                return;
+            }
+
+            try
+            {
+                watcher.EnableRaisingEvents = false;
+            }
+            catch
+            {
+                // already disabled
+            }
+
+            watcher.Created -= OnCreated;
+            try
+            {
+                watcher.Dispose();
+            }
+            catch
+            {
+                // Windows runner can throw from FileSystemWatcher.Dispose
             }
         }
 

@@ -17,6 +17,9 @@ def main() -> int:
     assert "secret-tool" in libsecret and "FileFtpCredentialStore" in libsecret
     watch = (APP / "Core/PathWatchTimings.cs").read_text(encoding="utf-8")
     assert "500" in watch and "3000" in watch
+    adapters = (ROOT / "QuickMediaIngest.Core.Tests/LinuxAdapterTests.cs").read_text(encoding="utf-8")
+    assert "new DebouncedPathWatcher(Path.GetTempPath()" not in adapters
+    assert "qmi-watch-" in adapters
     trash = (APP / "Core/GioTrashService.cs").read_text(encoding="utf-8")
     assert "ITrashService" in trash and "gio" in trash
     xdg = (APP / "Core/XdgAppPaths.cs").read_text(encoding="utf-8")
