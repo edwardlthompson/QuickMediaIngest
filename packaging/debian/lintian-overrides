@@ -1,0 +1,7 @@
+# Self-contained trimmed .NET 8 Avalonia publish (linux-x64 ReadyToRun).
+# The binary tree lives under /opt/quick-media-ingest instead of Debian-shared
+# /usr/lib; Magick/Skia/vips natives are bundled, not distro packages.
+quick-media-ingest: dir-or-file-in-opt *
+quick-media-ingest: embedded-library *
+quick-media-ingest: shared-library-is-executable *
+quick-media-ingest: no-changelog *

@@ -56,6 +56,7 @@ if [ ! -f "$SMOKE_BIN" ]; then
 fi
 chmod +x "$SMOKE_BIN"
 "$SMOKE_BIN" --smoke-native
+find "$APPDIR" -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 0644 {} +
 
 {
   cat packaging/debian/control
@@ -81,17 +82,27 @@ install -m 0644 packaging/debian/quick-media-ingest-import.desktop \
   "$STAGE/usr/share/applications/quick-media-ingest-import.desktop"
 ICON_SRC="$ROOT/QuickMediaIngest/Assets/AppIcon.png"
 ICON_DST="$STAGE/usr/share/icons/hicolor/256x256/apps/quick-media-ingest.png"
-if command -v magick >/dev/null 2>&1; then
-  magick "$ICON_SRC" -resize 256x256 "$ICON_DST"
-elif command -v convert >/dev/null 2>&1; then
+if command -v convert >/dev/null 2>&1 && convert -version 2>/dev/null | grep -q ImageMagick; then
   convert "$ICON_SRC" -resize 256x256 "$ICON_DST"
+elif command -v magick >/dev/null 2>&1 && magick -version 2>/dev/null | grep -q ImageMagick; then
+  magick "$ICON_SRC" -resize 256x256 "$ICON_DST"
 else
+  mkdir -p "$STAGE/usr/share/icons/hicolor/1024x1024/apps"
+  install -m 0644 "$ICON_SRC" "$STAGE/usr/share/icons/hicolor/1024x1024/apps/quick-media-ingest.png"
   install -m 0644 "$ICON_SRC" "$ICON_DST"
 fi
 install -m 0644 "$ICON_DST" "$STAGE/usr/share/pixmaps/quick-media-ingest.png"
 install -m 0644 packaging/debian/io.github.edwardlthompson.QuickMediaIngest.metainfo.xml \
   "$STAGE/usr/share/metainfo/io.github.edwardlthompson.QuickMediaIngest.metainfo.xml"
 install -m 0644 packaging/debian/copyright "$STAGE/usr/share/doc/quick-media-ingest/copyright"
+install -d "$STAGE/usr/share/lintian/overrides"
+install -m 0644 packaging/debian/lintian-overrides \
+  "$STAGE/usr/share/lintian/overrides/quick-media-ingest"
+{
+  printf 'quick-media-ingest (%s) unstable; urgency=medium\n\n' "$VERSION"
+  printf '  * Release %s.\n\n' "$VERSION"
+  printf ' -- Edward Thompson <noreply@users.noreply.github.com>  %s\n' "$(date -uR)"
+} | gzip -9n > "$STAGE/usr/share/doc/quick-media-ingest/changelog.gz"
 
 dpkg-deb --root-owner-group --build "$STAGE" "$DEB"
 

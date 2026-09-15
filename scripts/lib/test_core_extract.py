@@ -16,6 +16,7 @@ def _tfm(csproj: Path) -> str:
 def main() -> int:
     core = _tfm(ROOT / "QuickMediaIngest.Core/QuickMediaIngest.Core.csproj")
     assert "QuickMediaIngest" in core and "Core" in core
+    assert 'InternalsVisibleTo Include="QuickMediaIngest"' in core
     assert "**" in core and ".cs" in core
     _tfm(ROOT / "QuickMediaIngest.Localization/QuickMediaIngest.Localization.csproj")
     _tfm(ROOT / "QuickMediaIngest.Core.Tests/QuickMediaIngest.Core.Tests.csproj")

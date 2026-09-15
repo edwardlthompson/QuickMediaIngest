@@ -14,6 +14,9 @@ def main() -> int:
     assert "PublishSingleFile=false" in script
     assert "linux-x64" in script
     assert "lintian --fail-on error" in script
+    assert "lintian-overrides" in script
+    overrides = (ROOT / "packaging/debian/lintian-overrides").read_text(encoding="utf-8")
+    assert "dir-or-file-in-opt" in overrides
     desktop = (ROOT / "packaging/debian/quick-media-ingest.desktop").read_text(encoding="utf-8")
     assert "Exec=/opt/quick-media-ingest/QuickMediaIngest.Desktop" in desktop
     assert "Icon=quick-media-ingest" in desktop
