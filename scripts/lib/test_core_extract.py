@@ -24,6 +24,10 @@ def main() -> int:
     assert "QuickMediaIngest.Core.csproj" in wpf, wpf
     assert "QuickMediaIngest.Localization.csproj" in wpf, wpf
     assert r'Compile Remove="Core\**\*.cs"' in wpf or "Compile Remove=\"Core" in wpf, wpf
+    main_xaml = (ROOT / "QuickMediaIngest/MainWindow.xaml").read_text(encoding="utf-8")
+    assert "assembly=QuickMediaIngest.Core" in main_xaml
+    loc = ROOT / "QuickMediaIngest/Localization/Loc.cs"
+    assert loc.is_file(), "WPF Loc MarkupExtension must stay in the WPF project"
     adapter = ROOT / "QuickMediaIngest/Platform/Windows"
     for name in (
         "WindowsAppPaths.cs",

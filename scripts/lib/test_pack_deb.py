@@ -15,6 +15,8 @@ def main() -> int:
     assert "linux-x64" in script
     assert "lintian --fail-on error" in script
     assert "lintian-overrides" in script
+    smoke = (ROOT / "scripts/smoke-deb.sh").read_text(encoding="utf-8")
+    assert "set +o pipefail" in smoke
     overrides = (ROOT / "packaging/debian/lintian-overrides").read_text(encoding="utf-8")
     assert "dir-or-file-in-opt" in overrides
     desktop = (ROOT / "packaging/debian/quick-media-ingest.desktop").read_text(encoding="utf-8")

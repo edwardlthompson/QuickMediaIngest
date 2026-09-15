@@ -48,6 +48,7 @@ else
 fi
 
 if command -v dpkg-deb >/dev/null 2>&1; then
+  set +o pipefail
   if ! dpkg-deb -c "$DEB" | grep -q 'quick-media-ingest-import.desktop'; then
     echo "FAIL: deb missing import .desktop (x-content/image-dcf handler)"
     exit 1
@@ -78,6 +79,7 @@ if command -v dpkg-deb >/dev/null 2>&1; then
     echo "FAIL: menu desktop is NoDisplay"
     exit 1
   }
+  set -o pipefail
 fi
 
 if [ "$CARD" = true ]; then
