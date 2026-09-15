@@ -64,7 +64,8 @@ namespace QuickMediaIngest.ViewModels
                 ImportItem? rendered = group.FirstOrDefault(i =>
                 {
                     string ext = Path.GetExtension(i.FileName).ToLowerInvariant();
-                    return ext is ".heic" or ".heif" or ".jpg" or ".jpeg"
+                    return (MediaExtensions.IsJpegFamily(ext) || MediaExtensions.IsHeifFamily(ext)
+                            || ext is ".jxl")
                         && i.Thumbnail is System.Windows.Media.Imaging.BitmapSource renderedBitmap
                         && renderedBitmap.PixelWidth >= ThumbnailPreviewValidator.MinPixelEdge
                         && renderedBitmap.PixelHeight >= ThumbnailPreviewValidator.MinPixelEdge;
@@ -129,7 +130,8 @@ namespace QuickMediaIngest.ViewModels
                 }
 
                 string otherExt = Path.GetExtension(other.FileName).ToLowerInvariant();
-                if (otherExt is ".heic" or ".heif" or ".jpg" or ".jpeg")
+                if (MediaExtensions.IsJpegFamily(otherExt) || MediaExtensions.IsHeifFamily(otherExt)
+                    || otherExt is ".jxl")
                 {
                     return true;
                 }

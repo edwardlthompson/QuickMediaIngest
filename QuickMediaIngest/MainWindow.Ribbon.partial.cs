@@ -9,7 +9,6 @@ using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
 using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
 using TextBox = System.Windows.Controls.TextBox;
 using DataObject = System.Windows.DataObject;
 using DragDropEffects = System.Windows.DragDropEffects;
@@ -54,22 +53,6 @@ namespace QuickMediaIngest
             }
         }
 
-        private void PillToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            // IsChecked == dark UI (matches App.CurrentIsDarkTheme)
-            bool isDark = ThemeToggle?.IsChecked ?? false;
-
-            // Persist and apply theme through the viewmodel so SaveConfig() is invoked
-            if (DataContext is MainViewModel vm)
-            {
-                vm.IsDarkTheme = isDark;
-            }
-            else
-            {
-                App.ApplyTheme(!isDark);
-            }
-        }
-
         private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.F
@@ -103,7 +86,10 @@ namespace QuickMediaIngest
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to open crash logs folder.");
-                System.Windows.MessageBox.Show(AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message), AppLocalizer.Get("Msg_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
+                if (DataContext is MainViewModel vm)
+                {
+                    vm.NotifyUser(AppLocalizer.Get("Msg_Error_Title"), AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message));
+                }
             }
         }
 

@@ -17,17 +17,30 @@ namespace QuickMediaIngest.Core
                 return null;
             }
 
+            return TryResolveForSerial(serial, ftpRemoteFolder, pathProbe);
+        }
+
+        public static AdbTransferSession? TryResolveForSerial(
+            string deviceSerial,
+            string ftpRemoteFolder,
+            IAdbPathProbe? pathProbe = null)
+        {
+            if (string.IsNullOrWhiteSpace(deviceSerial))
+            {
+                return null;
+            }
+
             IAdbPathProbe probe = pathProbe ?? new AdbShellPathProbe();
             foreach (string candidate in AdbAndroidPath.CandidateDirectoryRoots(ftpRemoteFolder))
             {
-                if (!probe.DirectoryExists(serial, candidate))
+                if (!probe.DirectoryExists(deviceSerial, candidate))
                 {
                     continue;
                 }
 
                 if (AdbAndroidPath.TryGetMediaRootPrefix(candidate, ftpRemoteFolder, out string prefix))
                 {
-                    return new AdbTransferSession(serial, prefix);
+                    return new AdbTransferSession(deviceSerial, prefix);
                 }
             }
 

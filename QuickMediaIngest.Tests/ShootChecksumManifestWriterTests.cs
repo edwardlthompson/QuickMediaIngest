@@ -30,6 +30,22 @@ namespace QuickMediaIngest.Tests
                 Assert.Contains("photo1.jpg", content);
                 Assert.Contains("photo2.jpg", content);
                 Assert.Contains("*photo1.jpg", content);
+
+                string preDir = Path.Combine(Path.GetTempPath(), $"manifest-pre-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(preDir);
+                try
+                {
+                    string prePath = await ShootChecksumManifestWriter.WritePrecomputedAsync(
+                        preDir,
+                        new[] { (Path.Combine(preDir, "a.jpg"), "abc123") });
+                    Assert.NotNull(prePath);
+                    string pre = await File.ReadAllTextAsync(prePath);
+                    Assert.Contains("abc123 *a.jpg", pre);
+                }
+                finally
+                {
+                    Directory.Delete(preDir, recursive: true);
+                }
             }
             finally
             {

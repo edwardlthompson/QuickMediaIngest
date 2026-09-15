@@ -3,7 +3,7 @@
                     xmlns:system="clr-namespace:System;assembly=System.Runtime">
 
     <!-- ============ DARK THEME COLOR PALETTE ============ -->
-    <!-- Inspired by Excel 2003 with modern dark theme aesthetics -->
+    <!-- Studio chrome: dark surfaces, one photo-safe accent -->
     
     <!-- Primary backgrounds -->
     <Color x:Key="DarkTheme.Background">#1E1E1E</Color>
@@ -14,9 +14,9 @@
     <!-- Text colors -->
     <Color x:Key="DarkTheme.TextPrimary">#FFFFFF</Color>
     <Color x:Key="DarkTheme.TextSecondary">#E0E0E0</Color>
-    <Color x:Key="DarkTheme.TextTertiary">#999999</Color>
+    <Color x:Key="DarkTheme.TextTertiary">#B0BEC5</Color>
     
-    <!-- Accent colors - Excel 2003 iconic blue -->
+    <!-- Accent — keep yellow out of brand chrome -->
     <Color x:Key="DarkTheme.Accent">#007ACC</Color>
     <Color x:Key="DarkTheme.AccentLight">#1084D7</Color>
     
@@ -28,7 +28,7 @@
     <Color x:Key="DarkTheme.Warning">#FFA500</Color>
     <Color x:Key="DarkTheme.Error">#F44336</Color>
     
-    <!-- Excel 2003 yellow accent (sheet tabs) -->
+    <!-- Warning-only yellow (never Material primary) -->
     <Color x:Key="DarkTheme.ExcelYellow">#FFEB3B</Color>
     
     <!-- ============ LIGHT THEME COLOR PALETTE ============ -->
@@ -42,7 +42,7 @@
     <!-- Text colors -->
     <Color x:Key="LightTheme.TextPrimary">#212121</Color>
     <Color x:Key="LightTheme.TextSecondary">#424242</Color>
-    <Color x:Key="LightTheme.TextTertiary">#757575</Color>
+    <Color x:Key="LightTheme.TextTertiary">#5F6368</Color>
     
     <!-- Accent colors -->
     <Color x:Key="LightTheme.Accent">#007ACC</Color>
@@ -56,7 +56,7 @@
     <Color x:Key="LightTheme.Warning">#FFA500</Color>
     <Color x:Key="LightTheme.Error">#F44336</Color>
     
-    <!-- Excel 2003 yellow accent -->
+    <!-- Warning-only yellow (never Material primary) -->
     <Color x:Key="LightTheme.ExcelYellow">#FFD700</Color>
     
     <!-- ============ DEFAULT TO DARK THEME ============ -->
@@ -66,7 +66,7 @@
     <Color x:Key="Theme.CardBackground">#252526</Color>
     <Color x:Key="Theme.TextPrimary">#FFFFFF</Color>
     <Color x:Key="Theme.TextSecondary">#E0E0E0</Color>
-    <Color x:Key="Theme.TextTertiary">#999999</Color>
+    <Color x:Key="Theme.TextTertiary">#B0BEC5</Color>
     <Color x:Key="Theme.Accent">#007ACC</Color>
     <Color x:Key="Theme.AccentLight">#1084D7</Color>
     <Color x:Key="Theme.Divider">#3F3F46</Color>

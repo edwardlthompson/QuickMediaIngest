@@ -70,7 +70,7 @@ namespace QuickMediaIngest.Core
             int slash = remotePath.LastIndexOf('/');
             string directory = slash >= 0 ? remotePath[..slash] : string.Empty;
             string baseName = Path.GetFileNameWithoutExtension(fileName);
-            foreach (string siblingExt in new[] { ".heic", ".heif", ".jpg", ".jpeg" })
+            foreach (string siblingExt in new[] { ".heic", ".heif", ".hif", ".avif", ".jxl", ".jpg", ".jpeg" })
             {
                 yield return string.IsNullOrEmpty(directory)
                     ? "/" + baseName + siblingExt

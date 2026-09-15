@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>QuickMediaIngest.Localization</RootNamespace>
+    <NeutralLanguage>en</NeutralLanguage>
+    <SatelliteResourceLanguages>fr;es</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QuickMediaIngest.Core\QuickMediaIngest.Core.csproj" />
+  </ItemGroup>
+</Project>

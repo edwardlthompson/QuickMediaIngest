@@ -9,7 +9,6 @@ using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
 using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
 using TextBox = System.Windows.Controls.TextBox;
 using DataObject = System.Windows.DataObject;
 using DragDropEffects = System.Windows.DragDropEffects;
@@ -24,6 +23,7 @@ using System.Windows.Media.Animation;
 using System.Threading;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
+using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Localization;
 using QuickMediaIngest.ViewModels;
 
@@ -279,6 +279,13 @@ namespace QuickMediaIngest
             {
                 transform = new TranslateTransform();
                 tile.RenderTransform = transform;
+            }
+
+            if (AccessibilityPreferencesDetector.IsReducedMotionPreferred())
+            {
+                transform.BeginAnimation(TranslateTransform.XProperty, null);
+                transform.X = offset;
+                return;
             }
 
             var animation = new DoubleAnimation

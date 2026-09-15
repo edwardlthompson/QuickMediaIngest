@@ -19,9 +19,9 @@
 
 | Layer | Path |
 |-------|------|
-| Logic | `src/{feature}/` or stack equivalent |
-| View | `src/components/{Feature}Panel.ts` / `ui/{feature}/` |
-| Tests | co-located unit tests |
+| Logic | `QuickMediaIngest/Core/{feature}/` or stack equivalent |
+| View | `QuickMediaIngest/Controls/` / `*.xaml` |
+| Tests | `QuickMediaIngest.Tests/` |
 | Wiring | composition root ≤10 lines |
 ## Tests
 
@@ -41,5 +41,5 @@ See `docs/FEATURE_MODULES.md` per-feature checklist and BUILD_PLAN Sprint 2+ fea
 
 ## Notes
 
-- Reference exemplar: About screen (`examples/web/src/about/`, `examples/android/.../about/`)
+- Reference exemplar: ingest-bench (`docs/features/ingest-chrome.md`, `QuickMediaIngest/`)
 - After each AGENT step: `bash scripts/watch-agent-gates.sh --once --autofix`

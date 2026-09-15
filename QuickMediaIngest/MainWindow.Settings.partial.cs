@@ -9,7 +9,6 @@ using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
 using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
 using TextBox = System.Windows.Controls.TextBox;
 using DataObject = System.Windows.DataObject;
 using DragDropEffects = System.Windows.DragDropEffects;
@@ -50,7 +49,10 @@ namespace QuickMediaIngest
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to open logs folder.");
-                System.Windows.MessageBox.Show(AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message), AppLocalizer.Get("Msg_Error_Title"), MessageBoxButton.OK, MessageBoxImage.Error);
+                if (DataContext is MainViewModel vm)
+                {
+                    vm.NotifyUser(AppLocalizer.Get("Msg_Error_Title"), AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message));
+                }
             }
         }
 
@@ -106,7 +108,7 @@ namespace QuickMediaIngest
         {
             if (SidebarColumn != null)
             {
-                SidebarColumn.Width = new GridLength(isCollapsed ? 64 : 260);
+                AnimateSidebarWidth(isCollapsed);
             }
 
             if (SidebarExpandedContent != null)
@@ -194,22 +196,6 @@ namespace QuickMediaIngest
             {
                 SidebarLogoCollapsed.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
             }
-
-            // Icon-only theme lives on SidebarCollapsedRail when collapsed; hide label row to avoid duplicate + layout overflow.
-            if (SidebarThemeHeaderBorder != null)
-            {
-                SidebarThemeHeaderBorder.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
-            }
-        }
-
-        private void ThemeIconButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ThemeToggle == null)
-            {
-                return;
-            }
-
-            ThemeToggle.IsChecked = !(ThemeToggle.IsChecked ?? false);
         }
 
         private void CollapsedSourceButton_Click(object sender, RoutedEventArgs e)

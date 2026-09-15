@@ -4,11 +4,15 @@ using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using QuickMediaIngest.Core.Chrome;
+using QuickMediaIngest.Core.Services;
 
 namespace QuickMediaIngest
 {
     public partial class App
     {
+        private static bool _highContrastHooked;
+
         /// <summary>
         /// Detects the Windows system theme (dark/light mode) and applies it to the application.
         /// </summary>
@@ -57,7 +61,7 @@ namespace QuickMediaIngest
                 var theme = paletteHelper.GetTheme();
                 theme.SetBaseTheme(useLightTheme ? BaseTheme.Light : BaseTheme.Dark);
 
-                System.Windows.Media.Color accentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(useLightTheme ? "#1E88E5" : "#FFEB3B");
+                System.Windows.Media.Color accentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007ACC");
                 theme.SetPrimaryColor(accentColor);
                 theme.SetSecondaryColor(accentColor);
 
@@ -139,8 +143,8 @@ namespace QuickMediaIngest
             {
                 SetBrushColor(res, "SidebarBackground", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#232323"));
                 SetBrushColor(res, "SidebarVersion", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#9E9E9E"));
-                SetBrushColor(res, "SidebarTitle", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFDEB"));
-                SetBrushColor(res, "SidebarMenuItem", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFEB3B"));
+                SetBrushColor(res, "SidebarTitle", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                SetBrushColor(res, "SidebarMenuItem", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#4FC3F7"));
 
                 SetThemeColor(res, "Theme.Background", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#1E1E1E"));
                 SetThemeColor(res, "Theme.Surface", (System.Windows.Media.Color)ColorConverter.ConvertFromString("#2D2D30"));
@@ -161,6 +165,57 @@ namespace QuickMediaIngest
             }
 
             SyncThemeSolidBrushesFromColors(res);
+            ApplyHighContrastTokensIfNeeded();
+        }
+
+        private static void ApplyHighContrastTokensIfNeeded()
+        {
+            if (Application.Current == null)
+            {
+                return;
+            }
+
+            HookHighContrastChanges();
+            if (!HighContrastTokens.ShouldApply(AccessibilityPreferencesDetector.IsHighContrastActive()))
+            {
+                return;
+            }
+
+            var res = Application.Current.Resources;
+            res["Theme.Background"] = SystemColors.WindowColor;
+            res["Theme.Surface"] = SystemColors.WindowColor;
+            res["Theme.BarBackground"] = SystemColors.WindowColor;
+            res["Theme.CardBackground"] = SystemColors.WindowColor;
+            res["Theme.TextPrimary"] = SystemColors.WindowTextColor;
+            res["Theme.TextSecondary"] = SystemColors.WindowTextColor;
+            res["Theme.TextTertiary"] = SystemColors.GrayTextColor;
+            res["Theme.Accent"] = SystemColors.HighlightColor;
+            res["Theme.AccentLight"] = SystemColors.HighlightColor;
+            res["Theme.Divider"] = SystemColors.WindowFrameColor;
+            res["Theme.Border"] = SystemColors.WindowFrameColor;
+            res["Theme.Hover"] = SystemColors.HighlightColor;
+            res["MenuForegroundBrush"] = SystemColors.WindowTextBrush;
+            res["MenuBackgroundBrush"] = SystemColors.WindowBrush;
+            res["AppAccentBrush"] = SystemColors.HighlightBrush;
+            res["OverlayBlurRadius"] = HighContrastTokens.OverlayBlurRadius(true);
+            SyncThemeSolidBrushesFromColors(res);
+        }
+
+        private static void HookHighContrastChanges()
+        {
+            if (_highContrastHooked)
+            {
+                return;
+            }
+
+            _highContrastHooked = true;
+            SystemParameters.StaticPropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SystemParameters.HighContrast))
+                {
+                    ApplyTheme(CurrentIsDarkTheme ? false : true);
+                }
+            };
         }
 
         private static void SyncThemeSolidBrushesFromColors(ResourceDictionary rd)

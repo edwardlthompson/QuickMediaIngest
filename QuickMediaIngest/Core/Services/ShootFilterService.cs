@@ -7,11 +7,6 @@ namespace QuickMediaIngest.Core.Services
 {
     public sealed class ShootFilterService : IShootFilterService
     {
-        private static readonly HashSet<string> RawPreviewExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2", ".srw"
-        };
-
         public bool PassesToolbarRules(ImportItem item, ShootFilterCriteria criteria)
         {
             if (criteria.FilterStartDate.HasValue && item.DateTaken < criteria.FilterStartDate.Value.Date)
@@ -68,9 +63,9 @@ namespace QuickMediaIngest.Core.Services
                 case FilterFileTypeIds.Videos:
                     return item.IsVideo;
                 case FilterFileTypeIds.Raw:
-                    return RawPreviewExtensions.Contains($".{extension.ToLowerInvariant()}");
+                    return MediaExtensions.IsRawExtension("." + extension.ToLowerInvariant());
                 case FilterFileTypeIds.Jpeg:
-                    return extension is "JPG" or "JPEG";
+                    return MediaExtensions.IsJpegFamily("." + extension.ToLowerInvariant());
                 default:
                     return string.Equals(item.FileType, selectedFilter, StringComparison.OrdinalIgnoreCase);
             }

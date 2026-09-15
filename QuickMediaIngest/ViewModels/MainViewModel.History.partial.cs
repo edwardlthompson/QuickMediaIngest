@@ -102,6 +102,8 @@ namespace QuickMediaIngest.ViewModels
             {
                 _isUpdatingSelectAll = false;
             }
+
+            RefreshToolbarActionHints();
         }
 
         private void RebuildGroupsFromCurrentItems()

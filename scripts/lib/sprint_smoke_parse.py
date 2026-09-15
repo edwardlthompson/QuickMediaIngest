@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-HEADER = re.compile(r"^###\s+(?P<title>(?:M\d+|Sprint\s+).+)$")
+HEADER = re.compile(r"^###\s+(?P<title>.+)$")
 ROW = re.compile(
     r"^(?P<num>\d+[a-z]?)\.\s+(?P<status>🔲|✅|❌)\s+"
     r"\[(?P<owner>AGENT|AUTO|HUMAN|ADB)\]\s+(?P<task>.+)$"

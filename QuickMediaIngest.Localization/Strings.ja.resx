@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Main_WindowTitle" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_AppName" xml:space="preserve"><value>Quick Media Ingest</value></data>
+  <data name="Sidebar_Sources" xml:space="preserve"><value>ソース</value></data>
+  <data name="Sidebar_SettingsHeader" xml:space="preserve"><value>設定</value></data>
+  <data name="Btn_Preferences" xml:space="preserve"><value>環境設定</value></data>
+  <data name="Btn_AddFtpSource" xml:space="preserve"><value>FTPソースの追加</value></data>
+  <data name="Btn_ImportHistory" xml:space="preserve"><value>インポート履歴</value></data>
+  <data name="Btn_Exit" xml:space="preserve"><value>終了</value></data>
+  <data name="Toolbar_Import" xml:space="preserve"><value>インポート</value></data>
+  <data name="Toolbar_Refresh" xml:space="preserve"><value>更新</value></data>
+  <data name="Toolbar_SelectAll" xml:space="preserve"><value>すべて選択</value></data>
+  <data name="Toolbar_DeleteAfterImport" xml:space="preserve"><value>インポート後に削除</value></data>
+  <data name="Feedback_Title_Bug" xml:space="preserve"><value>バグを報告</value></data>
+  <data name="Feedback_Title_Feature" xml:space="preserve"><value>機能をリクエスト</value></data>
+  <data name="Feedback_Copy" xml:space="preserve"><value>コピー</value></data>
+  <data name="Feedback_OpenGitHub" xml:space="preserve"><value>GitHubを開く</value></data>
+  <data name="Feedback_Discard" xml:space="preserve"><value>破棄</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>外観</value></data>
+  <data name="Settings_OpenAppInfo" xml:space="preserve"><value>アプリ情報</value></data>
+  <data name="Theme_Mode_Light" xml:space="preserve"><value>ライト</value></data>
+  <data name="Theme_Mode_Dark" xml:space="preserve"><value>ダーク</value></data>
+  <data name="Toolbar_Preflight" xml:space="preserve"><value>ドライラン</value></data>
+  <data name="Empty_NoSourcesTitle" xml:space="preserve"><value>ソースがありません</value></data>
+  <data name="Empty_NoSourcesBody" xml:space="preserve"><value>SDカードを接続するか、カメラのFTPを追加してください。</value></data>
+  <data name="A11y_GroupByHours" xml:space="preserve"><value>撮影間隔（時間）</value></data>
+  <data name="A11y_ThumbnailSize" xml:space="preserve"><value>サムネイルサイズ</value></data>
+  <data name="Prompt_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="ImportAfterglow_Text" xml:space="preserve"><value>{0} 件をインポート → {1}</value></data>
+  <data name="ImportAfterglow_TextWarning" xml:space="preserve"><value>{0} 件をインポート → {1}（失敗 {2}）</value></data>
+  <data name="ImportAfterglow_Open" xml:space="preserve"><value>フォルダーを開く</value></data>
+  <data name="DestinationChip_A11y" xml:space="preserve"><value>インポート先</value></data>
+  <data name="Import_SceneDoneTitle" xml:space="preserve"><value>インポート完了</value></data>
+  <data name="Import_SceneFilesHint" xml:space="preserve"><value>ファイル</value></data>
+  <data name="Toolbar_ViewOverflow" xml:space="preserve"><value>…</value></data>
+  <data name="Settings_SearchPlaceholder" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="Settings_SearchNoResults" xml:space="preserve"><value>一致する設定はありません</value></data>
+</root>

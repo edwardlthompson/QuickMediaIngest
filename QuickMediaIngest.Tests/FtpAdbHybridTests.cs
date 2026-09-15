@@ -39,6 +39,9 @@ namespace QuickMediaIngest.Tests
                 .ToArray();
             Assert.Equal(".heic", System.IO.Path.GetExtension(paths[0]));
             Assert.Equal(".heif", System.IO.Path.GetExtension(paths[1]));
+            Assert.Contains(paths, p => p.EndsWith(".avif", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(paths, p => p.EndsWith(".jxl", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(paths, p => p.EndsWith(".hif", StringComparison.OrdinalIgnoreCase));
         }
     }
 

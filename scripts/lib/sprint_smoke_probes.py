@@ -116,7 +116,7 @@ def _docs_path_exists(root: Path, rel: str) -> bool:
     if "/" in norm:
         return False
     name = Path(rel).name
-    for folder in ("schemas", "docs", "examples", "modules", "scripts"):
+    for folder in ("schemas", "docs", "examples", "modules", "scripts", ".cursor", ".github"):
         base = root / folder
         if base.is_dir() and any(base.rglob(name)):
             return True

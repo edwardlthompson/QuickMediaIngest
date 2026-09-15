@@ -77,8 +77,6 @@ namespace QuickMediaIngest.ViewModels
             return Path.Combine(localRoot, trimmed.TrimStart('\\', '/'));
         }
 
-        public bool IsFirstRun { get; set; } = true;
-
         public void ShowOnboarding(Window owner, bool markNotFirstRun = true)
         {
             var dialog = new OnboardingDialog { Owner = owner };

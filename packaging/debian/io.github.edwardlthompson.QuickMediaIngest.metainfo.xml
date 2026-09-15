@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.edwardlthompson.QuickMediaIngest</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Quick Media Ingest</name>
+  <summary>Ingest photos and videos into dated, shoot-based folders</summary>
+  <description>
+    <p>FOSS ingest bench for photographers. The Linux package is the Avalonia head; Windows remains WPF.</p>
+  </description>
+  <launchable type="desktop-id">quick-media-ingest.desktop</launchable>
+  <url type="homepage">https://github.com/edwardlthompson/QuickMediaIngest</url>
+  <provides>
+    <binary>QuickMediaIngest.Desktop</binary>
+    <mediatype>x-content/image-dcf</mediatype>
+    <mediatype>x-content/image-picturecd</mediatype>
+    <mediatype>x-content/video-dcf</mediatype>
+  </provides>
+</component>

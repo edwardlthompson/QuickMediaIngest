@@ -17,20 +17,20 @@
 
 ## Container map
 
-| Layer | Web | Android |
-|-------|-----|---------|
-| View | `examples/web/src/components/FeedbackPanel.ts` | `examples/android/.../ui/feedback/` |
-| Logic | `examples/web/src/feedback/` | `examples/android/.../feedback/` |
-| Tests | `FeedbackPanel.test.ts`, `preview.test.ts` | `FeedbackPreviewTest.kt` |
-| Wiring | `appBootstrap.ts` / `AppShell.ts` ≤10 lines | `GoldenPathApp.kt` ≤10 lines |
+| Layer | Path |
+|-------|------|
+| View | `QuickMediaIngest/Controls/FeedbackOverlay/` |
+| Logic | `QuickMediaIngest/ViewModels/MainViewModel.Feedback.partial.cs` |
+| Tests | `QuickMediaIngest.Tests/MainViewModelFeedbackTests.cs`, `GoldenPathAutomationSmokeTests.GP4_*` |
+| Wiring | `MainViewModel` ReportBug / RequestFeature |
 ## Tests
 
-- Automated: yes — `FeedbackPanel.test.ts`, `preview.test.ts`, `FeedbackPreviewTest.kt`
+- Automated: yes — `QuickMediaIngest.Tests/MainViewModelFeedbackTests.cs`, `GoldenPathAutomationSmokeTests.GP4_*`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack <active>`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Definition of Done
 

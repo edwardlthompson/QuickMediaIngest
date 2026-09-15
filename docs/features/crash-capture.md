@@ -18,19 +18,19 @@
 
 ## Container map
 
-| Layer | Web | Android |
-|-------|-----|---------|
-| Logic | `examples/web/src/crash-capture/` | `examples/android/.../crashcapture/` |
-| Tests | `pendingCrash.test.ts` | `PendingCrashTest.kt` |
-| Wiring | `appBootstrap.ts` ≤10 lines | `GoldenPathApp.kt` / `MainActivity` ≤10 lines |
+| Layer | Path |
+|-------|------|
+| Logic | `QuickMediaIngest/Core/CrashCapture/` |
+| Tests | `QuickMediaIngest.Tests/CrashCaptureTests.cs`, `GoldenPathAutomationSmokeTests.GP2_*` |
+| Wiring | `QuickMediaIngest/App.CrashCapture.partial.cs` ≤10 lines |
 ## Tests
 
-- Automated: yes — `pendingCrash.test.ts` and `PendingCrashTest.kt`
+- Automated: yes — `QuickMediaIngest.Tests/CrashCaptureTests.cs`, `GoldenPathAutomationSmokeTests.GP2_*`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack <active>`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Definition of Done
 
@@ -38,5 +38,5 @@ Unit tests for queue-at-most-one, sanitize-before-persist, opt-in false, no re-e
 
 ## Notes
 
-- Web: `sessionStorage` unless save-crashes is on (`localStorage`)
-- Android: one app-internal file; chain previous `UncaughtExceptionHandler`
+- WPF: `QuickMediaIngest/Core/CrashCapture/` plus `App.CrashCapture.partial.cs`
+- Opt-in persist only; never auto-open GitHub

@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
+using QuickMediaIngest.Core.Prompt;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
 using QuickMediaIngest.Services;
@@ -38,49 +39,12 @@ namespace QuickMediaIngest.ViewModels
         /// <summary>Fired after shoot groups have been rebuilt from items.</summary>
         public event EventHandler? GroupsListRebuildCompleted;
 
-        [RelayCommand]
-        private void OpenImportHistory()
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ShowSettingsDialog = false;
-                    ShowScanExclusionsPanel = false;
-                    ShowAboutDialog = false;
-                    ShowImportHistoryDialog = true;
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "OpenImportHistory UI activation failed.");
-            }
-        }
-
-        [RelayCommand]
-        private void CloseImportHistory() => ShowImportHistoryDialog = false;
+        /// <summary>Fired when an import batch finishes (success flash).</summary>
+        public event EventHandler? ImportCompletedFlash;
 
         [ObservableProperty] private bool showImportHistoryDialog = false;
         [ObservableProperty] private bool showSettingsDialog = false;
         [ObservableProperty] private bool showScanExclusionsPanel = false;
-
-        [RelayCommand]
-        private void ToggleSettings()
-        {
-            ShowScanExclusionsPanel = false;
-            ShowImportHistoryDialog = false;
-            ShowSettingsDialog = true;
-        }
-
-        [RelayCommand]
-        private void OpenScanExclusions()
-        {
-            ShowSettingsDialog = false;
-            ShowImportHistoryDialog = false;
-            ShowScanExclusionsPanel = true;
-        }
-
-        [RelayCommand] private void CloseScanExclusions() => ShowScanExclusionsPanel = false;
 
         public IEnumerable<ImportHistoryRecord> RecentImportHistory => ImportHistoryRecords.Take(7);
 
@@ -133,6 +97,16 @@ namespace QuickMediaIngest.ViewModels
             ScanDialogTitle = AppLocalizer.Get("Vm_Scan_LoadingImportList");
             ScanProgressMessage = AppLocalizer.Get("Vm_Scan_PreparingScan");
             RefreshDestinationPresetLabels();
+            RefreshThemeModeLabels();
+        }
+
+        private void RefreshThemeModeLabels()
+        {
+            string selected = IsDarkTheme ? "Dark" : "Light";
+            ThemeModeOptions.Clear();
+            ThemeModeOptions.Add(new DestinationPresetOption("Light", AppLocalizer.Get("Theme_Mode_Light")));
+            ThemeModeOptions.Add(new DestinationPresetOption("Dark", AppLocalizer.Get("Theme_Mode_Dark")));
+            SelectedThemeModeKey = selected;
         }
 
         private void RefreshDestinationPresetLabels()
@@ -245,7 +219,8 @@ namespace QuickMediaIngest.ViewModels
             IAdbPathProbe adbPathProbe,
             IFileDialogService fileDialogService,
             IShellService shellService,
-            ILogger<MainViewModel> logger)
+            ILogger<MainViewModel> logger,
+            IUserPrompt? userPrompt = null)
         {
             _scanner = scanner;
             _ftpScanner = ftpScanner;
@@ -269,6 +244,7 @@ namespace QuickMediaIngest.ViewModels
             _groupBuilder = groupBuilder;
             _databaseService = databaseService;
             _logger = logger;
+            _userPrompt = userPrompt ?? this;
 
             InitializeSidebarSections();
             InitializeIntervalOptions();
@@ -276,6 +252,7 @@ namespace QuickMediaIngest.ViewModels
             ImportHistoryRecords.CollectionChanged += (s, e) => OnPropertyChanged(nameof(RecentImportHistory));
             Sources.CollectionChanged += (_, _) => RefreshUxEmptyStateHints();
             Groups.CollectionChanged += (_, _) => RefreshUxEmptyStateHints();
+            FailedImportRecords.CollectionChanged += (_, _) => RefreshToolbarActionHints();
         }
 
         private void InitializeIntervalOptions()

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickMediaIngest.Core.CrashCapture;
 using QuickMediaIngest.Core.GitHubFeedback;
+using QuickMediaIngest.Core.Nav;
 using QuickMediaIngest.Core.PrivacyReport;
 using QuickMediaIngest.Localization;
 
@@ -74,7 +75,10 @@ namespace QuickMediaIngest.ViewModels
         private void DiscardFeedback()
         {
             FeedbackDescription = string.Empty;
-            ShowFeedbackDialog = false;
+            if (_overlayNav.IsVisible(OverlayId.Feedback))
+            {
+                PopOverlay();
+            }
             new FilePendingCrashStore().Clear();
 
             try
@@ -105,8 +109,7 @@ namespace QuickMediaIngest.ViewModels
             FeedbackKind = "crash";
             FeedbackTitle = AppLocalizer.Get("Feedback_CrashTitle");
             FeedbackDescription = pending.Description;
-            ShowAboutDialog = false;
-            ShowFeedbackDialog = true;
+            PushOverlay(OverlayId.Feedback);
             RefreshFeedbackPreview();
         }
 
@@ -116,8 +119,7 @@ namespace QuickMediaIngest.ViewModels
             FeedbackTitle = kind == "feature"
                 ? AppLocalizer.Get("Feedback_FeatureTitle")
                 : AppLocalizer.Get("Feedback_BugTitle");
-            ShowAboutDialog = false;
-            ShowFeedbackDialog = true;
+            PushOverlay(OverlayId.Feedback);
             RefreshFeedbackPreview();
         }
 

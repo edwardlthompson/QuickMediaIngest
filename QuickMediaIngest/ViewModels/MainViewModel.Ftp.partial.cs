@@ -87,6 +87,7 @@ namespace QuickMediaIngest.ViewModels
             }
             RefreshImportReadinessSummary();
             OnPropertyChanged(nameof(IsDeleteAfterImportEnabled));
+            SyncIngestBench();
         }
         partial void OnDeleteAfterImportPromptDismissedChanged(bool value)
         {
@@ -288,7 +289,11 @@ namespace QuickMediaIngest.ViewModels
             SaveConfig();
             RefreshImportReadinessSummary();
         }
-        partial void OnUiLanguageChanged(string value) => SaveConfig();
+        partial void OnUiLanguageChanged(string value)
+        {
+            SaveConfig();
+            RefreshWindowFlowDirection();
+        }
         partial void OnShowSettingsDialogChanged(bool value)
         {
             if (value)
@@ -373,7 +378,20 @@ namespace QuickMediaIngest.ViewModels
         partial void OnIsDarkThemeChanged(bool value)
         {
             App.ApplyTheme(!value);
+            if (!string.Equals(SelectedThemeModeKey, value ? "Dark" : "Light", StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedThemeModeKey = value ? "Dark" : "Light";
+            }
             SaveConfig();
+        }
+
+        partial void OnSelectedThemeModeKeyChanged(string value)
+        {
+            bool dark = string.Equals(value, "Dark", StringComparison.OrdinalIgnoreCase);
+            if (IsDarkTheme != dark)
+            {
+                IsDarkTheme = dark;
+            }
         }
     }
 }

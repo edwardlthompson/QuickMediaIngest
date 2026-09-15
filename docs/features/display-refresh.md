@@ -19,19 +19,19 @@ Window requests the fastest same-resolution display mode. Scroll surfaces vote H
 
 | Layer | Path |
 |-------|------|
-| Logic | `examples/android/.../display/DisplayModeSelector.kt` |
-| Adapter | `examples/android/.../display/WindowRefresh.kt`, `HighRefreshScroll.kt` |
-| Tests | `examples/android/app/src/test/.../display/DisplayModeSelectorTest.kt` |
-| Wiring | `MainActivity` one call; About/Settings scroll modifiers |
+| Logic | `QuickMediaIngest/Core/DisplayRefresh/DisplayModeSelector.cs` |
+| Adapter | `QuickMediaIngest/Services/WindowRefresh.cs` |
+| Tests | `QuickMediaIngest.Tests/DisplayModeSelectorTests.cs` |
+| Wiring | `MainWindow.xaml.cs` one call |
 ## Tests
 
-- Automated: yes — `DisplayModeSelectorTest.kt`
+- Automated: yes — `QuickMediaIngest.Tests/DisplayModeSelectorTests.cs`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack android`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Notes
 
-Fallback validation: `./gradlew :app:testDebugUnitTest --tests dev.foss.goldenpath.display.DisplayModeSelectorTest`
+Fallback validation: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`

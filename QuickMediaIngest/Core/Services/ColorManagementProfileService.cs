@@ -30,6 +30,22 @@ namespace QuickMediaIngest.Core.Services
                         if (first.Length > 0) return first[0];
                     }
                 }
+                else if (OperatingSystem.IsLinux())
+                {
+                    string[] linux = new[]
+                    {
+                        "/usr/share/color/icc/colord/sRGB.icc",
+                        "/usr/share/color/icc/sRGB.icc",
+                        "/usr/share/color/icc/sRGB Color Space Profile.icm",
+                    };
+                    foreach (string path in linux)
+                    {
+                        if (File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {

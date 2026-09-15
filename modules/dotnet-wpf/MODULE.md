@@ -14,7 +14,7 @@
 ## Activation Checklist
 
 - [x] Solution includes app + test projects
-- [x] `QuickMediaIngest/Core/` isolated from WPF
+- [x] `QuickMediaIngest.Core` (`net8.0`) compiles `QuickMediaIngest/Core/` isolated from WPF
 - [x] xUnit tests for ingest engine, filters, grouping
 - [x] CI runs `dotnet build` + `dotnet test`
 - [x] Theme QA checklist for UI changes
@@ -31,6 +31,7 @@ build_local_test.bat
 dotnet restore QuickMediaIngest-1.sln
 dotnet build -c Release
 dotnet test -c Release
+
 ```
 
 ## File Size Limits (adapted for WPF)
@@ -40,7 +41,6 @@ dotnet test -c Release
 | `*.xaml` | 800 | Views; split into UserControls |
 | `ViewModels/*.cs`, `*.xaml.cs` | 400 | Use partial classes |
 | `Core/**/*.cs` | 200 | Pure logic |
-
 Grandfathered files are listed in `scripts/check-file-limits.sh` until Sprint 1 splits complete.
 
 ## Operations
@@ -57,7 +57,6 @@ Grandfathered files are listed in `scripts/check-file-limits.sh` until Sprint 1 
 | Scaffold, tests, CI, docs | `AGENT` |
 | Release approval, GitHub settings | `HUMAN` |
 | `dotnet test`, encoding, bootstrap validation | `AUTO` |
-
 After each `[AGENT]` step, run `bash scripts/watch-agent-gates.sh --once --autofix` (or `.\scripts\validate-local.ps1`). On exit **2**, halt per 3-strike rule.
 
 ## Cross-links (template process)

@@ -181,6 +181,10 @@ PARALLEL_CHECKS=(
   check-build-plan-tally.sh
   check-agent-adapters.sh
   check-env.sh
+  check-gitleaks-baseline.sh
+  check-semgrep.sh
+  check-security-scan-policy.sh
+  check-theme-qa.sh
 )
 if [ -f scripts/lib/run_checks_parallel.py ]; then
   if ! "$PY" scripts/lib/run_checks_parallel.py "${PARALLEL_CHECKS[@]}"; then

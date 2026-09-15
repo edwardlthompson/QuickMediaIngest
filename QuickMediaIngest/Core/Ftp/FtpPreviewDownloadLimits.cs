@@ -34,7 +34,7 @@ namespace QuickMediaIngest.Core
                 return RawBytes;
             }
 
-            if (ext is ".heic" or ".heif")
+            if (MediaExtensions.IsHeifFamily(ext))
             {
                 return HeicBytes;
             }
@@ -77,7 +77,7 @@ namespace QuickMediaIngest.Core
             }
 
             string ext = Path.GetExtension(fileName).ToLowerInvariant();
-            if (knownFileSize <= 0 && ext is ".heic" or ".heif")
+            if (knownFileSize <= 0 && MediaExtensions.IsHeifFamily(ext))
             {
                 return new[] { HeicBytes };
             }

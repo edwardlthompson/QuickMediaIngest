@@ -64,6 +64,15 @@ namespace QuickMediaIngest.Core
                 currentGroup.EndDate = current.DateTaken; // Bump end boundary
             }
 
+            foreach (ItemGroup group in groups)
+            {
+                ImportItem? first = group.Items.FirstOrDefault();
+                if (first is not null && string.IsNullOrWhiteSpace(group.FolderPath))
+                {
+                    group.FolderPath = Path.GetDirectoryName(first.SourcePath) ?? string.Empty;
+                }
+            }
+
             return groups;
         }
 

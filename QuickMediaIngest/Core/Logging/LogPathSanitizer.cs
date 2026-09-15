@@ -18,6 +18,8 @@ namespace QuickMediaIngest.Core.Logging
             FtpRemote
         }
 
+        private static readonly char[] DirectorySeparators = { '/', '\\' };
+
         public static string ForLog(string? path, PathKind kind) => kind switch
         {
             PathKind.AppData => AppData(path),
@@ -38,7 +40,7 @@ namespace QuickMediaIngest.Core.Logging
                 string trimmed = path.Trim();
                 string? root = Path.GetPathRoot(trimmed);
                 string[] segments = trimmed
-                    .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+                    .Split(DirectorySeparators, StringSplitOptions.RemoveEmptyEntries);
 
                 // UNC: \\server\share\... — first segment is server, skip root handling
                 bool isUnc = trimmed.StartsWith(@"\\", StringComparison.Ordinal) ||
@@ -63,20 +65,26 @@ namespace QuickMediaIngest.Core.Logging
                     return trimmed;
                 }
 
+                char sep = trimmed.Contains('\\') ? '\\' : '/';
                 string tail = string.Join(
-                    Path.DirectorySeparatorChar.ToString(),
+                    sep.ToString(),
                     segments.Skip(segments.Length - Math.Max(1, tailSegments)));
 
                 string prefix = isUnc
                     ? @"\\" + segments[0]
                     : (root ?? string.Empty).TrimEnd('\\', '/');
 
-                if (string.IsNullOrEmpty(prefix))
+                if (string.IsNullOrEmpty(prefix) && segments[0].Length == 2 && segments[0][1] == ':')
                 {
-                    return "..." + Path.DirectorySeparatorChar + tail;
+                    prefix = segments[0];
                 }
 
-                return prefix + Path.DirectorySeparatorChar + "..." + Path.DirectorySeparatorChar + tail;
+                if (string.IsNullOrEmpty(prefix))
+                {
+                    return "..." + sep + tail;
+                }
+
+                return prefix + sep + "..." + sep + tail;
             }
             catch
             {

@@ -9,13 +9,13 @@
     xmlns:behaviors="clr-namespace:QuickMediaIngest.Controls.Behaviors"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Grid>
-    <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
+    <Grid x:Name="AddFtpOverlay" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowAddFtpDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" behaviors:MotionAssist.FadeOnVisible="True">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -64,7 +64,7 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -104,7 +104,7 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -151,110 +151,56 @@
             </StackPanel>
         </Border>
     </Grid>
-    <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900">
+    <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowImportProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="900" behaviors:MotionAssist.FadeOnVisible="True">
         <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
             <Rectangle.Fill>
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
-        <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
-        <Border Width="760" Padding="18" CornerRadius="8"
+        <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#99000000" IsHitTestVisible="False"/>
+        <Border MaxWidth="720" MinHeight="280" Padding="28" CornerRadius="8"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 Background="{DynamicResource MaterialDesignPaper}"
                 BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
             <StackPanel>
-                <TextBlock Text="{loc:Loc Import_InProgressTitle}" Style="{StaticResource AppDialogTitleTextStyle}" Margin="0,0,0,10"/>
-                <ProgressBar Height="16" Minimum="0" Maximum="100" Value="{Binding ProgressPercent}" Margin="0,0,0,6"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="{loc:Loc Import_OverallProgress}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding ProgressPercent}" Style="{StaticResource AppBodyTextStyle}"/>
-                    <TextBlock Text="%" Style="{StaticResource AppBodyTextStyle}"/>
-                </StackPanel>
-
-                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,10"/>
-
-                <Border Background="{DynamicResource MenuBackgroundBrush}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Loc Import_CurrentGroup}" FontWeight="SemiBold" Margin="0,0,10,6"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentImportGroupTitle}" TextWrapping="Wrap" Margin="0,0,0,6"/>
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Loc Import_FilesProcessed}" FontWeight="SemiBold" Margin="0,0,10,6"/>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="{Binding ProcessedFilesForImport}"/>
-                            <TextBlock Text="/"/>
-                            <TextBlock Text="{Binding TotalFilesForImport}"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Loc Import_Succeeded}" FontWeight="SemiBold" Margin="0,0,10,6"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentFileBeingImported}" Margin="0,0,0,6"/>
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Loc Import_Failed}" FontWeight="SemiBold" Margin="0,0,10,6"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding FailedFilesForImport}" Margin="0,0,0,6"/>
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Loc Import_Elapsed}" FontWeight="SemiBold" Margin="0,0,10,6"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ImportElapsedText}" Margin="0,0,0,6"/>
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Loc Import_EtaSpeed}" FontWeight="SemiBold"/>
-                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal">
-                            <TextBlock Text="{loc:Loc About_Eta}"/>
-                            <TextBlock Text="{Binding ImportEtaText}"/>
-                            <TextBlock Text="  |  "/>
-                            <TextBlock Text="{Binding ImportDataRateText}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <TextBlock Text="{loc:Loc Import_CurrentGroupProgress}" Style="{StaticResource AppBodyTextStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                <ProgressBar Height="12" Minimum="0" Maximum="100" Value="{Binding CurrentGroupProgressPercent}" Margin="0,0,0,4"/>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Loc Import_GroupFiles}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding CurrentGroupFileBeingImported}" Style="{StaticResource AppBodyTextStyle}"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Loc Import_GroupTotal}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding TotalFilesInCurrentGroup}" Style="{StaticResource AppBodyTextStyle}"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="{loc:Loc Import_OverallTotalFiles}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding ImportSceneTitle}" Style="{StaticResource AppDialogTitleTextStyle}" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding ImportScenePercentText}" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,12"
+                           Foreground="{DynamicResource AppAccentBrush}"/>
+                <ProgressBar Height="24" Minimum="0" Maximum="100" Value="{Binding ProgressPercent}" Margin="0,0,0,16"/>
+                <TextBlock Text="{Binding CurrentImportGroupTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <ProgressBar Height="16" Minimum="0" Maximum="100" Value="{Binding CurrentGroupProgressPercent}" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                    <TextBlock Text="{Binding ProcessedFilesForImport}" Style="{StaticResource AppBodyTextStyle}"/>
+                    <TextBlock Text="/" Style="{StaticResource AppBodyTextStyle}"/>
                     <TextBlock Text="{Binding TotalFilesForImport}" Style="{StaticResource AppBodyTextStyle}"/>
+                    <TextBlock Text="{loc:Loc Import_SceneFilesHint}" Style="{StaticResource AppCaptionTextStyle}" Margin="8,0,0,0"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Loc Import_FailedInLastRun}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding FailedImportRecords.Count}" Style="{StaticResource AppBodyTextStyle}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                    <TextBlock Text="{Binding ImportElapsedText}" Style="{StaticResource AppCaptionTextStyle}"/>
+                    <TextBlock Text="  ·  " Style="{StaticResource AppCaptionTextStyle}"/>
+                    <TextBlock Text="{Binding ImportEtaText}" Style="{StaticResource AppCaptionTextStyle}"/>
+                    <TextBlock Text="  ·  " Style="{StaticResource AppCaptionTextStyle}"/>
+                    <TextBlock Text="{Binding ImportDataRateText}" Style="{StaticResource AppCaptionTextStyle}"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Loc Import_QueuedJobs}" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding QueuedImportCount}" Style="{StaticResource AppBodyTextStyle}"/>
-                </StackPanel>
-                <ItemsControl ItemsSource="{Binding FailedImportRecords}" Margin="0,6,0,0">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding FileName}" Style="{StaticResource AppCaptionTextStyle}" Foreground="{DynamicResource Theme.Error.Brush}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{loc:Loc ImportAfterglow_Open}"
+                            Command="{Binding OpenImportAfterglowFolderCommand}"
+                            Visibility="{Binding ShowImportSceneOpenDestination, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Style="{StaticResource DialogPrimaryButtonStyle}"
+                            Margin="0,0,8,0"/>
+                    <Button Content="{loc:Loc Btn_Close}"
+                            Command="{Binding DismissImportProgressSceneCommand}"
+                            Visibility="{Binding ShowImportSceneOpenDestination, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Style="{StaticResource DialogOutlinedButtonStyle}"
+                            Margin="0,0,8,0"/>
                     <Button Content="{loc:Loc Btn_CancelImport}"
                             Command="{Binding CancelActiveImportCommand}"
                             Visibility="{Binding IsImporting, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            Style="{StaticResource DialogOutlinedButtonStyle}"
-                            Padding="14,6"/>
+                            Style="{StaticResource DialogOutlinedButtonStyle}"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -265,7 +211,7 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -295,27 +241,20 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
             <Border Width="640" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock Text="{loc:Loc About_Title}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Loc About_Title}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,12"/>
                     <TextBlock Text="{loc:Loc About_Description}" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                    <TextBlock Text="{loc:Loc About_Glossary}" FontWeight="SemiBold" Margin="0,8,0,6"/>
-                    <StackPanel Margin="0,0,0,12">
-                        <TextBlock Text="{loc:Loc About_Glossary_TermPreflight}" FontWeight="SemiBold"/>
-                        <TextBlock Text="{loc:Loc About_Glossary_DefPreflight}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                        <TextBlock Text="{loc:Loc About_Glossary_TermUnified}" FontWeight="SemiBold"/>
-                        <TextBlock Text="{loc:Loc About_Glossary_DefUnified}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                        <TextBlock Text="{loc:Loc About_Glossary_TermShoot}" FontWeight="SemiBold"/>
-                        <TextBlock Text="{loc:Loc About_Glossary_DefShoot}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap"/>
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="120"/>
-                        <TextBlock Text="{Binding AppVersion}"/>
+                        <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="80"/>
+                        <TextBlock Text="{Binding AppVersion}" Width="120"/>
+                        <TextBlock Text="{loc:Loc About_BuildDate}" FontWeight="SemiBold" Width="80"/>
+                        <TextBlock Text="{Binding BuildDate}" Width="120"/>
                     </StackPanel>
 
                     <Separator Margin="0,12,0,12" />
@@ -354,12 +293,6 @@
                         <Button Content="{loc:Loc About_Releases}" Command="{Binding OpenGitHubCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,8,8" />
                         <Button Content="{loc:Loc About_DonateVenmo}" Command="{Binding OpenDonateVenmoCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="0,0,0,8" />
                     </WrapPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="{loc:Loc About_Version}" FontWeight="SemiBold" Width="80"/>
-                        <TextBlock Text="{Binding AppVersion}" Width="120"/>
-                        <TextBlock Text="{loc:Loc About_BuildDate}" FontWeight="SemiBold" Width="80"/>
-                        <TextBlock Text="{Binding BuildDate}" Width="120"/>
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{loc:Loc Btn_Close}" Command="{Binding ToggleAboutCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
                     </StackPanel>
@@ -373,7 +306,7 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -396,7 +329,7 @@
                 <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
             </Rectangle.Fill>
             <Rectangle.Effect>
-                <BlurEffect Radius="14" RenderingBias="Performance"/>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
             </Rectangle.Effect>
         </Rectangle>
         <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -408,6 +341,29 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{loc:Loc UpdatePrompt_Install}" Command="{Binding InstallPendingUpdateCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,8,0"/>
                         <Button Content="{loc:Loc UpdatePrompt_Later}" Command="{Binding LaterPendingUpdateCommand}" Style="{StaticResource DialogOutlinedButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+    <Grid Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False" Background="Transparent" Visibility="{Binding ShowUserPromptDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="990" behaviors:MotionAssist.FadeOnVisible="True">
+        <Rectangle Margin="-10" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
+            </Rectangle.Fill>
+            <Rectangle.Effect>
+                <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
+            </Rectangle.Effect>
+        </Rectangle>
+        <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Width="480" Padding="18" CornerRadius="8" Background="{DynamicResource MaterialDesignPaper}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{Binding UserPromptTitle}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding UserPromptBody}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{loc:Loc Prompt_Ok}" Command="{Binding AcceptUserPromptCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" IsDefault="True" Margin="0,0,8,0"/>
+                        <Button Content="{loc:Loc Btn_Cancel}" Command="{Binding CancelUserPromptCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" IsCancel="True" Visibility="{Binding UserPromptIsConfirm, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

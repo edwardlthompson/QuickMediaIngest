@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
 using QuickMediaIngest.Core;
+using QuickMediaIngest.Core.Nav;
 using QuickMediaIngest.Core.Services;
 using Microsoft.Extensions.Logging;
 
@@ -275,11 +274,22 @@ namespace QuickMediaIngest.ViewModels
         private void SaveAndCloseSettings()
         {
             SaveConfig();
-            ShowSettingsDialog = false;
+            SettingsSearchQuery = string.Empty;
+            if (_overlayNav.IsVisible(OverlayId.Settings))
+            {
+                PopOverlay();
+            }
         }
 
         [RelayCommand]
-        private void CloseSettingsOverlay() => ShowSettingsDialog = false;
+        private void CloseSettingsOverlay()
+        {
+            SettingsSearchQuery = string.Empty;
+            if (_overlayNav.IsVisible(OverlayId.Settings))
+            {
+                PopOverlay();
+            }
+        }
 
         [RelayCommand]
         private void BrowseDestination()
@@ -306,11 +316,9 @@ namespace QuickMediaIngest.ViewModels
                 catch
                 {
                     _shellService.OpenFolder(initial);
-                    MessageBox.Show(
-                        AppLocalizer.Get("Msg_FolderPickerExplorerFallback"),
+                    NotifyUser(
                         AppLocalizer.Get("Msg_SelectFolder_Title"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        AppLocalizer.Get("Msg_FolderPickerExplorerFallback"));
                 }
             }
             catch (Exception ex)

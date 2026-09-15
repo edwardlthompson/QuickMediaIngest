@@ -8,7 +8,9 @@
     xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:controls="clr-namespace:QuickMediaIngest.Controls"
-    Title="{loc:Loc Main_WindowTitle}" MinWidth="400" MinHeight="300"
+    xmlns:behaviors="clr-namespace:QuickMediaIngest.Controls.Behaviors"
+    Title="{loc:Loc Main_WindowTitle}" MinWidth="900" MinHeight="300"
+    FlowDirection="{Binding WindowFlowDirection}"
     WindowStartupLocation="Manual"
     Icon="QuickMediaIngest.ico"
     TextElement.Foreground="{DynamicResource MaterialDesignBody}"
@@ -101,18 +103,6 @@
                                     </StackPanel>
                                 </ToggleButton>
                             </Grid>
-                            <Border x:Name="SidebarThemeHeaderBorder" Style="{StaticResource SidebarRowContainerStyle}" Margin="0,10,0,0">
-                                <ToggleButton x:Name="ThemeToggle"
-                                              Style="{StaticResource SidebarRowToggleStyle}"
-                                              Checked="PillToggle_Toggled"
-                                              Unchecked="PillToggle_Toggled"
-                                              ToolTip="{loc:Loc Theme_Tooltip}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="ThemeLightDark" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{loc:Loc Theme_Label}" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </ToggleButton>
-                            </Border>
                         </StackPanel>
                     </Grid>
 
@@ -142,87 +132,22 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </StackPanel>
-                        <Expander Grid.Row="1" Margin="12,0,12,8" IsExpanded="{Binding SidebarNotificationsExpanded, Mode=TwoWay}">
-                            <Expander.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{loc:Loc Sidebar_Notifications}" Style="{StaticResource SidebarHeaderTextStyle}" />
-                                </StackPanel>
-                            </Expander.Header>
-                            <Grid Margin="0,6,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Grid.Row="0">
-                                    <TextBlock Text="{Binding DeleteAfterImportStatusLine}" TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppBodyTextStyle}">
-                                                <Setter Property="Foreground" Value="{DynamicResource Theme.Warning.Brush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDeleteAfterImportEnabled}" Value="False">
-                                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success.Brush}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <TextBlock Text="{Binding SelectedFilesStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                                    <TextBlock Text="{Binding DestinationStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding RawGroupingStatusText}" Margin="0,4,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppBodyTextStyle}">
-                                                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsRawJpegGroupingEnabled}" Value="True">
-                                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success.Brush}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <TextBlock Text="{Binding KeywordsStatusLine}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding PreviewHealthSummary}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding FtpThumbnailPhaseDetail}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding LastImportSummary}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                    <Separator Margin="0,8,0,8"/>
-                                    <TextBlock Text="{loc:Loc Sidebar_NotificationFeed}" Style="{StaticResource SidebarHeaderTextStyle}" Margin="0,0,0,4"/>
-                                    <Button Content="{loc:Loc Notify_ClearFeed}"
-                                            Command="{Binding ClearNotificationFeedCommand}"
-                                            Style="{StaticResource DialogOutlinedButtonStyle}"
-                                            Padding="8,2" Margin="0,0,0,6"/>
-                                </StackPanel>
-                                <ListBox Grid.Row="1" ItemsSource="{Binding NotificationFeed}" Margin="0,4,0,0">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type vm:NotificationFeedLine}">
-                                            <StackPanel Margin="0,2,0,2">
-                                                <Separator Margin="0,4,0,6" Visibility="{Binding IsSessionDivider, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppCaptionTextStyle}">
-                                                            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding UseSuccessAccent}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource Theme.Success.Brush}"/>
-                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
-                        </Expander>
+                        <Button x:Name="NotificationsBellButton"
+                                Grid.Row="1"
+                                Margin="12,0,12,8"
+                                Command="{Binding ToggleNotificationsFlyoutCommand}"
+                                Style="{StaticResource SidebarRowButtonStyle}"
+                                ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}"
+                                AutomationProperties.Name="{loc:Loc A11y_NotificationsIcon}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{loc:Loc Sidebar_Notifications}" Style="{StaticResource SidebarHeaderTextStyle}" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
                     <!-- Collapsed icon rail -->
                     <StackPanel x:Name="SidebarCollapsedRail" Grid.Row="1" Visibility="Collapsed" Margin="8,12,8,8">
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Click="ThemeIconButton_Click" ToolTip="{loc:Loc Theme_Tooltip}" Margin="0,0,0,6" AutomationProperties.Name="{loc:Loc Theme_Tooltip}">
-                            <materialDesign:PackIcon Kind="ThemeLightDark" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <ItemsControl ItemsSource="{Binding Sources}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -236,7 +161,12 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}" Margin="0,0,0,6" AutomationProperties.Name="{loc:Loc A11y_NotificationsIcon}">
+                        <Button x:Name="NotificationsCollapsedBellButton"
+                                Style="{StaticResource SidebarChromeIconButtonStyle}"
+                                Command="{Binding ToggleNotificationsFlyoutCommand}"
+                                ToolTip="{loc:Loc Sidebar_NotificationsIconTooltip}"
+                                Margin="0,0,0,6"
+                                AutomationProperties.Name="{loc:Loc A11y_NotificationsIcon}">
                             <materialDesign:PackIcon Kind="BellOutline" Style="{StaticResource SidebarIconStyle}" Width="18" Height="18"/></Button>
                     </StackPanel>
 
@@ -270,11 +200,6 @@
                                     <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="History" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/><TextBlock Text="{loc:Loc Btn_ImportHistory}" Style="{StaticResource SidebarHeaderTextStyle}"/></StackPanel>
                                 </Button>
                             </Border>
-                            <Border Style="{StaticResource SidebarRowContainerStyle}">
-                                <Button Style="{StaticResource SidebarRowButtonStyle}" Command="{Binding ToggleAboutCommand}">
-                                    <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="InformationOutline" Style="{StaticResource SidebarIconStyle}" Margin="0,0,6,0"/><TextBlock Text="{loc:Loc Btn_AboutUpdates}" Style="{StaticResource SidebarHeaderTextStyle}"/></StackPanel>
-                                </Button>
-                            </Border>
                         </StackPanel>
                     </Expander>
                     <StackPanel x:Name="SettingsCollapsedRail" Grid.Row="2" Visibility="Collapsed" Margin="8,8,8,12">
@@ -282,7 +207,6 @@
                         <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenScanExclusionsCommand}" ToolTip="{loc:Loc Sidebar_ScanExclusionsTooltip}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Sidebar_ScanExclusionsTooltip}"><materialDesign:PackIcon Kind="FolderRemoveOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAddFtpCommand}" ToolTip="{loc:Loc Btn_AddFtpSource}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_AddFtpSource}"><materialDesign:PackIcon Kind="LanConnect" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding OpenImportHistoryCommand}" ToolTip="{loc:Loc Btn_ImportHistory}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_ImportHistory}"><materialDesign:PackIcon Kind="History" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
-                        <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ToggleAboutCommand}" ToolTip="{loc:Loc Btn_AboutUpdates}" Margin="0,0,0,4" AutomationProperties.Name="{loc:Loc Btn_AboutUpdates}"><materialDesign:PackIcon Kind="InformationOutline" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                         <Button Style="{StaticResource SidebarChromeIconButtonStyle}" Command="{Binding ExitApplicationCommand}" ToolTip="{loc:Loc Btn_Exit_Tooltip}" Margin="0,4,0,0" AutomationProperties.Name="{loc:Loc Btn_Exit_Tooltip}"><materialDesign:PackIcon Kind="ExitToApp" Width="18" Height="18" Style="{StaticResource SidebarIconStyle}"/></Button>
                     </StackPanel>
 
@@ -329,96 +253,127 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Top action and settings bands -->
+                <!-- Command bar: Import hero, then view overflow -->
                 <Border Grid.Row="0"
                         Background="{DynamicResource MenuBackgroundBrush}"
-                        BorderBrush="{DynamicResource MenuForegroundBrush}"
+                        BorderBrush="{DynamicResource Theme.Divider.Brush}"
                         BorderThickness="0,0,0,1"
-                        Padding="10,4">
+                        Padding="12,8">
                     <StackPanel>
-                        <WrapPanel VerticalAlignment="Center" Margin="0,0,0,4">
-                            <Border Style="{StaticResource TopBarSectionCardStyle}" ToolTip="{loc:Loc Toolbar_ImportActionsTooltip}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Toolbar_ImportActions}" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
-                                    <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}">
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}"><Button Command="{Binding ImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}" Content="{loc:Loc Toolbar_Import}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}"><Button Command="{Binding QueueImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}" Content="{loc:Loc Toolbar_Queue}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_PreflightTooltip}"><Button Command="{Binding PreflightImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_PreflightTooltip}" Content="{loc:Loc Toolbar_Preflight}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_RetryFailedTooltip}"><Button Command="{Binding RetryFailedImportsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RetryFailedTooltip}" Content="{loc:Loc Toolbar_RetryFailed}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ResumePendingTooltip}"><Button Command="{Binding ResumePendingImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_ResumePendingTooltip}" Content="{loc:Loc Toolbar_ResumePending}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_RefreshTooltip}"><Button Command="{Binding RefreshAllSourcesCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RefreshTooltip}" Content="{loc:Loc Toolbar_Refresh}"/></Border>
-                                        <Border Style="{StaticResource TopBarControlContainerLastStyle}">
-                                            <ToggleButton x:Name="DeleteAfterImportCheckBox"
-                                                          Content="{loc:Loc Toolbar_DeleteAfterImport}"
-                                                          Style="{StaticResource TopBarDangerToggleStyle}"
-                                                          IsChecked="{Binding DeleteAfterImport, Mode=TwoWay}"
-                                                          PreviewMouseLeftButtonDown="DeleteAfterImportCheckBox_PreviewMouseLeftButtonDown"
-                                                          Checked="DeleteAfterImportCheckBox_Checked"
-                                                          ToolTip="{loc:Loc Toolbar_DeleteAfterImportTooltip}"/>
-                                        </Border>
-                                    </WrapPanel>
-                                </StackPanel>
+                        <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}">
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}">
+                                <Button Command="{Binding ImportCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" ToolTip="{loc:Loc Toolbar_ImportTooltip}" Content="{loc:Loc Toolbar_Import}" behaviors:MotionAssist.PressScale="True"/>
                             </Border>
-
-                            <Border Style="{StaticResource TopBarSectionCardLastStyle}" ToolTip="{loc:Loc Toolbar_ViewSectionTooltip}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Toolbar_ViewSection}" Style="{StaticResource AppSubheadingTextStyle}" Margin="0,0,0,4"/>
-                                    <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}">
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
-                                            <ToggleButton x:Name="SelectAllCheckBox" Style="{StaticResource TopBarActionToggleStyle}" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <materialDesign:PackIcon Kind="CheckAll" Width="14" Height="14" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
-                                                    <TextBlock Text="{loc:Loc Toolbar_SelectAll}" Style="{StaticResource AppTextPrimaryStyle}"/>
-                                                </StackPanel>
-                                            </ToggleButton>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ExpandAllGroupsTooltip}">
-                                            <ToggleButton Style="{StaticResource TopBarActionToggleStyle}" IsChecked="{Binding AllGroupsExpanded, Mode=TwoWay}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <materialDesign:PackIcon Kind="ArrowExpandVertical" Width="14" Height="14" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
-                                                    <TextBlock Text="{loc:Loc Toolbar_ExpandAllGroups}" Style="{StaticResource AppTextPrimaryStyle}"/>
-                                                </StackPanel>
-                                            </ToggleButton>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_GroupByTooltip}">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{DynamicResource MenuForegroundBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <Slider x:Name="HourIntervalSlider" Minimum="1" Maximum="24" Width="110" Value="{Binding TimeBetweenShootsHours, Mode=TwoWay}" SmallChange="1" IsSnapToTickEnabled="True" ToolTip="{loc:Loc Toolbar_GroupByTooltip}"/>
-                                                <Border Background="{DynamicResource MenuForegroundBrush}" CornerRadius="4" Margin="6,0,0,0" Padding="5,2">
-                                                    <TextBlock Text="{Binding ElementName=HourIntervalSlider, Path=Value, StringFormat={}{0}h}" Foreground="{DynamicResource MenuBackgroundBrush}" FontSize="11" FontWeight="SemiBold"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ThumbTooltip}">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <materialDesign:PackIcon Kind="Magnify" Width="15" Height="15" Foreground="{DynamicResource MenuForegroundBrush}" Margin="0,0,6,0"/>
-                                                <materialDesign:PackIcon Kind="Minus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
-                                                <Slider x:Name="ThumbnailZoomSlider" Minimum="50" Maximum="300" Width="120" Value="{Binding ThumbnailSize, Mode=TwoWay}" Margin="5,0" ToolTip="{loc:Loc Toolbar_ThumbTooltip}"/>
-                                                <materialDesign:PackIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_FilterTooltip}">
-                                            <TextBox x:Name="FilterKeywordTextBox"
-                                                     Width="150"
-                                                     Text="{Binding FilterKeyword, UpdateSourceTrigger=PropertyChanged}"
-                                                     ToolTip="{loc:Loc Toolbar_FilterTooltip}"
-                                                     Style="{StaticResource TopBarFieldTextBoxStyle}"
-                                                     materialDesign:HintAssist.Hint="{loc:Loc Toolbar_FilterHint}"
-                                                     materialDesign:HintAssist.IsFloating="False"/>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_FilterFileTypeTooltip}">
-                                            <ComboBox Width="150" Style="{StaticResource TopBarFieldComboBoxStyle}" ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <TextBlock Text="{Binding Converter={StaticResource FilterFileTypeToDisplayConverter}}"/>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                        </Border>
-                                        <Border Style="{StaticResource TopBarControlContainerLastStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}"><Button Command="{Binding ClearThumbnailCacheAndReloadPreviewsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}" Content="{loc:Loc Toolbar_RebuildPreviews}"/></Border>
-                                    </WrapPanel>
-                                </StackPanel>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_PreflightTooltip}">
+                                <Button Command="{Binding PreflightImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_PreflightTooltip}" Content="{loc:Loc Toolbar_Preflight}"/>
                             </Border>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_RefreshTooltip}">
+                                <Button Command="{Binding RefreshAllSourcesCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RefreshTooltip}" Content="{loc:Loc Toolbar_Refresh}"/>
+                            </Border>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}"
+                                    Visibility="{Binding ShowToolbarQueue, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button Command="{Binding QueueImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_QueueTooltip}" Content="{loc:Loc Toolbar_Queue}"/>
+                            </Border>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_RetryFailedTooltip}"
+                                    Visibility="{Binding ShowToolbarRetryFailed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button Command="{Binding RetryFailedImportsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RetryFailedTooltip}" Content="{loc:Loc Toolbar_RetryFailed}"/>
+                            </Border>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ResumePendingTooltip}"
+                                    Visibility="{Binding ShowToolbarResumePending, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button Command="{Binding ResumePendingImportCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_ResumePendingTooltip}" Content="{loc:Loc Toolbar_ResumePending}"/>
+                            </Border>
+                            <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{Binding DestinationRoot}"
+                                    Visibility="{Binding ShowDestinationChipInPrimaryBar, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button Command="{Binding BrowseDestinationCommand}" Style="{StaticResource TopBarActionButtonStyle}"
+                                        AutomationProperties.Name="{loc:Loc DestinationChip_A11y}" ToolTip="{Binding DestinationRoot}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="FolderOutline" Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                        <TextBlock Text="{Binding DestinationChipLabel}" MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Style="{StaticResource AppTextPrimaryStyle}"/>
+                                    </StackPanel>
+                                </Button>
+                            </Border>
+                            <Border Style="{StaticResource TopBarControlContainerLastStyle}">
+                                <ToggleButton x:Name="DeleteAfterImportCheckBox"
+                                              Content="{loc:Loc Toolbar_DeleteAfterImport}"
+                                              Style="{StaticResource TopBarDangerToggleStyle}"
+                                              IsChecked="{Binding DeleteAfterImport, Mode=TwoWay}"
+                                              PreviewMouseLeftButtonDown="DeleteAfterImportCheckBox_PreviewMouseLeftButtonDown"
+                                              Checked="DeleteAfterImportCheckBox_Checked"
+                                              ToolTip="{loc:Loc Toolbar_DeleteAfterImportTooltip}"/>
+                            </Border>
+                            <Expander Header="{Binding ViewOverflowHeader}"
+                                      IsExpanded="{Binding ViewToolbarExpanded, Mode=TwoWay}"
+                                      Margin="8,0,0,4"
+                                      ToolTip="{loc:Loc Toolbar_ViewSectionTooltip}"
+                                      Foreground="{DynamicResource MenuForegroundBrush}">
+                                <WrapPanel Style="{StaticResource TopBarControlsWrapStyle}" Margin="0,8,0,0">
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{Binding DestinationRoot}"
+                                            Visibility="{Binding CommandBarCompact, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Button Command="{Binding BrowseDestinationCommand}" Style="{StaticResource TopBarActionButtonStyle}"
+                                                AutomationProperties.Name="{loc:Loc DestinationChip_A11y}" ToolTip="{Binding DestinationRoot}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="FolderOutline" Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                                <TextBlock Text="{Binding DestinationChipLabel}" MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Style="{StaticResource AppTextPrimaryStyle}"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
+                                        <ToggleButton x:Name="SelectAllCheckBox" Style="{StaticResource TopBarActionToggleStyle}" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked" ToolTip="{loc:Loc Toolbar_SelectAllTooltip}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="CheckAll" Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                                <TextBlock Text="{loc:Loc Toolbar_SelectAll}" Style="{StaticResource AppTextPrimaryStyle}"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ExpandAllGroupsTooltip}">
+                                        <ToggleButton Style="{StaticResource TopBarActionToggleStyle}" IsChecked="{Binding AllGroupsExpanded, Mode=TwoWay}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="ArrowExpandVertical" Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource MenuForegroundBrush}"/>
+                                                <TextBlock Text="{loc:Loc Toolbar_ExpandAllGroups}" Style="{StaticResource AppTextPrimaryStyle}"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_GroupByTooltip}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <materialDesign:PackIcon Kind="ClockOutline" Width="16" Height="16" Foreground="{DynamicResource MenuForegroundBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <Slider x:Name="HourIntervalSlider" Minimum="1" Maximum="24" Width="110" Value="{Binding TimeBetweenShootsHours, Mode=TwoWay}" SmallChange="1" IsSnapToTickEnabled="True" ToolTip="{loc:Loc Toolbar_GroupByTooltip}" AutomationProperties.Name="{loc:Loc A11y_GroupByHours}"/>
+                                            <Border Background="{DynamicResource MenuForegroundBrush}" CornerRadius="4" Margin="6,0,0,0" Padding="5,2">
+                                                <TextBlock Text="{Binding ElementName=HourIntervalSlider, Path=Value, StringFormat={}{0}h}" Foreground="{DynamicResource MenuBackgroundBrush}" FontSize="12" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_ThumbTooltip}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <materialDesign:PackIcon Kind="Magnify" Width="16" Height="16" Foreground="{DynamicResource MenuForegroundBrush}" Margin="0,0,6,0"/>
+                                            <materialDesign:PackIcon Kind="Minus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
+                                            <Slider x:Name="ThumbnailZoomSlider" Minimum="50" Maximum="300" Width="120" Value="{Binding ThumbnailSize, Mode=TwoWay}" Margin="5,0" ToolTip="{loc:Loc Toolbar_ThumbTooltip}" AutomationProperties.Name="{loc:Loc A11y_ThumbnailSize}"/>
+                                            <materialDesign:PackIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource MenuForegroundBrush}" Opacity="0.7" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_FilterTooltip}">
+                                        <TextBox x:Name="FilterKeywordTextBox"
+                                                 Width="150"
+                                                 Text="{Binding FilterKeyword, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="{loc:Loc Toolbar_FilterTooltip}"
+                                                 Style="{StaticResource TopBarFieldTextBoxStyle}"
+                                                 materialDesign:HintAssist.Hint="{loc:Loc Toolbar_FilterHint}"
+                                                 materialDesign:HintAssist.IsFloating="False"/>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerStyle}" ToolTip="{loc:Loc Toolbar_FilterFileTypeTooltip}">
+                                        <ComboBox Width="150" Style="{StaticResource TopBarFieldComboBoxStyle}" ItemsSource="{Binding AvailableFileTypes}" SelectedItem="{Binding FilterFileType, Mode=TwoWay}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterFileTypeToDisplayConverter}}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </Border>
+                                    <Border Style="{StaticResource TopBarControlContainerLastStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}"
+                                            Visibility="{Binding ShowToolbarRebuildPreviews, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Button Command="{Binding ClearThumbnailCacheAndReloadPreviewsCommand}" Style="{StaticResource TopBarActionButtonStyle}" ToolTip="{loc:Loc Toolbar_RebuildPreviewsTooltip}" Content="{loc:Loc Toolbar_RebuildPreviews}"/>
+                                    </Border>
+                                </WrapPanel>
+                            </Expander>
                         </WrapPanel>
 
                     <ItemsControl ItemsSource="{Binding ActiveFilterChips}" Margin="0,0,0,4">
@@ -429,15 +384,15 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="12" Padding="8,2,4,2" Margin="0,0,8,6">
+                                <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="12" Padding="8,2,4,2" Margin="0,0,8,6" behaviors:MotionAssist.FadeOnVisible="True">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Style="{StaticResource AppCaptionTextStyle}" Margin="4,0,4,0"/>
-                                        <Button Content="✕" FontSize="11"
+                                        <Button Content="✕" FontSize="12"
                                                 AutomationProperties.Name="{loc:Loc A11y_RemoveFilterChip}"
                                                 Command="{Binding DataContext.RemoveFilterChipCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding Id}"
                                                 Style="{StaticResource TopBarActionButtonStyle}"
-                                                Padding="4,0" MinWidth="22" Height="22"
+                                                Padding="4,0" MinWidth="24" MinHeight="24" Height="24"
                                                 ToolTip="{loc:Loc Toolbar_RemoveFilterTooltip}"/>
                                     </StackPanel>
                                 </Border>
@@ -471,9 +426,21 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.CanContentScroll="False"
                           Visibility="{Binding ShowShootGroupsList, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ListView.Style>
+                        <Style TargetType="ListView" BasedOn="{StaticResource {x:Type ListView}}">
+                            <Setter Property="Opacity" Value="1"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DimShootListForImport}" Value="True">
+                                    <Setter Property="Opacity" Value="0.35"/>
+                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.Style>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="behaviors:MotionAssist.FadeOnVisible" Value="True"/>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
@@ -551,7 +518,7 @@
                                                     Command="{Binding DataContext.ToggleShootStackExpandCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource TopBarActionButtonStyle}"
-                                                    FontSize="11"
+                                                    FontSize="12"
                                                     Margin="0,6,0,0"
                                                     HorizontalAlignment="Left"
                                                     Padding="4,0"
@@ -582,7 +549,7 @@
                                                     Margin="0,10,0,0"
                                                     HorizontalAlignment="Left"
                                                     Padding="10,4"
-                                                    FontSize="11"
+                                                    FontSize="12"
                                                     ToolTip="{loc:Loc Shoot_IgnoreFolderTooltip}"/>
                                         </StackPanel>
                                     </Grid>
@@ -629,12 +596,12 @@
                                                                 </Border.Style>
                                                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                                                     <materialDesign:PackIcon Kind="ImageBroken" Width="28" Height="28" Foreground="#FFF5F5F5" HorizontalAlignment="Center"/>
-                                                                    <TextBlock Text="{loc:Loc Preview_Failed}" FontSize="10" Foreground="#FFF5F5F5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                                    <TextBlock Text="{loc:Loc Preview_Failed}" FontSize="12" Foreground="#FFF5F5F5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                                                 </StackPanel>
                                                             </Border>
                                                         </Grid>
                                                     </Border>
-                                                    <CheckBox Content="{Binding PreviewLabel}" IsChecked="{Binding IsSelected, Mode=TwoWay}" FontSize="11" Margin="0,2,0,0"
+                                                    <CheckBox Content="{Binding PreviewLabel}" IsChecked="{Binding IsSelected, Mode=TwoWay}" FontSize="12" Margin="0,2,0,0"
                                                               Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=Window}}"/>
                                                 </StackPanel>
                                             </DataTemplate>
@@ -655,8 +622,13 @@
                         Visibility="{Binding ShowShootListEmptyPlaceholder, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel HorizontalAlignment="Center" MaxWidth="440">
                         <StackPanel Visibility="{Binding ShowEmptyNoSourcesPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <TextBlock Text="{loc:Loc Empty_NoSourcesTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                            <Button Content="{loc:Loc Btn_AddFtpSource}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" HorizontalAlignment="Left" Padding="16,8"/>
+                            <materialDesign:PackIcon Kind="SdCard" Width="48" Height="48" HorizontalAlignment="Left" Margin="0,0,0,12" Foreground="{DynamicResource Theme.Accent.Brush}"/>
+                            <TextBlock Text="{loc:Loc Empty_NoSourcesTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock Text="{loc:Loc Empty_NoSourcesBody}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{loc:Loc Toolbar_Refresh}" Command="{Binding RefreshAllSourcesCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
+                                <Button Content="{loc:Loc Btn_AddFtpSource}" Command="{Binding ToggleAddFtpCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Padding="16,8"/>
+                            </StackPanel>
                         </StackPanel>
                         <StackPanel Visibility="{Binding ShowEmptyFilterPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Text="{loc:Loc Empty_FilterNoMatchTitle}" Style="{StaticResource AppSubheadingTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12"/>
@@ -683,7 +655,8 @@
                     </Grid>
                 </Grid>
                 <!-- Details Panel for Selected Group -->
-                <Border Grid.Row="2" Background="{DynamicResource MaterialDesignPaper}" Padding="16" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource MaterialDesignDivider}">
+                <Border Grid.Row="2" Background="{DynamicResource MaterialDesignPaper}" Padding="16" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource MaterialDesignDivider}"
+                        Visibility="{Binding ShowGroupDetailsPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel>
                         <TextBlock Text="{loc:Loc Details_GroupDetails}" Style="{StaticResource AppHeadingTextStyle}" Margin="0,0,0,8"
                                    Foreground="{DynamicResource AppAccentBrush}"/>
@@ -709,6 +682,15 @@
                 </Border>
 
                 <Border Grid.Row="3" Background="{DynamicResource MenuBackgroundBrush}" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1,1,0,0" Padding="10,6">
+                    <Grid>
+                    <Border x:Name="StatusFlashBar" Background="{DynamicResource Theme.Accent.Brush}" Opacity="0" IsHitTestVisible="False"/>
+                    <StackPanel>
+                    <DockPanel LastChildFill="True" Margin="0,0,0,8"
+                               Visibility="{Binding ShowImportAfterglow, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Btn_Close}" Command="{Binding DismissImportAfterglowCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Margin="8,0,0,0" MinHeight="32"/>
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc ImportAfterglow_Open}" Command="{Binding OpenImportAfterglowFolderCommand}" Style="{StaticResource DialogPrimaryButtonStyle}" MinHeight="32"/>
+                        <TextBlock Text="{Binding ImportAfterglowText}" VerticalAlignment="Center" TextWrapping="Wrap" Style="{StaticResource AppBodyTextStyle}" Margin="0,0,12,0"/>
+                    </DockPanel>
                     <DockPanel LastChildFill="True">
                         <ProgressBar DockPanel.Dock="Left"
                                      Width="170"
@@ -725,7 +707,7 @@
                                        Foreground="{DynamicResource MenuForegroundBrush}"
                                        TextTrimming="CharacterEllipsis"/>
                             <TextBlock Text="{Binding AdbTransferStatusHint}"
-                                       FontSize="11"
+                                       FontSize="12"
                                        Foreground="{DynamicResource Theme.TextSecondary.Brush}"
                                        TextTrimming="CharacterEllipsis">
                                 <TextBlock.Style>
@@ -740,15 +722,45 @@
                                 </TextBlock.Style>
                             </TextBlock>
                             <TextBlock Text="{Binding ScanProgressMessage}"
-                                       FontSize="11"
+                                       FontSize="12"
                                        Foreground="{DynamicResource Theme.TextSecondary.Brush}"
                                        Visibility="{Binding ShowScanProgressDialog, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                       behaviors:MotionAssist.FadeOnVisible="True"
                                        TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </DockPanel>
+                    </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>
+        <Popup IsOpen="{Binding ShowNotificationsFlyout, Mode=TwoWay}"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               Placement="Mouse">
+            <Border Width="320" MaxHeight="420" Padding="12"
+                    Background="{DynamicResource MaterialDesignPaper}"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Notify_ClearFeed}" Command="{Binding ClearNotificationFeedCommand}" Style="{StaticResource DialogOutlinedButtonStyle}" Padding="8,4"/>
+                        <TextBlock Text="{loc:Loc Sidebar_NotificationFeed}" Style="{StaticResource SidebarHeaderTextStyle}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <ListBox ItemsSource="{Binding NotificationFeed}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:NotificationFeedLine}">
+                                <StackPanel Margin="0,2,0,2">
+                                    <Separator Margin="0,4,0,6" Visibility="{Binding IsSessionDivider, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" Style="{StaticResource AppCaptionTextStyle}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Popup>
         <controls:DialogOverlaysView x:Name="DialogOverlaysViewControl" />
         <controls:ImportHistoryOverlayView x:Name="ImportHistoryOverlayViewControl" />
         <!-- Settings: root-level overlay so VisualBrush blur matches other modals (not a child of MainChromeRoot) -->

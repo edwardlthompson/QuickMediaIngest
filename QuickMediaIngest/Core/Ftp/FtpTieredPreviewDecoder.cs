@@ -20,7 +20,7 @@ namespace QuickMediaIngest.Core
             bool isRaw = MediaExtensions.IsRawExtension(ext);
             bool isVideo = MediaExtensions.IsVideoExtension(ext);
 
-            if (ext is ".jpg" or ".jpeg")
+            if (MediaExtensions.IsJpegFamily(ext))
             {
                 DecodedThumbnail? exif = Accept(ExifThumbnailReader.TryGetExifThumbnail(tempPath, logger));
                 if (exif != null)
@@ -29,7 +29,7 @@ namespace QuickMediaIngest.Core
                 }
             }
 
-            if (ext is ".heic" or ".heif")
+            if (MediaExtensions.IsHeifFamily(ext))
             {
                 // Complete HEIC: Magick first — naive FF D8..FF D9 scans hit BMFF false positives.
                 if (mode == FtpPreviewDecodeMode.CompleteFile)

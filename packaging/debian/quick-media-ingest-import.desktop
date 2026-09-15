@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Import with Quick Media Ingest
+Comment=Import the photos on your camera card
+Exec=/opt/quick-media-ingest/QuickMediaIngest.Desktop %U
+TryExec=/opt/quick-media-ingest/QuickMediaIngest.Desktop
+Icon=quick-media-ingest
+Terminal=false
+Categories=GNOME;GTK;Graphics;Photography;
+MimeType=x-content/image-dcf;x-content/image-picturecd;x-content/video-dcf;
+StartupNotify=true
+StartupWMClass=quick-media-ingest
+Keywords=ingest;import;photo;camera;SD;DCIM;

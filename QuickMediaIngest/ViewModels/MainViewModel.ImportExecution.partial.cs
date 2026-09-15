@@ -32,41 +32,6 @@ namespace QuickMediaIngest.ViewModels
     public partial class MainViewModel : ObservableObject
     {
 
-        private static void ShowWindowsImportCompletionNotification(int importedCount, int totalCount, int failedCount)
-        {
-            string title = failedCount > 0
-                ? AppLocalizer.Get("Msg_ImportComplete_Title_Warning")
-                : AppLocalizer.Get("Msg_ImportComplete_Title_Success");
-            string body = failedCount > 0
-                ? AppLocalizer.Format("Msg_ImportComplete_Body_Warning", importedCount, totalCount, failedCount)
-                : AppLocalizer.Format("Msg_ImportComplete_Body_Success", importedCount, totalCount);
-
-            try
-            {
-                SystemSounds.Exclamation.Play();
-            }
-            catch
-            {
-                // Ignore local sound playback issues.
-            }
-
-            try
-            {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    MessageBox.Show(
-                        body,
-                        title,
-                        MessageBoxButton.OK,
-                        failedCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
-                }));
-            }
-            catch
-            {
-                // Ignore notification failures to avoid interrupting import completion.
-            }
-        }
-
         private IngestOptions CreateIngestOptions(ItemGroup group, IFileProvider? provider = null)
         {
             DuplicateHandlingMode duplicateMode = DuplicatePolicy switch

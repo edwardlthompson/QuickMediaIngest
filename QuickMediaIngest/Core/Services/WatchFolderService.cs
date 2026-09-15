@@ -21,7 +21,7 @@ namespace QuickMediaIngest.Core.Services
         private FileSystemWatcher? _watcher;
         private readonly object _lock = new();
 
-        public bool IsWatching => _watcher != null && _watcher.EnableRaisingEvents;
+        public bool IsWatching => _watcher != null;
         public string? WatchedDirectory => _watcher?.Path;
         public event EventHandler<string>? FileDetected;
 
@@ -47,11 +47,16 @@ namespace QuickMediaIngest.Core.Services
                     {
                         IncludeSubdirectories = true,
                         NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
-                        EnableRaisingEvents = true
                     };
-
                     _watcher.Created += OnCreated;
-                    _logger.LogInformation("Watch-folder service started for {Path}", directoryPath);
+                    try
+                    {
+                        _watcher.EnableRaisingEvents = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "inotify enable failed for {Path}; watcher still attached", directoryPath);
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -122,6 +122,16 @@ namespace QuickMediaIngest.Core.Models
             set { _isExpanded = value; OnPropertyChanged(); }
         }
 
+        public int FileCount => Items.Count;
+
+        public void NotifyItemsChanged()
+        {
+            OnPropertyChanged(nameof(Items));
+            OnPropertyChanged(nameof(FileCount));
+            OnPropertyChanged(nameof(TotalSize));
+            OnPropertyChanged(nameof(TransportDisplay));
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {

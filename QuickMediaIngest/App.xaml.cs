@@ -17,6 +17,7 @@ using QuickMediaIngest.Data;
 using QuickMediaIngest.Services;
 using QuickMediaIngest.Thumbnails.Wpf;
 using QuickMediaIngest.ViewModels;
+using QuickMediaIngest.Windows;
 
 namespace QuickMediaIngest
 {
@@ -112,6 +113,16 @@ namespace QuickMediaIngest
         private ServiceProvider? _serviceProvider;
         private static ILogger<App>? _logger;
 
+        private static void ApplyReducedMotionChrome()
+        {
+            if (!AccessibilityPreferencesDetector.IsReducedMotionPreferred())
+            {
+                return;
+            }
+
+            Current.Resources["OverlayBlurRadius"] = 0d;
+        }
+
         protected override async void OnStartup(StartupEventArgs e)
         {
             if (TryRunHeadlessSmoke(e.Args, out int smokeExitCode))
@@ -140,6 +151,7 @@ namespace QuickMediaIngest
             }
 
             DetectAndApplySystemTheme();
+            ApplyReducedMotionChrome();
 
             string crashMarker = Path.Combine(Path.GetTempPath(), "qmi_force_crash.txt");
             if (File.Exists(crashMarker))
@@ -226,6 +238,7 @@ namespace QuickMediaIngest
             services.AddSingleton<IUnifiedConcreteSourceScanService, UnifiedConcreteSourceScanService>();
             services.AddSingleton<FtpFileDownloader>();
             services.AddSingleton<IFtpThumbnailService, FtpThumbnailService>();
+            services.AddSingleton<IAppPaths, WindowsAppPaths>();
             services.AddSingleton<IFtpCredentialStore, WindowsFtpCredentialStore>();
             services.AddSingleton<IFileDialogService, WpfFileDialogService>();
             services.AddSingleton<IShellService, WpfShellService>();

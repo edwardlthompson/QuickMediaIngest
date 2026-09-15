@@ -17,7 +17,7 @@
 - Pure FOSS under MIT license; no proprietary closed-source SDKs in production path
 - WPF file limits (adapted): `.xaml` 800 lines, ViewModels/`*.xaml.cs` 400 lines, `Core/` 200 lines
 - Strict type safety (`#nullable enable`) and runtime validation at data boundaries
-- Core business logic in `QuickMediaIngest/Core/` — no WPF references in Core
+- Core business logic in `QuickMediaIngest.Core` (`net8.0`, sources in `QuickMediaIngest/Core/`) — no WPF references in Core
 - MVVM via CommunityToolkit.Mvvm; partial ViewModels for large concerns
 - Opt-in only telemetry; no tracking by default
 
@@ -38,6 +38,7 @@ build_local_test.bat
 dotnet restore QuickMediaIngest-1.sln
 dotnet build -c Release
 dotnet test -c Release --no-build
+
 ```
 
 Output: `publish/local-test/QuickMediaIngest.exe`
@@ -50,6 +51,7 @@ After major `[AGENT]` steps:
 .\scripts\validate-local.ps1 -QuickBootstrap
 # or with agent autofix loop (Git Bash):
 bash scripts/watch-agent-gates.sh --once --autofix
+
 ```
 
 On exit **2**: halt (3-strike or environment block). See `.cursor/agent-progress.json`.

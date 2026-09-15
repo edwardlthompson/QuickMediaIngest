@@ -93,6 +93,39 @@ jobs:
       - name: Format check
         run: dotnet format QuickMediaIngest-1.sln --verify-no-changes
 
+  core-tests-linux:
+    name: .NET Core.Tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.422"
+          global-json-file: global.json
+      - name: Test Core.Tests when present
+        run: |
+          if [ -f QuickMediaIngest.Core.Tests/QuickMediaIngest.Core.Tests.csproj ]; then
+            dotnet test QuickMediaIngest.Core.Tests/QuickMediaIngest.Core.Tests.csproj -c Release --verbosity minimal
+          else
+            echo "SKIP: Core.Tests not extracted yet (LX-L1)"
+          fi
+
+  pack-deb:
+    name: Pack Linux .deb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.422"
+          global-json-file: global.json
+      - name: Install lintian
+        run: sudo apt-get update && sudo apt-get install -y lintian
+      - name: Pack Debian package
+        run: bash scripts/pack-deb.sh
+      - name: Smoke .deb
+        run: bash scripts/smoke-deb.sh
+
   template-update-check:
     name: Template Update Check
     runs-on: ubuntu-latest

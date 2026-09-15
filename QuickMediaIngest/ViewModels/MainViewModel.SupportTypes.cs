@@ -100,22 +100,6 @@ namespace QuickMediaIngest.ViewModels
     }
 
 
-    public class ImportHistoryRecord
-    {
-        public DateTime StartedAtLocal { get; set; } = DateTime.Now;
-        public double DurationSeconds { get; set; }
-        public int FilesSelected { get; set; }
-        public int FilesImported { get; set; }
-        public int FailedFiles { get; set; }
-        public string Source { get; set; } = string.Empty;
-        public string Destination { get; set; } = string.Empty;
-
-        public string StartedAtDisplay => StartedAtLocal.ToString("yyyy-MM-dd HH:mm:ss");
-        public string DurationDisplay => TimeSpan.FromSeconds(Math.Max(0, DurationSeconds)).ToString(@"hh\:mm\:ss");
-        public string SummaryDisplay =>
-            $"{StartedAtDisplay} | Imported {FilesImported}/{FilesSelected} | Failed {FailedFiles} | Duration {DurationDisplay}";
-    }
-
     public class FailedImportRecord
     {
         public string SourcePath { get; set; } = string.Empty;
@@ -127,16 +111,6 @@ namespace QuickMediaIngest.ViewModels
     {
         public string SourceId { get; set; } = string.Empty;
         public string SourceDisplay { get; set; } = string.Empty;
-        public List<string> SelectedSourcePaths { get; set; } = new();
-    }
-
-    internal sealed class PendingImportPlan
-    {
-        public DateTime CreatedAt { get; set; }
-        public string SourceId { get; set; } = string.Empty;
-        public string SourceDisplay { get; set; } = string.Empty;
-        public string DestinationRoot { get; set; } = string.Empty;
-        public string NamingTemplate { get; set; } = string.Empty;
         public List<string> SelectedSourcePaths { get; set; } = new();
     }
 

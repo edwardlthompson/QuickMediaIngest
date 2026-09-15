@@ -1,0 +1,14 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="QuickMediaIngest.Desktop.App"
+             RequestedThemeVariant="Dark">
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark" Accent="#ff007ACC" RegionColor="#ff1E1E1E"/>
+                <ColorPaletteResources x:Key="Light" Accent="#ff007ACC" RegionColor="#ffFFFFFF"/>
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://QuickMediaIngest.Desktop/Themes/Studio.axaml"/>
+    </Application.Styles>
+</Application>

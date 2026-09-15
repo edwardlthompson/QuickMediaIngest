@@ -11,8 +11,14 @@ Quiet Venmo support and a non-blocking GitHub update check that compares product
 - Newer matching versioned asset (`QuickMediaIngest-X.Y.Z-x64.exe` portable, `QuickMediaIngest-X.Y.Z-x64-setup.msi` installer) prompts **Install** | **Later**. Later silences that product version. Failures stay silent.
 - Donate prefs and last-check timestamps live in `%AppData%\QuickMediaIngest\update-donate.json` only.
 
-## Smoke
+## Container map
 
+| Layer | Path |
+|-------|------|
+| Logic | `QuickMediaIngest/Core/` (`DonationLinks`, `UpdateDonate*`, `UpdateService`) |
+| View | `QuickMediaIngest/Controls/DialogOverlays/` About overlay |
+| Tests | `QuickMediaIngest.Tests/UpdateDonateTests.cs`, `GoldenPathAutomationSmokeTests.GP1_*` |
+| Wiring | `MainViewModel.Updates.partial.cs` |
 1. Fresh AppData: launch once. No donate popup. `update-donate.json` has `recordedInstalledVersion`.
 2. Edit `recordedInstalledVersion` to a previous value, relaunch. Donate overlay appears once; **Not now** does not show it again.
 3. About → Donate via Venmo opens the public Venmo URL.

@@ -17,23 +17,23 @@
 
 ## Container map
 
-| Layer | Web | Android |
-|-------|-----|---------|
-| Logic | `examples/web/src/github-feedback/` | `examples/android/.../githubfeedback/` |
-| Tests | `*.test.ts` | `src/test/.../githubfeedback/` |
-| Wiring | none (Feedback UI calls this) |
+| Layer | Path |
+|-------|------|
+| Logic | `QuickMediaIngest/Core/GitHubFeedback/` |
+| Tests | `QuickMediaIngest.Tests/GitHubIssueComposerTests.cs`, `GitHubDuplicateSearchTests.cs` |
+| Wiring | none (Feedback overlay calls this) |
 ## Tests
 
-- Automated: yes — `*.test.ts` and Android `src/test/.../githubfeedback/`
+- Automated: yes — `QuickMediaIngest.Tests/GitHubIssueComposerTests.cs`, `GitHubDuplicateSearchTests.cs`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack web`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Definition of Done
 
-See `docs/FEATURE_MODULES.md`. Fallback: `cd examples/web && npm test -- github-feedback`.
+See `docs/FEATURE_MODULES.md`. Fallback: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Notes
 

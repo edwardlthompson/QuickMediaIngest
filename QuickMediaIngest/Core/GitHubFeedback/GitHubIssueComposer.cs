@@ -47,7 +47,8 @@ public static class GitHubIssueComposer
     {
         string repo = IsPlaceholderRepo(ownerRepo) ? DefaultOwnerRepo : ownerRepo.Trim();
         string body = PrivacyReportMarkdown.BuildReportMarkdown(
-            kind, description, stack, exceptionType, fingerprint, appVersion, osFamily: "Windows");
+            kind, description, stack, exceptionType, fingerprint, appVersion,
+            osFamily: OperatingSystem.IsLinux() ? "Linux" : "Windows");
         string title = kind.Equals("crash", StringComparison.OrdinalIgnoreCase)
             ? BuildCrashTitle(fingerprint, exceptionType)
             : PrivacyReportSanitize.SanitizeReportText(description);

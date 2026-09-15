@@ -19,6 +19,7 @@ Prepend a new dated section at the top of @COMPLETED_TASKS.md (immediately after
 ## {Sprint or feature name} ({YYYY-MM-DD})
 
 - ✅ [OWNER] Original description
+
 ```
 
 Copy every ✅ row from the finished block verbatim (keep owner labels and descriptions).
@@ -27,11 +28,11 @@ Copy every ✅ row from the finished block verbatim (keep owner labels and descr
 
 Remove the archived ✅ rows from the active board.
 
-**Finished sprint (audit, maintainer, release):**
+**Finished sprint:**
 
-- Delete or collapse the sprint section on the active board
-- Add a summary line: `> **{Sprint ID}** archived in COMPLETED_TASKS.md @ \`{short-sha}\`.`
-- Append a row to the **Archived Sprints** table (Sprint, Complete, `COMPLETED_TASKS.md`)
+- Copy every ✅ row into `COMPLETED_TASKS.md` (prepend a dated section)
+- **Delete the sprint from `BUILD_PLAN.md`** — no leftover “archived in …” blurbs, no Archive table rows
+- `BUILD_PLAN.md` **Archive** is only a link to `COMPLETED_TASKS.md`
 
 **Finished feature (Sprint 2+ per-feature block):**
 
@@ -52,6 +53,7 @@ python3 scripts/agent-run.py gc-worktrees -- --apply
 
 ```bash
 python3 scripts/check-file-encoding.py BUILD_PLAN.md COMPLETED_TASKS.md
+
 ```
 
 Active board should contain no ✅ rows except backlogged `[HUMAN]`/`[ADB]` items explicitly left open (see `HUMAN_BACKLOG.md`).

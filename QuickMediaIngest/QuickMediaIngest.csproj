@@ -6,7 +6,7 @@
       <ImplicitUsings>enable</ImplicitUsings>
       <UseWPF>true</UseWPF>
       <ApplicationIcon>QuickMediaIngest.ico</ApplicationIcon>
-      <Version>1.4.0</Version>
+      <Version>1.5.0</Version>
       <NeutralLanguage>en</NeutralLanguage>
       <SatelliteResourceLanguages>fr;es</SatelliteResourceLanguages>
       <!-- System.Data.SQLite resolves native interop using Assembly.Location; default single-file keeps managed DLLs in-memory so Location is empty and SQLiteConnection throws ArgumentNullException in Path.Combine. Extract all bundled content on startup (see docs: single-file overview, IncludeAllContentForSelfExtract). -->
@@ -14,6 +14,15 @@
       <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
       <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Core\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickMediaIngest.Core\QuickMediaIngest.Core.csproj" />
+    <ProjectReference Include="..\QuickMediaIngest.Localization\QuickMediaIngest.Localization.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="QuickMediaIngest.Tests" />

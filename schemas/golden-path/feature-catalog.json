@@ -4,77 +4,104 @@
       "id": "about",
       "title": "About screen",
       "spec": "docs/features/donations-updates.md",
-      "stacks": ["web", "android", "python", "node", "go", "rust"],
+      "stacks": ["web", "android", "python", "node", "go", "rust", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/about", "src/about"],
         "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/about"],
         "python": ["examples/python/src/hello/about.py"],
         "node": ["examples/node/src/about.ts"],
         "go": ["examples/go/about.go"],
-        "rust": ["examples/rust/src/about.rs"]
+        "rust": ["examples/rust/src/about.rs"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/DonationLinks.cs", "QuickMediaIngest/Controls/DialogOverlays"]
       }
     },
     {
       "id": "crash-capture",
       "title": "Crash capture",
       "spec": "docs/features/crash-capture.md",
-      "stacks": ["web", "android", "python", "node", "go", "rust"],
+      "stacks": ["web", "android", "python", "node", "go", "rust", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/crash-capture", "src/crash-capture"],
         "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/crashcapture"],
         "python": ["examples/python/src/hello/crash.py"],
         "node": ["examples/node/src/crash.ts"],
         "go": ["examples/go/crash.go"],
-        "rust": ["examples/rust/src/crash.rs"]
+        "rust": ["examples/rust/src/crash.rs"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/CrashCapture"]
       }
     },
     {
       "id": "settings",
       "title": "Settings",
       "spec": "docs/features/settings.md",
-      "stacks": ["web", "android"],
+      "stacks": ["web", "android", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/settings", "src/settings"],
-        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/settings"]
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/settings"],
+        "dotnet-wpf": ["QuickMediaIngest/Controls/PreferencesOverlay"]
       }
     },
     {
       "id": "feedback",
       "title": "Feedback dialogs",
       "spec": "docs/features/feedback.md",
-      "stacks": ["web", "android"],
+      "stacks": ["web", "android", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/feedback", "src/feedback"],
-        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/feedback"]
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/feedback"],
+        "dotnet-wpf": ["QuickMediaIngest/Controls/FeedbackOverlay"]
       }
     },
     {
       "id": "github-feedback",
       "title": "GitHub issue composer",
       "spec": "docs/features/github-feedback.md",
-      "stacks": ["web", "android"],
+      "stacks": ["web", "android", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/github-feedback", "src/github-feedback"],
-        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/githubfeedback"]
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/githubfeedback"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/GitHubFeedback"]
       }
     },
     {
       "id": "privacy-report",
       "title": "Privacy sanitizer",
       "spec": "docs/features/privacy-report.md",
-      "stacks": ["web", "android"],
+      "stacks": ["web", "android", "dotnet-wpf"],
       "detect": {
         "web": ["examples/web/src/privacy-report", "src/privacy-report"],
-        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/privacyreport"]
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/privacyreport"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/PrivacyReport"]
       }
     },
     {
       "id": "display-refresh",
       "title": "Display refresh",
       "spec": "docs/features/display-refresh.md",
-      "stacks": ["android"],
+      "stacks": ["android", "dotnet-wpf"],
       "detect": {
-        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/display"]
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/display"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/DisplayRefresh"]
+      }
+    },
+    {
+      "id": "navigation",
+      "title": "Overlay navigation stack",
+      "spec": "docs/features/navigation.md",
+      "stacks": ["web", "android", "dotnet-wpf"],
+      "detect": {
+        "web": ["examples/web/src/nav", "src/nav"],
+        "android": ["examples/android/app/src/main/java/dev/foss/goldenpath/ui/nav"],
+        "dotnet-wpf": ["QuickMediaIngest/Core/Nav", "QuickMediaIngest/Core/Prompt"]
+      }
+    },
+    {
+      "id": "linux-parity",
+      "title": "Linux ingest-bench parity",
+      "spec": "docs/features/linux-parity.md",
+      "stacks": ["dotnet-wpf"],
+      "detect": {
+        "dotnet-wpf": ["QuickMediaIngest.Desktop", "docs/features/linux-parity.md"]
       }
     }
   ]

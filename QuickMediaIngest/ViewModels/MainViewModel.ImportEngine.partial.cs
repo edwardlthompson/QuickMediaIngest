@@ -50,17 +50,15 @@ namespace QuickMediaIngest.ViewModels
             }
 
             ShowPostDeleteRecoveryBanner = false;
+            ShowImportAfterglow = false;
 
             if (ConfirmBeforeImport)
             {
                 string confirmBody = BuildImportConfirmationMessage(selectedGroups, totalFiles);
-                MessageBoxResult confirmResult = MessageBox.Show(
-                    confirmBody,
+                bool confirmed = await _userPrompt.ConfirmAsync(
                     AppLocalizer.Get("Vm_ConfirmImportTitle"),
-                    MessageBoxButton.OKCancel,
-                    MessageBoxImage.Question);
-
-                if (confirmResult != MessageBoxResult.OK)
+                    confirmBody).ConfigureAwait(true);
+                if (!confirmed)
                 {
                     StatusMessage = AppLocalizer.Get("Vm_StatusImportCanceled");
                     return;
@@ -75,14 +73,12 @@ namespace QuickMediaIngest.ViewModels
                 string freeGb = free.HasValue
                     ? (free.Value / (1024d * 1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture)
                     : "?";
-                MessageBox.Show(
-                    AppLocalizer.Format("Msg_ImportSummary_Body", estMb, freeGb),
+                await _userPrompt.NotifyAsync(
                     AppLocalizer.Get("Msg_ImportSummary_Title"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    AppLocalizer.Format("Msg_ImportSummary_Body", estMb, freeGb)).ConfigureAwait(true);
             }
 
-            if (!TryPassImportFreeSpaceGate(selectedGroups))
+            if (!await TryPassImportFreeSpaceGateAsync(selectedGroups).ConfigureAwait(true))
             {
                 return;
             }
@@ -152,6 +148,7 @@ namespace QuickMediaIngest.ViewModels
                 }
             });
 
+            bool keepImportScene = false;
             try
             {
 
@@ -231,7 +228,8 @@ namespace QuickMediaIngest.ViewModels
                     DeleteAfterImport &&
                     ProcessedFilesForImport > FailedFilesForImport;
 
-                ShowWindowsImportCompletionNotification(CurrentFileBeingImported, TotalFilesForImport, FailedFilesForImport);
+                ShowImportAfterglowBanner(CurrentFileBeingImported, FailedFilesForImport);
+                ImportCompletedFlash?.Invoke(this, EventArgs.Empty);
 
                 SaveImportHistoryRecord(stopwatch.Elapsed);
                 ExportImportReportArtifact(stopwatch.Elapsed, selectedGroups);
@@ -239,7 +237,8 @@ namespace QuickMediaIngest.ViewModels
 
                 // Brief beat so the completion state is visible (avoids ~1s dead air from the old 1000ms delay).
                 await System.Threading.Tasks.Task.Delay(400);
-                ShowImportProgressDialog = false;
+                keepImportScene = true;
+                RefreshImportSceneHints();
 
                 RunPostImportActions(selectedGroups);
                 Groups.Clear();
@@ -273,7 +272,14 @@ namespace QuickMediaIngest.ViewModels
                 ImportElapsedText = stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
                 ClearImportByteProgressTracking();
                 IsImporting = false;
-                ShowImportProgressDialog = false;
+                if (!keepImportScene)
+                {
+                    ShowImportProgressDialog = false;
+                }
+                else
+                {
+                    RefreshImportSceneHints();
+                }
                 _importCancellationSource?.Dispose();
                 _importCancellationSource = null;
                 _logger.LogInformation("Import finished. Imported={ImportedCount}, Failed={FailedCount}", CurrentFileBeingImported, FailedFilesForImport);
@@ -285,7 +291,7 @@ namespace QuickMediaIngest.ViewModels
         /// <summary>
         /// Returns false when import should not start (insufficient free space or user canceled soft-warn).
         /// </summary>
-        private bool TryPassImportFreeSpaceGate(List<ItemGroup> selectedGroups)
+        private async Task<bool> TryPassImportFreeSpaceGateAsync(List<ItemGroup> selectedGroups)
         {
             long selectedBytes = ImportDestinationEstimator.SumSelectedBytes(selectedGroups);
             long? freeBytes = ImportDestinationEstimator.TryGetFreeBytes(DestinationRoot);
@@ -305,23 +311,19 @@ namespace QuickMediaIngest.ViewModels
                             string neededMb = ((selectedBytes + ImportFreeSpaceGate.MarginBytes) / (1024d * 1024d))
                                 .ToString("0.##", CultureInfo.CurrentCulture);
                             string freeMb = (freeBytes.Value / (1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture);
-                            MessageBox.Show(
-                                AppLocalizer.Format("Msg_ImportFreeSpace_AbortBody", neededMb, freeMb),
+                            await _userPrompt.NotifyAsync(
                                 AppLocalizer.Get("Msg_ImportFreeSpace_AbortTitle"),
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                                AppLocalizer.Format("Msg_ImportFreeSpace_AbortBody", neededMb, freeMb)).ConfigureAwait(true);
                             StatusMessage = AppLocalizer.Get("Vm_Status_ImportAbortedLowFreeSpace");
                             return false;
                         }
                     case ImportFreeSpaceDecision.WarnUnknownSizesLowFree:
                         {
                             string freeMb = (freeBytes.Value / (1024d * 1024d)).ToString("0.##", CultureInfo.CurrentCulture);
-                            MessageBoxResult warn = MessageBox.Show(
-                                AppLocalizer.Format("Msg_ImportFreeSpace_WarnBody", freeMb),
+                            bool proceed = await _userPrompt.ConfirmAsync(
                                 AppLocalizer.Get("Msg_ImportFreeSpace_WarnTitle"),
-                                MessageBoxButton.OKCancel,
-                                MessageBoxImage.Warning);
-                            if (warn != MessageBoxResult.OK)
+                                AppLocalizer.Format("Msg_ImportFreeSpace_WarnBody", freeMb)).ConfigureAwait(true);
+                            if (!proceed)
                             {
                                 StatusMessage = AppLocalizer.Get("Vm_StatusImportCanceled");
                                 return false;

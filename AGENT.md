@@ -15,6 +15,7 @@ ingest, photos, videos, wpf, foss
 - FOSS .NET 8 WPF desktop app for photographers and videographers.
 - Import from SD cards, local drives, and FTP into dated shoot-based destination folders.
 - Configurable naming, metadata options, and safety checks.
+- Linux ingest-bench head: `QuickMediaIngest.Desktop` (Avalonia). Parity gap list and BUILD_PLAN LP rows: `docs/features/linux-parity.md`. `.cursor/stack-selection.json` stays `dotnet-wpf`.
 - Do not run `init-project.sh` or prune on this child. Stack is `dotnet-wpf` only.
 - Never overwrite `AGENTS.md`, `docs/spec.md`, `docs/plan.md`, or `QuickMediaIngest/` from template stubs.
 

@@ -53,8 +53,21 @@ from human_task_waiting_gh import (
     automate_private_vuln_reporting,
     automate_push_protection,
 )
+from human_task_wpf import (
+    automate_deb_sign,
+    automate_mint_deb_smoke,
+    automate_sdk_sys,
+    automate_t10_security,
+    automate_theme_qa,
+)
 
 HUMAN_RULES: list[tuple[re.Pattern[str], str, object]] = [
+    (re.compile(r"gitleaks|semgrep|T10|Security Scan bar", re.I), "human", automate_t10_security),
+    (re.compile(r"THEME_QA", re.I), "human", automate_theme_qa),
+    (re.compile(r"UNB-SDK-SYS|dotnet-sdk-8\.0", re.I), "human", automate_sdk_sys),
+    (re.compile(r"LX-L5|Mint Cinnamon|smoke-deb", re.I), "human", automate_mint_deb_smoke),
+    (re.compile(r"visual glance|Mint glance", re.I), "human", automate_theme_qa),
+    (re.compile(r"LX-deb-sign|GPG or apt repo", re.I), "human", automate_deb_sign),
     (re.compile(r"Use this template", re.I), "human", automate_use_template),
     (re.compile(r"Fill placeholders.*INITIALIZATION_PROMPT", re.I), "human", automate_init_placeholders),
     (re.compile(r"Pick Cursor mode", re.I), "human", lambda r, c: automate_informational(r, c, "cursor-mode")),

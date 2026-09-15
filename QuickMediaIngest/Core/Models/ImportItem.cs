@@ -84,6 +84,13 @@ namespace QuickMediaIngest.Core.Models
             set { _previewLabel = value; OnPropertyChanged(); }
         }
 
+        private string _previewCachePath = string.Empty;
+        public string PreviewCachePath
+        {
+            get => _previewCachePath;
+            set { _previewCachePath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
         public string StackKey { get; set; } = string.Empty;
         public bool IsStackRepresentative { get; set; } = true;
 

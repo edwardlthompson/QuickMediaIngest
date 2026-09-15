@@ -22,7 +22,7 @@
                         <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
                     </Rectangle.Fill>
                     <Rectangle.Effect>
-                        <BlurEffect Radius="14" RenderingBias="Performance"/>
+                        <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
                     </Rectangle.Effect>
                 </Rectangle>
                 <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>

@@ -2,6 +2,341 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-09-15 — Release v1.5.0 (Linux Avalonia ingest-bench)
+
+**Status:** Accepted
+**Context:** Linux Mint needs a real ingest-bench, not a WPF-only portable EXE. Core was still mixed with Windows types. Unreleased Linux UX, thumbs, window persist, and Debian packaging were sitting on `chore/template-catchup-v1.5.0`.
+
+**Decision:**
+- Ship Avalonia Desktop as a second view over `IngestBenchAppModel`; keep stack `dotnet-wpf` and do not compile `MainViewModel` into Desktop.
+- Extract `QuickMediaIngest.Core` / `Localization` to `net8.0`; persist window/pane in trim-safe `prefs.json`; parallel local+ADB thumbs with remount-stable cache keys; hicolor + `StartupWMClass` for Cinnamon.
+- Bump product version to `1.5.0` (WPF, Core, Desktop, `.deb` default). Template already at 1.5.0.
+
+**Validation:** Local `pre-release-gate.sh --local` 23 stages; `upd audit` 0 vulns; Core.Tests + Avalonia build; `test_pack_deb.py` expects `Icon=quick-media-ingest`.
+
+---
+## 2026-09-15 — Parallel thumb fill and remount-stable cache keys
+
+**Status:** Accepted
+**Context:** SD-card and phone previews filled on one thread, so ADB pulls stalled local tiles. SD cache keys included absolute path + FAT `LastWriteTimeUtc`, so a remount looked like a new file and last run’s JPEGs were ignored. A 64MB cap plus `full-preview.jpg` could also evict still-valid grid thumbs.
+
+**Decision:** Fill local items in parallel while two phone groups pull at once. Key local files as `v2|{volume-relative}|{length}` (no mtime). Raise the thumb cap to 256MB and do not LRU-evict `full-preview.jpg`.
+
+**Validation:** Core.Tests remount prefix + mtime identity; local fill succeeds while a missing ADB item is in the same run.
+
+---
+## 2026-09-15 — Remembered window and resizable preview pane
+
+**Status:** Accepted
+**Context:** Avalonia always opened at 1100×720 in the upper-left (default Manual origin). The selected-file preview was a 160×160 dock. AppModel is at the 200-line cap.
+
+**Decision:** Persist `WindowWidth/Height/Left/Top/Maximized/PositionSet` and `PreviewPaneWidth` on `PrefsState` via trim-safe `prefs.json`. Restore on Opened, clamp to a visible screen, save on Closing. Replace the docked thumbnail with a GridSplitter column. Clicking a grid tile sets `SelectedCullItem` and decodes a 1600-edge cache (embedded JPEG + `FitMaxEdge`), then `DecodeToWidth` to the pane. Grid tiles stay on the 256/320 path.
+
+**Validation:** Core.Tests prefs round-trip + pane clamp; 1600-edge cache path distinct from 256.
+
+---
+## 2026-09-15 — Grid scroll: shrink RAW preview JPEGs
+
+**Status:** Accepted
+**Context:** After filling a 200-file CR2 shoot, scroll was choppy and the Desktop process RSS was ~16 GB. `RawEmbeddedPreviewReader` cached Canon’s full preview JPEG (~6 MB / ~20 MP). `PathBitmapConverter` did `new Bitmap(path)` for every tile in a non-virtualized `WrapPanel`, so 200 uncompressed frames sat on the GPU.
+
+**Decision:** `FitMaxEdge` before writing the thumb cache; reject oversized cache files; decode Avalonia bitmaps with `DecodeToWidth(320)` and reuse them. Keep ADB’s 24-file pull cap.
+
+**Validation:** Core.Tests CR2 cache ≤200 KB and ≤256 px; RSS after rescan should be hundreds of MB, not tens of GB.
+
+---
+## 2026-09-15 — Local SD RAW thumbnails (no 24-cap)
+
+**Status:** Accepted
+**Context:** A Canon CR2 card (200 files, one shoot) showed a handful of tiles and “all loaded.” `FillShootPreviews(perGroup: 24)` skipped remaining locals without counting them failed; the meter is `done/total` over every item.
+
+**Decision:** Decode every local/SD file. Keep the 24 cap only for ADB pulls. Prefer embedded JPEG in RAW (MetadataExtractor IFD, then Magick `dng:thumbnail`) so CR2 does not full-demosaic.
+
+**Validation:** Core.Tests fill-beyond-cap + CR2 embedded extract when `CANON_DC` is mounted.
+
+---
+## 2026-09-15 — SD-card import desktop handler (chooser-visible)
+
+**Status:** Accepted
+**Context:** `gio mime x-content/image-dcf` listed `quick-media-ingest-import.desktop`, but Mint’s insert-media dialog is a Gtk AppChooser. That widget skips `NoDisplay=true` apps except the current default (Pix). The hidden Pix-style helper therefore never appeared as an option.
+
+**Decision:** Drop `NoDisplay` on the import helper. Put the same `x-content/image-dcf;image-picturecd;video-dcf` MimeType and `%U` on the visible menu `.desktop` so `should_show` is true. Keep parsing launch URIs in `LaunchMediaRoots`.
+
+**Validation:** Core.Tests desktop fixtures; smoke-deb rejects `NoDisplay=true`; `Gio.AppInfo.should_show()` true; Gtk AppChooser recommended list includes Quick Media Ingest; card remount.
+
+---
+## 2026-09-15 — SD-card import desktop handler
+
+**Status:** Superseded by chooser-visible entry
+**Context:** Inserting a camera SD card on Linux Mint listed only Pix (`pix-import.desktop`). Quick Media Ingest’s menu `.desktop` had no `x-content/image-dcf` MimeType, so GNOME/Cinnamon autorun never offered it.
+
+**Decision:** Ship `quick-media-ingest-import.desktop` (`NoDisplay=true`, `MimeType=x-content/image-dcf;x-content/image-picturecd;x-content/video-dcf;`, `Exec=… %U`) matching Pix’s import handler. Parse `file://` / folder args and scan that volume. `update-desktop-database` in postinst.
+
+**Validation:** Core.Tests LaunchMediaRoots + desktop file contents; smoke-deb greps the import desktop; pack-deb + dpkg; `gio mime x-content/image-dcf`.
+
+---
+## 2026-09-15 — Pipelined copy + live verify
+
+**Status:** Accepted
+**Context:** Catalog SHA-256 still ran only after the last copy, so a 1500-file import looked idle and the shoot list did not shrink until hashing finished. Parallel hash threads on the dest disk would fight writes.
+
+**Decision:** One hasher drains dest paths as copies complete (`Channel`, unbounded). Status is `Copy n/N  Verify m/N` with ETA from verify. `DropOne` removes each hashed file on the UI thread. Channel `Complete()` is in `finally` so Drain cannot hang. Missing dest stays and is failed; catalog I/O on a landed dest still drops the item. Delete-after stays on `IngestVerification` during copy. No second dest-tree walk.
+
+**Validation:** Core.Tests Dual/DropOne/empty Drain/missing dest; import still clears Groups; `watch-agent-gates --once --autofix --scope auto`; pack-deb + dpkg 1.4.0.
+
+---
+## 2026-09-15 — Overall import progress + post-import catalog meter
+
+**Status:** Accepted
+**Context:** Import showed per-shoot percent from `IngestEngine.ProgressChanged`. After copy, `Complete()` idled the bar, then `AfterImportAsync` SHA-256'd every dest file twice (`WriteManifestAsync` + catalog) with no UI. `DropImported` waited on that, so a 1500-file delete-after import looked hung: no progress, no error, no refresh.
+
+**Decision:** Count selected files across groups; update `ImportStatus` with done/total, elapsed, and ETA. Keep `IsImporting` through one hash pass that both records the catalog and writes `checksums.sha256`. Skip missing sources in skip-already-imported (ADB paths). Persist the catalog with trim-safe `JsonObject`. Drop imported shoots and complete the scene only after cataloging (catalog errors still refresh the list and surface in the status bar).
+
+**Validation:** Core.Tests import progress format + import status history + skip-missing; ShootChecksumManifestWriter precomputed; `watch-agent-gates --once --autofix --scope auto`; pack-deb + dpkg 1.4.0.
+
+---
+## 2026-09-15 — Open folder + clear shoot list after import
+
+**Status:** Accepted
+**Context:** Afterglow Open folder did nothing for destinations with spaces (`01 - Unedited`) because `xdg-open` split the path. The shoot list still showed imported files.
+
+**Decision:** Pass the folder to `xdg-open <path>` via `ArgumentList` (no `--`; Mint xdg-open treats `--` as an illegal option). After a real import, drop succeeded items from the bench (failed copies stay for Retry). Desktop also tries Avalonia `Launcher.LaunchUriAsync`.
+
+**Validation:** Core.Tests (ShellOpen spaces, DropImported, import clears Groups); `watch-agent-gates --once --autofix --scope auto`; pack-deb + dpkg 1.4.0.
+
+---
+## 2026-09-15 — Trim-safe chrome prefs + no leftover focus ring
+
+**Status:** Accepted
+**Context:** Installed Linux app forgot Delete after import, hour gap, and thumbnail zoom. `prefs.json` omitted those keys because trimmed `JsonSerializer` dropped `FileDto` properties. Buttons/sliders kept a cyan focus rectangle after click.
+
+**Decision:** Persist prefs with `JsonObject` (same pattern as dest.json). Drop the `:focus` border and Fluent `FocusAdorner` on Button/CheckBox/Slider.
+
+**Validation:** Core.Tests IngestBenchPrefs (keys on disk + round-trip); `watch-agent-gates --once --autofix --scope auto`; pack-deb + dpkg 1.4.0.
+
+---
+## 2026-09-15 — Max media-type + thumbnail compatibility
+
+**Status:** Accepted
+**Context:** Phone DCIM held hundreds of AVIF/JXL files that never entered the shoot list because they were not in `MediaExtensions`. Thumb decode was Magick-only before HEIC/ffmpeg, so stills Magick could not open never reached libvips.
+
+**Decision:** Expand the ingest allowlist (AVIF/JXL/HIF, JPEG 2000, camera `.thm`, extra RAW/video). Decode stills Magick → libvips → HEIF/AVIF, video ffmpeg. Raise ADB preview pulls to 45s and fill up to `perGroup` phone thumbs.
+
+**Validation:** Core.Tests 239 (MediaExtensions + DecodeToCache Avif/Jxl when Magick can write); `watch-agent-gates --once --autofix --scope auto` 23 stages; `pack-deb.sh` + dpkg 1.4.0.
+
+---
+## 2026-09-15 — ffmpeg, phone Pictures, select-all toggle, live prefs
+
+**Status:** Accepted
+**Context:** Video thumbs needed ffmpeg; phone Pictures was not scanned; Select All only selected; chrome settings only flushed on process exit.
+
+**Decision:** Host `ffmpeg` 6.1.1. Drive picker lists `adb:SERIAL` DCIM (on by default) and `adb:SERIAL/pictures` (off until ticked, persisted in scan-sources.json). Select All toggles. Delete-after, thumbnail zoom, hour gap, filter type, Prefer-ADB, and expand-all save to prefs.json as soon as they change.
+
+**Validation:** Core.Tests (shoots/prefs/adb/volume hint); `watch-agent-gates --once --autofix --scope auto`; pack-deb + dpkg 1.4.0.
+
+---
+## 2026-09-15 — Dual-device ADB import smoke
+
+**Status:** Accepted
+**Context:** Linux Import used `LocalFileProvider`, so phone paths could not copy. Two OnePlus devices were connected.
+
+**Decision:** Split mixed shoots by `adb:serial` vs local and pull with `AdbFileProvider`; cap ADB copies at 2. Phone Pictures folders stay out of the DCIM scan.
+
+**Validation:** `QMI_SMOKE_ADB=1` DualAdbImportSmokeTests (1 JPEG each, including `Point & Shoot` paths with `&`); `watch-agent-gates --once --autofix --scope auto`.
+
+---
+## 2026-09-15 — Import/thumb counts + Save location size
+
+**Status:** Accepted
+**Context:** Status bar needed succeeded/failed counts after import and thumbnail fill; command-bar Save location was taller than Scan/Import because of leftover `destChip` Height 52.
+
+**Decision:** `IngestBenchActivity.Counts` formats both jobs; import `Complete` and `ThumbFillResult` feed the status bar (scan line kept beside thumbnail counts). Save location is a 44×88 ghost button like Scan/Import; `Button.destChip` style removed.
+
+**Validation:** Core.Tests (scene/activity/thumbs/import); `test_avalonia_bench.py`; `watch-agent-gates --once --autofix --scope auto`; `pack-deb.sh` + `dpkg` overwrite 1.4.0.
+
+---
+## 2026-09-15 — Linux UX polish (UX) AGENT complete
+
+**Status:** Accepted
+**Context:** `/build` executed BUILD_PLAN UX-1–40 after the Linux ingest-bench UX audit.
+
+**Decision:** Desktop stays a Fluent view over `IngestBenchAppModel` (no `MainViewModel`). Import is disabled until `SelectedShoot`; dest chip opens a naming ingest sheet; motion uses Core `MotionTimings` and skips when reduced motion is on; overlay scrims lock hit-testing and honor `OverlayBlurRadius`.
+
+**Validation:** Core.Tests; `test_avalonia_bench.py` / `test_linux_parity.py`; `check-file-limits.sh`; `watch-agent-gates --once --autofix --scope auto`.
+
+---
+## 2026-09-15 — Linux ingest-bench depth (LD) shipped
+
+**Status:** Accepted
+**Context:** `/build` completed BUILD_PLAN LD 1–5 after Mint glance showed missing naming chips.
+
+**Decision:** File naming lives in Core `FileNamingBuilder` + Avalonia chips/presets/preview. Shoot cards, Magick wrap-grid zoom, group-by/type chips, and import prefs (dest/dup/verify/RAW/confirm) bind AppModel only — still no `MainViewModel` in Desktop.
+
+**Validation:** Core.Tests 187+; `watch-agent-gates` 23 stages; `smoke-sprint --require` PASS (5 LD items).
+
+---
+
+## 2026-09-15 — Linux ingest-bench depth (LD) after Mint glance
+
+**Status:** Accepted
+**Context:** After LP 43–71, Mint testing showed file-naming has no chip/preset picker—only a template text box. A second pass of WPF Settings + shoot list vs Avalonia found more view gaps.
+
+**Decision:** Track remaining **view** gaps as BUILD_PLAN **LD** (not a new LP wave). First row **LD-naming**: token chips + Settings builder. Do not compile `MainViewModel` into Desktop. Won’t-port (WPD/iPhone/MaterialDesign) unchanged.
+
+**Validation:** Gap list in `docs/features/linux-parity.md` § Remaining after LP; tally on BUILD_PLAN LD 1–5.
+
+---
+
+## 2026-09-15 — Linux ingest-bench parity (LP) complete
+
+**Status:** Accepted
+**Context:** `/build` finished BUILD_PLAN **43–71**. Avalonia Desktop must stay a view over Core/AppModel, not a MainViewModel compile.
+
+**Decision:**
+- Wave C: queue/cull/post/watch/media/wifi/ptp/a11y/eject on AppModel; Desktop AXAML binds those types.
+- Linux a11y uses `GTK_THEME`/`QMI_HIGH_CONTRAST`, reduced-motion env, RTL `FlowDirection`, F1 shortcuts, live region.
+- Linux eject is `gio mount -u` then `udisksctl unmount -p` on `/media` `/run/media` `/mnt` only; leftover Notify when delete-after leaves local files.
+- HUMAN Mint glance automated via THEME_QA analog (`visual glance` rule). Live Cinnamon look is still optional.
+- Do not compile `MainViewModel` into Desktop.
+
+**Validation:** Core.Tests 175; `watch-agent-gates` 23 stages after LP-a11y and LP-eject; `pack-deb.sh` Magick+libvips `--smoke-native`; `smoke-sprint --require` PASS (28 items); `/gates` validate-bootstrap + feature-gate multi.
+
+---
+
+## 2026-09-14 — Linux ingest-bench parity (LP)
+
+**Status:** Accepted
+**Context:** Installed Avalonia `.deb` is a six-button stub; Windows WPF is the full ingest product. User asked for a gap list, a plan, and BUILD_PLAN rows.
+
+**Decision:**
+- Spec: `docs/features/linux-parity.md`. BUILD_PLAN **43–71** (named LP), Sequential, one slice per AGENT row.
+- Do not compile `MainViewModel` into Desktop. Extract to Core/AppModel; Avalonia Fluent views bind that.
+- Won’t port: WPD/MTP, iPhone USB, WMI/BitLocker, MaterialDesign pixels, WiX, SQLite VACUUM.
+- PTP on Linux is libusb (LP-ptp), not WPD. Unmount is `gio mount -u` / udisks (LP-eject).
+- Wave A is the original LX v1 ingest promise; Wave B overlays; Wave C I-11…I-48 workflow/media.
+
+**Validation:** Tally on BUILD_PLAN; catalog `linux-parity`; no Sacred `docs/spec.md` / `docs/plan.md` overwrite.
+
+---
+
+## 2026-09-14 — LX-trim PublishTrimmed linux-x64 .deb
+
+**Status:** Accepted
+**Context:** Follow-up 40 required Magick / SQLite / NetVips to survive IL trim before `pack-deb.sh` could set `PublishTrimmed=true`.
+
+**Decision:**
+- `NativeLibrarySmoke` (`--smoke-native`) creates a 1×1 Magick image and calls `NetVips.Version(0)` before Avalonia starts.
+- SQLite is Windows WPF VACUUM-only; Desktop prints `SKIP sqlite (not referenced)` instead of referencing `System.Data.SQLite` on Linux.
+- `pack-deb.sh` publishes trimmed R2R multi-file and fails the pack if `--smoke-native` is non-zero. Native AOT stays out of v1.
+- Trimmer roots keep `Magick.NET-Q16-AnyCPU`, `Magick.NET.Core`, and `NetVips`. Avalonia still uses reflection bindings (IL2026 warnings; UI not Native AOT).
+
+**Validation:** `NativeLibrarySmokeTests`; trimmed publish `--smoke-native` (OK magick / OK libvips); `scripts/lib/test_lx_trim.py`.
+
+---
+
+## 2026-09-14 — LX-L1 Core + Localization net8.0
+
+**Status:** Accepted
+**Context:** Linux `/build` could not run WPF STA tests; two-head .deb needs a shared Core.
+
+**Decision:**
+- `QuickMediaIngest.Core` and `QuickMediaIngest.Localization` target `net8.0`; WPF compiles them by `ProjectReference` and `Compile Remove`s `Core/**/*.cs`.
+- `Loc` MarkupExtension stays in the WPF assembly; resx + `AppLocalizer` move to Localization.
+- WMI (`DeviceWatcher`, `RemovableDriveIo`), Credential Manager, Registry theme, and `SystemParameters` high-contrast live in `QuickMediaIngest/Platform/Windows/`.
+- `IAppPaths` + `DefaultAppPaths` in Core; `WindowsAppPaths` registered in `App.xaml.cs`.
+- Path sanitizer / afterglow leaf labels split on `/` and `\` so Core.Tests pass on Linux.
+
+**Validation:** `dotnet test QuickMediaIngest.Core.Tests` (92+); `watch-agent-gates --once --scope auto`.
+
+---
+
+## 2026-09-14 — LX-L2 Linux adapters
+
+**Status:** Accepted
+**Context:** Mint .deb needs XDG, secret files, trash, and a non-root guard before Avalonia.
+
+**Decision:**
+- `XdgAppPaths`, `FileFtpCredentialStore` (0600), `GioTrashService`, `ShellOpen` (`xdg-open`), `UidGuard`, `DebouncedPathWatcher` (500ms / 3s) live in Core `net8.0`.
+- `NetVips.Native.linux-x64` is a Linux-only PackageReference on Core.
+- WPF still uses `WindowsAppPaths` + Credential Manager.
+
+**Validation:** `LinuxAdapterTests`; `scripts/lib/test_linux_adapters.py`.
+
+---
+
+## 2026-09-14 — Ingest-bench UX M7–RTL wrap
+
+**Status:** Accepted
+**Context:** `/build` finished the remaining ingest-bench UX rows on Linux via source probes (WPF STA stays Windows CI).
+
+**Decision:**
+- High contrast remaps Theme.* to `SystemColors` and skips overlay blur; hook re-applies the current light/dark theme then overlays HC tokens.
+- Import primary `DialogPrimaryButtonStyle` is 44×88 (WCAG 2.5.5); theme QA requires 44.
+- `UiReadingOrder` + `MainWindow.FlowDirection` honor `TextInfo.IsRightToLeft`; shipped locales stay LTR.
+
+**Validation:** `watch-agent-gates --once --scope auto`; `smoke-sprint --require --sprint "Ingest-bench UX (named)"`.
+
+---
+
+## 2026-09-14 — UX-M7 IUserPrompt overlay
+
+**Status:** Accepted
+**Context:** Non-destructive import/status dialogs used WPF MessageBox; the Linux Avalonia head needs the same contract.
+
+**Decision:**
+- `IUserPrompt` + `SilentUserPrompt` live in Core (no WPF).
+- WPF `MainViewModel` implements the overlay (OK / Cancel); production ctor defaults to `this`.
+- Keep MessageBox for delete-after, cancel-active-import, clear-history, and unhandled exceptions.
+
+**Validation:** `scripts/lib/test_user_prompt.py`; `UserPromptTests`; Linux feature-gate source probes.
+
+---
+
+## 2026-09-14 — Linux host gate unblock (UNB)
+
+**Status:** Accepted
+**Context:** `/build` halted exit 2 (`dotnet` missing); WPF STA tests cannot run on Linux Mint.
+
+**Decision:**
+- Install .NET 8 to `$HOME/.dotnet` via `scripts/install-dotnet-sdk-linux.sh` (no sudo).
+- `feature-gate.sh` resolves `DOTNET_ROOT` / `$HOME/.dotnet` / WSL `dotnet.exe`.
+- On Linux, skip `net8.0-windows` tests; run Core.Tests when LX-L1 exists. Windows CI still runs the full sln. ubuntu-latest Core.Tests job skips until that csproj exists.
+
+**Validation:** `watch-agent-gates --once --scope auto` exit 0 (hygiene, encoding, file-limits, license). SDK 8.0.425 at `$HOME/.dotnet`.
+
+---
+
+## 2026-09-14 — Automate remaining HUMAN BUILD_PLAN rows
+
+**Status:** Accepted
+**Context:** Five `[HUMAN]` rows blocked `/build` (T10, optional distro SDK, Windows THEME_QA glance, Mint .deb smoke, .deb signing).
+
+**Decision:**
+- T10: Trivy stays the required Security Scan bar; gitleaks/semgrep stay `continue-on-error`; `check-security-scan-policy.sh` encodes that.
+- Linux SDK: user-local `$HOME/.dotnet` (UNB-SDK); no apt/sudo HUMAN row.
+- THEME_QA: `check-theme-qa.sh` replaces the Windows glance (14px, `#007ACC`, Blue primary, hit targets, first-run, command bar).
+- LX-L5: `smoke-deb.sh` is `[AUTO]` after L4 (uid ≠ 0; optional `--card`).
+- LX-deb-sign: v1 unsigned GitHub `.deb`; `sign-deb.sh` no-ops without `DEB_GPG_KEY`.
+
+**Validation:** `python3 scripts/lib/test_human_automation_wpf.py`; `bash scripts/check-theme-qa.sh`; `bash scripts/check-security-scan-policy.sh`; `bash scripts/sign-deb.sh`.
+
+---
+
+## 2026-09-14 — Ingest-bench UX chrome (Q1–Q5 + command bar)
+
+**Status:** Accepted
+**Context:** UX audit: first-run never showed onboarding; toolbar showed ~14 equal-weight actions; Material yellow primary and 9–11px type felt dated.
+
+**Decision:**
+- One command bar (Import / Dry run / Refresh) with View overflow; Retry/Resume/Queue/Rebuild only when relevant.
+- First-run onboarding + empty-state headline/body (Refresh + Add FTP). Notifications are a working bell flyout.
+- Tokens: `#007ACC` accent, 12/14/16/20 type, 24px chip remove, 40×32 primary actions, reduced-motion skips overlay blur and ribbon nudge.
+- Glossary moved to F1. EN copy pack synced to fr/es.
+
+**Validation:** `UxChromeTests` + OverlayNav tests (Windows CI `dotnet`); local Python catalog/gate-scope tests. THEME_QA is `scripts/check-theme-qa.sh`.
+
+---
+
 ## 2026-08-30 — Release v1.4.0 (Golden Path & Feature Backlog I-01..I-80)
 
 **Status:** Accepted

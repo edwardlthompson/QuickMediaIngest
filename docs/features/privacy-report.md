@@ -19,21 +19,21 @@
 
 | Layer | Path |
 |-------|------|
-| Logic | `examples/web/src/privacy-report/`, `examples/android/.../privacyreport/`, `scripts/lib/privacy_report_*.py` |
-| Tests | co-located Vitest/JUnit + `tests/privacy_report/` oracle |
+| Logic | `QuickMediaIngest/Core/PrivacyReport/` |
+| Tests | `QuickMediaIngest.Tests/PrivacyReportTests.cs`, `ImportReportSanitizationTests.cs` |
 | Wiring | none |
 ## Tests
 
-- Automated: yes — co-located Vitest/JUnit plus `tests/privacy_report/`
+- Automated: yes — `QuickMediaIngest.Tests/PrivacyReportTests.cs`, `ImportReportSanitizationTests.cs`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack <active>`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Definition of Done
 
-See `docs/FEATURE_MODULES.md`. Fallback: `python3 -m unittest tests.privacy_report.test_sanitize`.
+See `docs/FEATURE_MODULES.md`. Fallback: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Notes
 

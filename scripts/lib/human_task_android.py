@@ -89,3 +89,25 @@ def automate_android_sdk_smoke(root: Path, _cfg: dict) -> AttemptResult:
         return AttemptResult(1, "adb-unavailable", "no_authorized_device after unit tests", True)
     return AttemptResult(1, "android-sdk", "No Android example tree", True)
 
+
+def _resolve_adb() -> str:
+    adb = os.environ.get("ADB", "adb")
+    if os.name == "nt" and not shutil.which(adb):
+        win = os.environ.get("LOCALAPPDATA", "")
+        if win:
+            candidate = Path(win) / "Android/Sdk/platform-tools/adb.exe"
+            if candidate.is_file():
+                return str(candidate)
+    return adb
+
+
+def _posix_for_bash(path: Path) -> str:
+    return path.as_posix()
+
+
+def _gradle_argv(root: Path, *tasks: str) -> list[str] | None:
+    gradle = root / "examples/android/gradlew"
+    if not gradle.is_file():
+        return None
+    return ["bash", str(gradle), *tasks]
+

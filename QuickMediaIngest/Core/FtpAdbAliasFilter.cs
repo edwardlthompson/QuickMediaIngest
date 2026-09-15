@@ -48,16 +48,14 @@ namespace QuickMediaIngest.Core
                 bool hasRawOrHeic = group.Any(i =>
                 {
                     string e = Path.GetExtension(i.FileName);
-                    return MediaExtensions.IsRawExtension(e) ||
-                           e.Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
-                           e.Equals(".heif", StringComparison.OrdinalIgnoreCase);
+                    return MediaExtensions.IsRawExtension(e) || MediaExtensions.IsHeifFamily(e);
                 });
 
                 if (ext == ".heif" && hasHeic)
                 {
                     candidates.Add(item);
                 }
-                else if ((ext is ".jpg" or ".jpeg") && hasRawOrHeic)
+                else if (MediaExtensions.IsJpegFamily(ext) && hasRawOrHeic)
                 {
                     candidates.Add(item);
                 }

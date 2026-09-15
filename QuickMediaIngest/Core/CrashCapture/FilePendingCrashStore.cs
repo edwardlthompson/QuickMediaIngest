@@ -13,9 +13,13 @@ public sealed class FilePendingCrashStore : IPendingCrashStore
     public FilePendingCrashStore(string? path = null)
     {
         _path = path ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "QuickMediaIngest",
+            DefaultAppPaths.Instance.AppDataRoot,
             "pending-crash.json");
+    }
+
+    public FilePendingCrashStore(IAppPaths paths)
+        : this(Path.Combine(paths.AppDataRoot, "pending-crash.json"))
+    {
     }
 
     public PendingCrash? Load()

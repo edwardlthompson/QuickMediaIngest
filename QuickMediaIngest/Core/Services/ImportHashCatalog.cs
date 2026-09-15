@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -59,8 +60,15 @@ namespace QuickMediaIngest.Core.Services
             {
                 string? dir = Path.GetDirectoryName(catalogPath);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                string json = JsonSerializer.Serialize(_catalog, new JsonSerializerOptions { WriteIndented = true });
-                await File.WriteAllTextAsync(catalogPath, json).ConfigureAwait(false);
+                var obj = new JsonObject();
+                foreach (KeyValuePair<string, string> pair in _catalog)
+                {
+                    obj[pair.Key] = pair.Value;
+                }
+
+                await File.WriteAllTextAsync(
+                    catalogPath,
+                    obj.ToJsonString(new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -74,12 +82,17 @@ namespace QuickMediaIngest.Core.Services
             {
                 if (!File.Exists(catalogPath)) return;
                 string json = await File.ReadAllTextAsync(catalogPath).ConfigureAwait(false);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                if (dict != null)
+                if (JsonNode.Parse(json) is not JsonObject obj)
                 {
-                    foreach (var kvp in dict)
+                    return;
+                }
+
+                foreach (KeyValuePair<string, JsonNode?> kvp in obj)
+                {
+                    string? dest = kvp.Value?.GetValue<string>();
+                    if (!string.IsNullOrWhiteSpace(dest))
                     {
-                        _catalog[kvp.Key] = kvp.Value;
+                        _catalog[kvp.Key] = dest;
                     }
                 }
             }

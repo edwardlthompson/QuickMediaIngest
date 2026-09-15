@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Quick Media Ingest
+Comment=Ingest photos and videos into dated, shoot-based folders
+Exec=/opt/quick-media-ingest/QuickMediaIngest.Desktop %U
+TryExec=/opt/quick-media-ingest/QuickMediaIngest.Desktop
+Icon=quick-media-ingest
+Terminal=false
+Categories=GNOME;GTK;Graphics;Photography;
+MimeType=x-content/image-dcf;x-content/image-picturecd;x-content/video-dcf;
+Keywords=ingest;import;photo;video;camera;SD;DCIM;
+StartupNotify=true
+StartupWMClass=quick-media-ingest

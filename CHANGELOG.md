@@ -2,6 +2,81 @@
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-15
+
+### Added
+
+- **Linux UX polish (UX-1–40)**: first-paint welcome + quiet empty bench, Settings expander, Import disabled until a shoot is selected, cancel-import overlay, labeled Settings combos, ingest sheet, source rail, FTP-failure empty, Fluent motion (reduced-motion skip), live region and 44px Dry run/Refresh.
+- **Pipelined import verify**: copy/delete and dest SHA-256 overlap; the status bar shows Copy n/N and Verify m/N with elapsed/ETA; each verified file leaves the shoot list immediately. Linux Import pulls ADB files with a per-phone provider (max 2 concurrent pulls).
+- **SD-card Open with**: the visible menu `.desktop` and `quick-media-ingest-import.desktop` both claim `x-content/image-dcf` without `NoDisplay`, so Mint/Cinnamon’s Gtk AppChooser lists Quick Media Ingest next to Pix. Launching either scans the mounted card.
+- **Local RAW thumbs**: SD-card fills no longer stop at 24 previews per shoot (that left Canon CR2 tiles gray while the meter hit 100%). Embedded JPEG previews are used first, then shrunk to the grid edge so scrolling does not keep 20-megapixel bitmaps in RAM.
+- **App icon on Linux**: the window and Cinnamon panel use `AppIcon.png` (`Window.Icon` + hicolor `quick-media-ingest` + `StartupWMClass`). The `.desktop` files no longer point at generic `camera-photo`.
+- **Remembered window + preview pane**: Avalonia stores restore size, position, maximized, and preview-column width in `prefs.json` (last normal bounds survive a maximized close; a hidden pane does not overwrite the saved column width). The right column is a splitter-resized viewer of the selected file’s full-resolution JPEG (camera embed for RAW; the source file for JPG). The filename/rating strip under the grid is gone.
+- **Persistent bench chrome**: save location, naming, Preferences, delete-after, thumbnail zoom, group-by hours, filter type, Prefer-ADB, and expand-all survive restart (trim-safe `prefs.json`); preview JPEGs stay on disk until those files are imported.
+- **Command bar**: buttons, checkboxes, and sliders no longer keep a focus rectangle after click.
+- **Phone Pictures**: drive picker lists each phone’s DCIM and a separate Pictures folder (off until ticked).
+- **Wide media types**: ingest and thumbnails cover AVIF, JPEG XL, HIF/HEIFS, JPEG 2000, camera `.thm`, extra RAW, and extra video containers (WebM, 3G2, TS, MXF, …); stills fall back Magick → libvips → HEIF decoder, video uses ffmpeg.
+- **Naming builder**: Save location sheet uses always-on checkboxes for file names and folder parts; tokens append in the order they are ticked.
+- **Linux host gates**: `install-dotnet-sdk-linux.sh` (user-local 8.0), Linux feature-gate skips WPF STA tests, `docs/LINUX_DEV.md`.
+- **Human-row automation**: `check-security-scan-policy.sh`, `check-theme-qa.sh`, `smoke-deb.sh`, `sign-deb.sh`.
+- **Ingest-bench motion**: overlay enter, Import press scale, row fade, sidebar 260→64, success flash; all durations 0 when reduced motion is on.
+- **IUserPrompt**: non-destructive import/status MessageBoxes now use a shared overlay (`Core/Prompt`) so Avalonia can implement the same contract; delete-after, cancel-import, and clear-history stay as destructive MessageBoxes.
+- **Preferences search**: filter Settings sections from a search box; unmatched expanders hide; query clears when the overlay closes.
+- **Import afterglow**: status-bar banner “Imported n files → folder” with Open folder; completion no longer blocks on a modal.
+- **Command bar overflow**: under 1100px extra View actions dock into overflow.
+- **Destination chip**: command-bar **Save location** (no folder-name subtitle) sits between Scan and Import at the same 44×88 size.
+- **High-contrast chrome**: when `SystemParameters.HighContrast` is on, Theme.* tokens remap to `SystemColors` and overlay blur is 0.
+- **Import hit target**: primary Import button is 44×88 (WCAG 2.5.5).
+- **RTL-ready FlowDirection**: `MainWindow` follows `CultureInfo.TextInfo.IsRightToLeft` (ja/de/es/fr stay LTR).
+- **Core extract (LX-L1)**: `QuickMediaIngest.Core` + `QuickMediaIngest.Localization` target `net8.0`; Linux CI runs `Core.Tests`; WMI / Credential Manager / Registry theme / high-contrast stay in `Platform/Windows`.
+- **IngestBench AppModel (LX-L1b)**: shared first-run / empty-card / import flags type; `MainViewModel` forwards so Avalonia can bind the same object.
+- **Linux adapters (LX-L2)**: XDG config paths, 0600 FTP secret files, `gio trash` then unlink, `xdg-open`, uid-0 refuse, inotify debounce 500ms + 3s poll, `NetVips.Native.linux-x64`.
+- **Avalonia ingest-bench (LX-L3)**: `QuickMediaIngest.Desktop` binds `IngestBenchAppModel` (Import / Dry run / Refresh, empty state, first-run, crash overlay); refuses uid 0.
+- **Linux .deb (LX-L4)**: `scripts/pack-deb.sh` publishes Avalonia linux-x64 self-contained ReadyToRun (multi-file) with AppStream + `.desktop`.
+- **Linux host (LP-host)**: Avalonia composition uses `IngestBenchHost` (XDG paths, persisted first-run, crash overlay from `pending-crash.json`, `IUserPrompt` overlay).
+- **Linux dest (LP-dest)**: destination chip + folder picker, persisted `dest.json` naming template (`[Date]_[Time]_[Original]` default).
+- **Linux import (LP-import)**: real Import / Dry run via `IngestEngine`, free-space abort, collision count, delete-after through `gio trash`.
+- **Linux shoots (LP-shoots)**: shoot list after scan with select-all, skip, keyword filter, Local/FTP/ADB transport badge.
+- **Linux FTP (LP-ftp)**: add/test/browse overlay, `ftp-sources.json` plus libsecret/0600 passwords, bandwidth KB/s overlay.
+- **Linux ADB (LP-adb)**: Prefer-ADB when `adb` is on PATH; dual FTP/ADB filename aliases are de-duplicated.
+- **Linux thumbs (LP-thumbs)**: Magick JPEG preview cache under AppData with a 64MB cap (no WIC).
+- **Linux scene (LP-scene)**: full-bleed import progress, afterglow banner, Open folder via `xdg-open`.
+- **Linux crash (LP-crash)**: closing the crash overlay records the fingerprint in `discarded-crashes.json` so it does not return.
+- **Linux chrome (LP-chrome)**: Avalonia command bar overflow under 1100px, notifications flyout, 14px type, `#007ACC` Import 44×88.
+- **Linux history (LP-history)**: import history overlay with search/filter, CSV export, and persisted `import-history.json`.
+- **Linux exclusions (LP-excl)**: scan-exclusions overlay adds/removes folder prefixes (`scan-exclusions.json`) and hides them from Refresh/Import.
+- **Linux feedback (LP-feedback)**: bug/feature composer with sanitized preview, fail-soft GitHub duplicate search, Copy / Open GitHub, Esc / Ctrl+Enter.
+- **Linux prefs (LP-prefs)**: Preferences overlay with theme, language, naming, GPS strip, settings search, and JSON import/export (`prefs.json`).
+- **Linux about (LP-about)**: About overlay with version, Donate via Venmo, and fail-soft GitHub filename-version checks for `.deb` assets.
+- **Linux prompt (LP-prompt)**: dry-run and status use `IUserPrompt` overlays; delete-after remains a destructive confirm.
+- **Linux queue (LP-queue)**: Queue current selection (or run immediately when idle), retry failed paths, and resume `pending-import.json` after a restart.
+- **Linux cull (LP-cull)**: Pick/Reject, 0–5 stars, and color labels on the ingest-bench; Refresh restores cull via `CullSelectionPersistence`.
+- **Linux post (LP-post)**: SHA-256 `checksums.sha256`, optional 3-2-1 copy, XMP creator/copyright sidecars, and `import-hashes.json` skip on re-import.
+- **Linux watch (LP-watch)**: watch-folder auto-refresh, shoot Split/Merge, timezone override, batch rename, dest-folder tokens.
+- **Linux media (LP-media)**: HEIC via Magick/vips, optional ffmpeg first-frame, side-by-side compare, Linux ICC probe, thumbnail cache purge.
+- **Linux Wi-Fi (LP-wifi)**: camera FTP folder presets (Sony/Canon/Nikon/Fuji/Panasonic) fill remote path and port.
+- **Linux PTP (LP-ptp)**: PTP/USB tether lists gvfs `gphoto2` mounts and `gphoto2 --auto-detect` (libusb stack, not WPD).
+- **Linux a11y (LP-a11y)**: high-contrast via `GTK_THEME`/`QMI_HIGH_CONTRAST`, reduced motion env, RTL from UI culture, F1 shortcuts, live region.
+- **Linux eject (LP-eject)**: `gio mount -u` then `udisksctl unmount` on `/media`/`/run/media`/`/mnt`; leftover-files reminder after delete-after.
+
+- **Linux naming builder (LD-naming)**: token chips (`[Date]`, `[Original]`, …) in Preferences only, presets, Date/Time/Sequence toggles, format/separator, live preview, folder-token chips.
+- **Linux welcome (UX-onboard):** first-run overlay shows app icon, `Onboarding_Body`, and 20px heading (not a title-only Got it).
+- **Linux shoot cards (LD-shoot-card)**: expand, editable title/keywords, folder path, start/end, file count, ignore-folder.
+- **Linux thumbs grid (LD-thumbs-grid)**: per-shoot Magick wrap-grid with 50–300 zoom (no WIC).
+- **Linux filters (LD-filters)**: group-by hours, file-type filter, keyword/type chips, expand-all.
+- **Linux import prefs (LD-prefs-import)**: dest presets, duplicate policy, verification, RAW+JPEG stack, confirm-before-import.
+
+### Fixed
+
+- **Open folder after import**: Linux `xdg-open` is given the destination as a single argument (no `--`; Mint’s xdg-open rejects that flag). Imported files leave the shoot list; failed copies stay for Retry.
+- **Save location**: browsing a folder now marks destination **Custom**, so the Pictures preset no longer overwrites `dest.json` on the next launch.
+- **Avalonia trimmed overlays**: compiled bindings (`x:DataType`) so `ShowCrashOverlay` does not stay visible when IL trim drops reflection bindings; first-run scrim matches other overlays.
+- **Linux secrets / LUKS / overlays**: Secret Service via `secret-tool` with 0600 file fallback; LUKS detection via `findmnt`; Avalonia History / Scan exclusions / Feedback use Core `OverlayNav`.
+
+### Changed
+
+- **Ingest-bench chrome**: first-run onboarding, waiting-for-card empty state (Refresh + Add FTP), command bar with View overflow, notifications flyout, Dry run copy, 14px type, and `#007ACC` accent (no Excel-yellow primary).
+
 ## [1.4.0] — 2026-08-30
 
 ### Added

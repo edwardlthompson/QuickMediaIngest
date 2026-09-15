@@ -201,9 +201,8 @@ namespace QuickMediaIngest.ViewModels
                 return;
             }
 
-            if (ShowSettingsDialog)
+            if (PopOverlay())
             {
-                ShowSettingsDialog = false;
                 return;
             }
 
@@ -228,12 +227,6 @@ namespace QuickMediaIngest.ViewModels
             if (ShowAddFtpDialog)
             {
                 ShowAddFtpDialog = false;
-                return;
-            }
-
-            if (ShowAboutDialog)
-            {
-                ShowAboutDialog = false;
                 return;
             }
 

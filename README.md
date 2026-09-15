@@ -4,13 +4,17 @@
 
 <h1 align="center">Quick Media Ingest</h1>
 
-**Quick Media Ingest** is a fast, open-source media importer for photographers and videographers. Ingest photos and videos from **SD cards**, **local drives**, and **FTP** (including common **phone / camera Wi‑Fi** shares) into **dated, shoot-based** destination folders with **configurable file naming**, **metadata options**, and **safety checks**.
+**Quick Media Ingest** is a fast, open-source media importer for photographers and videographers.
 
-The app takes inspiration from classic import tools, with a **Material Design**-influenced **dark / light** theme, a **unified** view that can merge **removable + FTP** sources, and **exclusion / blacklist** rules so you control what never appears in the list.
+## Pitch
+
+Ingest photos and videos from **SD cards**, **local drives**, and **FTP** (including common **phone / camera Wi‑Fi** shares) into **dated, shoot-based** destination folders with **configurable file naming**, **metadata options**, and **safety checks**. Windows uses WPF; Linux uses the Avalonia ingest-bench (`.deb`).
+
+The app takes inspiration from classic import tools, with a **Material Design**-influenced **dark / light** theme (WPF), Fluent chrome on Linux, a **unified** view that can merge **removable + FTP** sources, and **exclusion / blacklist** rules so you control what never appears in the list.
 
 ---
 
-## Key features
+## Features
 
 ### Sources and scanning
 
@@ -56,7 +60,7 @@ The app takes inspiration from classic import tools, with a **Material Design**-
 
 ---
 
-## Usage (quick path)
+## Quick start
 
 1. Add **sources** (drives appear from Windows; add **FTP** if needed).
 2. Choose **one source** or **Unified (SD + FTP)**.
@@ -89,6 +93,7 @@ Single-file portable test build:
 
 ```bash
 build_local_test.bat
+
 ```
 
 Output: `publish/local-test/QuickMediaIngest.exe`
@@ -123,6 +128,7 @@ This repo uses [agent-project-bootstrap](https://github.com/edwardlthompson/agen
 Read @docs/START_HERE.md, @docs/CURSOR_MODES.md, and @docs/FOR_AGENTS.md.
 Use BUILD_PLAN.md Sequential lane first; respect AGENT/HUMAN/ADB/AUTO labels.
 Active module: @modules/dotnet-wpf/MODULE.md
+
 ```
 
 **Slash commands:** type `/` in Agent chat — see [`docs/help/BATCH_COMMANDS.md`](docs/help/BATCH_COMMANDS.md). Gate loop: `bash scripts/watch-agent-gates.sh --once --autofix` or `.\scripts\validate-local.ps1 -WatchGates`.
@@ -132,7 +138,6 @@ Active module: @modules/dotnet-wpf/MODULE.md
 | `AGENT` | Cursor Agent — code, docs, tests, CI |
 | `HUMAN` | Human — approvals, GitHub settings, releases |
 | `AUTO` | CI/scripts — Actions, Dependabot, pre-commit |
-
 See [`docs/START_HERE.md`](docs/START_HERE.md), [`AGENTS.md`](AGENTS.md), and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Template update checker
@@ -145,11 +150,11 @@ Tracks upstream [agent-project-bootstrap](https://github.com/edwardlthompson/age
 | `daily` | At most once per day |
 | `weekly` | At most once per week (default) |
 | `monthly` | At most once per month |
-
 Configure in [`.template-update.json`](.template-update.json). Manual check:
 
 ```powershell
 pwsh scripts/check-template-updates.ps1
+
 ```
 
 See [`docs/UPGRADING_FROM_TEMPLATE.md`](docs/UPGRADING_FROM_TEMPLATE.md).
@@ -169,10 +174,14 @@ See [`docs/UPGRADING_FROM_TEMPLATE.md`](docs/UPGRADING_FROM_TEMPLATE.md).
 Issues and pull requests are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ```bash
-dotnet restore QuickMediaIngest-1.sln
+bash scripts/install-dotnet-sdk-linux.sh   # Linux: .NET 8 to $HOME/.dotnet (no sudo)
+dotnet restore QuickMediaIngest-1.sln      # Windows: full WPF sln
 dotnet build -c Release
 dotnet test -c Release
+
 ```
+
+Linux feature-gate skips `net8.0-windows` STA tests. See [`docs/LINUX_DEV.md`](docs/LINUX_DEV.md).
 
 ## License
 

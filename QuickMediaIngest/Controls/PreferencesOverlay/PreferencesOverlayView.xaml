@@ -6,11 +6,13 @@
     xmlns:loc="clr-namespace:QuickMediaIngest.Localization"
     xmlns:vm="clr-namespace:QuickMediaIngest.ViewModels"
     xmlns:converters="clr-namespace:QuickMediaIngest.Converters"
+    xmlns:behaviors="clr-namespace:QuickMediaIngest.Controls.Behaviors"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Grid>
     <Grid x:Name="SettingsOverlay"
           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False"
-          Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1100">
+          Visibility="{Binding ShowSettingsDialog, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="1100"
+          behaviors:MotionAssist.FadeOnVisible="True">
         <Border Background="Transparent">
             <Border.InputBindings>
                 <MouseBinding MouseAction="LeftClick" Command="{Binding CloseSettingsOverlayCommand}" />
@@ -21,7 +23,7 @@
                         <VisualBrush Visual="{Binding BlurBackdropSource, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Stretch="Fill"/>
                     </Rectangle.Fill>
                     <Rectangle.Effect>
-                        <BlurEffect Radius="14" RenderingBias="Performance"/>
+                        <BlurEffect Radius="{DynamicResource OverlayBlurRadius}" RenderingBias="Performance"/>
                     </Rectangle.Effect>
                 </Rectangle>
                 <Border Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#35303030" IsHitTestVisible="False"/>
@@ -41,15 +43,42 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="{loc:Loc Settings_MainTitle}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,16"
-                           Foreground="{DynamicResource MenuForegroundBrush}"/>
+                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                    <TextBlock Text="{loc:Loc Settings_MainTitle}" Style="{StaticResource AppHeadingLargeTextStyle}" Margin="0,0,0,8"
+                               Foreground="{DynamicResource MenuForegroundBrush}"/>
+                    <TextBox Text="{Binding SettingsSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                             materialDesign:HintAssist.Hint="{loc:Loc Settings_SearchPlaceholder}"
+                             AutomationProperties.Name="{loc:Loc Settings_SearchPlaceholder}"/>
+                </StackPanel>
 
                 <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               Padding="0,0,4,0">
                     <StackPanel>
-                        <Expander IsExpanded="{Binding SettingsPrefsDestinationExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                        <Expander IsExpanded="{Binding SettingsPrefsAppearanceExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}"
+                                  Visibility="{Binding SettingsSectionAppearanceVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Expander.Header>
+                                <TextBlock Text="{loc:Loc Settings_Section_Appearance}" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{loc:Loc Theme_Label}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding ThemeModeOptions}"
+                                          SelectedValue="{Binding SelectedThemeModeKey, Mode=TwoWay}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Label"
+                                          Margin="0,0,0,12"
+                                          AutomationProperties.Name="{loc:Loc Theme_Label}"/>
+                                <Button Content="{loc:Loc Settings_OpenAppInfo}"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding OpenAboutFromSettingsCommand}"
+                                        Style="{StaticResource DialogOutlinedButtonStyle}"
+                                        AutomationProperties.Name="{loc:Loc Settings_OpenAppInfo}"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander IsExpanded="{Binding SettingsPrefsDestinationExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}"
+                                  Visibility="{Binding SettingsSectionDestinationVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Expander.Header>
                                 <TextBlock Text="{loc:Loc Settings_SaveDestination}" FontWeight="SemiBold"/>
                             </Expander.Header>
@@ -70,7 +99,8 @@
                             </StackPanel>
                         </Expander>
 
-                        <Expander IsExpanded="{Binding SettingsPrefsNamingExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                        <Expander IsExpanded="{Binding SettingsPrefsNamingExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}"
+                                  Visibility="{Binding SettingsSectionNamingVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Expander.Header>
                                 <TextBlock Text="{loc:Loc Settings_FileNamingScheme}" FontWeight="SemiBold"/>
                             </Expander.Header>
@@ -138,7 +168,8 @@
                             </StackPanel>
                         </Expander>
 
-                        <Expander IsExpanded="{Binding SettingsPrefsLanguageExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}">
+                        <Expander IsExpanded="{Binding SettingsPrefsLanguageExpanded, Mode=TwoWay}" Margin="0,0,0,10" Foreground="{DynamicResource MenuForegroundBrush}"
+                                  Visibility="{Binding SettingsSectionLanguageVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Expander.Header>
                                 <TextBlock Text="{loc:Loc Settings_Section_Language}" FontWeight="SemiBold"/>
                             </Expander.Header>
@@ -158,7 +189,8 @@
                             </StackPanel>
                         </Expander>
 
-                        <Expander IsExpanded="{Binding SettingsPrefsImportSettingsExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}">
+                        <Expander IsExpanded="{Binding SettingsPrefsImportSettingsExpanded, Mode=TwoWay}" Margin="0,0,0,4" Foreground="{DynamicResource MenuForegroundBrush}"
+                                  Visibility="{Binding SettingsSectionImportVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Expander.Header>
                                 <TextBlock Text="{loc:Loc Settings_Section_ImportSettings}" FontWeight="SemiBold"/>
                             </Expander.Header>
@@ -224,6 +256,8 @@
                                 </StackPanel>
                             </StackPanel>
                         </Expander>
+                        <TextBlock Text="{loc:Loc Settings_SearchNoResults}" Style="{StaticResource AppBodyTextStyle}" TextWrapping="Wrap" Opacity="0.82"
+                                   Visibility="{Binding SettingsSearchNoResults, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
                 </ScrollViewer>
 

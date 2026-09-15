@@ -30,6 +30,10 @@ namespace QuickMediaIngest.Tests
         [InlineData(".orf")]
         [InlineData(".rw2")]
         [InlineData(".raf")]
+        [InlineData(".pef")]
+        [InlineData(".crw")]
+        [InlineData(".srw")]
+        [InlineData(".x3f")]
         public void CommonRawFormats_AreIdentifiedAsRaw(string ext)
         {
             Assert.True(MediaExtensions.IsRawExtension(ext));

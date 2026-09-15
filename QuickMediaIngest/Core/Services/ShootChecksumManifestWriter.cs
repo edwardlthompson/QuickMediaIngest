@@ -52,5 +52,40 @@ namespace QuickMediaIngest.Core.Services
                 return null;
             }
         }
+
+        public static async Task<string?> WritePrecomputedAsync(
+            string shootDirectory,
+            IReadOnlyList<(string file, string hash)> rows,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(shootDirectory) || !Directory.Exists(shootDirectory) || rows == null || rows.Count == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"# SHA-256 Manifest generated at {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
+                foreach ((string file, string hash) in rows)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (string.IsNullOrWhiteSpace(hash))
+                    {
+                        continue;
+                    }
+
+                    sb.AppendLine($"{hash} *{Path.GetFileName(file)}");
+                }
+
+                string manifestPath = Path.Combine(shootDirectory, "checksums.sha256");
+                await File.WriteAllTextAsync(manifestPath, sb.ToString(), Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+                return manifestPath;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

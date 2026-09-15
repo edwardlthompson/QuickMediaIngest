@@ -49,7 +49,9 @@ namespace QuickMediaIngest.Core
                 return;
             }
 
-            string folderName = GroupFolderNaming.GetTargetFolderName(group);
+            string folderName = GroupFolderNaming.GetTargetFolderName(
+                group,
+                string.IsNullOrWhiteSpace(options.DestinationFolderTemplate) ? null : options.DestinationFolderTemplate);
             string targetDir = Path.Combine(destinationRoot, folderName);
 
             if (!Directory.Exists(targetDir))
@@ -71,6 +73,10 @@ namespace QuickMediaIngest.Core
             int parallelImports = options.MaxConcurrentFileCopies > 0
                 ? Math.Clamp(options.MaxConcurrentFileCopies, 1, 16)
                 : Math.Clamp(Environment.ProcessorCount, 1, 8);
+            if (AdbTransferIo.IsAdbBackedProvider(_provider))
+            {
+                parallelImports = AdbTransferIo.CapConcurrentCopies(options.MaxConcurrentFileCopies);
+            }
 
             if (options.DelayBetweenFilesMilliseconds > 0)
             {

@@ -22,8 +22,9 @@ namespace QuickMediaIngest.ViewModels
     {
         [ObservableProperty] private bool settingsPrefsNamingExpanded = true;
         [ObservableProperty] private bool settingsPrefsLanguageExpanded = true;
+        [ObservableProperty] private bool settingsPrefsAppearanceExpanded = true;
         /// <summary>Unified Preferences expander for all import-related options.</summary>
-        [ObservableProperty] private bool settingsPrefsImportSettingsExpanded = true;
+        [ObservableProperty] private bool settingsPrefsImportSettingsExpanded = false;
         [ObservableProperty] private string importReadinessSummary = string.Empty;
         [ObservableProperty] private string lastImportSummary = string.Empty;
         [ObservableProperty] private string previewHealthSummary = string.Empty;
@@ -68,6 +69,8 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private string accessibilityAnnouncement = string.Empty;
 
         public ObservableCollection<DestinationPresetOption> DestinationPresetOptions { get; } = new();
+        public ObservableCollection<DestinationPresetOption> ThemeModeOptions { get; } = new();
+        [ObservableProperty] private string selectedThemeModeKey = "Dark";
 
         public bool HasNoSidebarSources => Sources.Count == 0;
 
@@ -109,6 +112,8 @@ namespace QuickMediaIngest.ViewModels
             OnPropertyChanged(nameof(ShowEmptyFtpFailurePanel));
             OnPropertyChanged(nameof(ShowEmptyScanPanel));
             OnPropertyChanged(nameof(AdbTransferStatusHint));
+            RefreshToolbarActionHints();
+            SyncIngestBench();
         }
 
         private static string BuildShootExpansionKey(ItemGroup g) =>
@@ -356,6 +361,8 @@ namespace QuickMediaIngest.ViewModels
         {
             SaveConfig();
             RefreshImportReadinessSummary();
+            OnPropertyChanged(nameof(DestinationChipLabel));
+            RefreshImportSceneHints();
         }
 
         partial void OnDestinationPresetChanged(string value)

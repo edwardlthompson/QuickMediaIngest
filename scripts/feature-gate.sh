@@ -160,22 +160,41 @@ if ! bash scripts/check-file-limits.sh >/dev/null 2>&1; then
 fi
 GATES_PASSED+=("file-limits")
 
+if should_run dotnet-wpf; then
+  for t in scripts/lib/test_motion_timings.py scripts/lib/test_user_prompt.py scripts/lib/test_settings_search.py scripts/lib/test_import_afterglow.py scripts/lib/test_import_progress_scene.py scripts/lib/test_command_bar_overflow.py scripts/lib/test_high_contrast.py scripts/lib/test_import_hit_target.py scripts/lib/test_ui_reading_order.py scripts/lib/test_core_extract.py scripts/lib/test_ingest_bench_app_model.py scripts/lib/test_linux_adapters.py scripts/lib/test_avalonia_bench.py scripts/lib/test_pack_deb.py scripts/lib/test_lx_trim.py scripts/lib/test_linux_parity.py; do
+    if [ -f "$t" ]; then
+      run_cmd "$(basename "$t" .py)" "$PY" "$t"
+    fi
+  done
+fi
+
 if should_run dotnet-wpf && [ -f QuickMediaIngest-1.sln ]; then
-  DOTNET_BIN="dotnet"
-  if ! command -v dotnet >/dev/null 2>&1; then
-    if command -v dotnet.exe >/dev/null 2>&1; then
-      DOTNET_BIN="dotnet.exe"
-    elif [ -x "/mnt/c/Program Files/dotnet/dotnet.exe" ]; then
-      DOTNET_BIN="/mnt/c/Program Files/dotnet/dotnet.exe"
-    else
+  DOTNET_BIN="$($PY "$ROOT/scripts/lib/dotnet_host.py" --print)"
+  DOTNET_HOST="$($PY "$ROOT/scripts/lib/dotnet_host.py" --host)"
+  if [ "$DOTNET_HOST" = "windows" ]; then
+    if [ -z "$DOTNET_BIN" ]; then
       block_env "dotnet SDK not found; install .NET 8 SDK"
     fi
+    run_cmd dotnet-restore "$DOTNET_BIN" restore QuickMediaIngest-1.sln
+    run_cmd dotnet-build "$DOTNET_BIN" build QuickMediaIngest-1.sln -c Release --no-restore
+    run_cmd dotnet-test "$DOTNET_BIN" test QuickMediaIngest-1.sln -c Release --no-build --verbosity minimal
+    run_cmd dotnet-format "$DOTNET_BIN" format QuickMediaIngest-1.sln --verify-no-changes
+    run_cmd dotnet-vulnerable "$DOTNET_BIN" list QuickMediaIngest-1.sln package --vulnerable --include-transitive
+  else
+    log "Linux host: skip net8.0-windows STA tests (Windows CI runs the full sln)"
+    CORE_PROJ="$($PY "$ROOT/scripts/lib/dotnet_host.py" --core-tests)"
+    if [ -n "$DOTNET_BIN" ] && [ -n "$CORE_PROJ" ]; then
+      run_cmd dotnet-restore "$DOTNET_BIN" restore "$CORE_PROJ"
+      run_cmd dotnet-test "$DOTNET_BIN" test "$CORE_PROJ" -c Release --verbosity minimal
+      if [ -f QuickMediaIngest.Desktop/QuickMediaIngest.Desktop.csproj ]; then
+        run_cmd avalonia-build "$DOTNET_BIN" build QuickMediaIngest.Desktop/QuickMediaIngest.Desktop.csproj -c Release
+      fi
+    elif [ -n "$DOTNET_BIN" ]; then
+      log "SDK present; Core.Tests not extracted yet (LX-L1) — skip WPF sln"
+    else
+      log "dotnet SDK not on PATH; Linux subset is hygiene + license until UNB-SDK or LX-L1"
+    fi
   fi
-  run_cmd dotnet-restore "$DOTNET_BIN" restore QuickMediaIngest-1.sln
-  run_cmd dotnet-build "$DOTNET_BIN" build QuickMediaIngest-1.sln -c Release --no-restore
-  run_cmd dotnet-test "$DOTNET_BIN" test QuickMediaIngest-1.sln -c Release --no-build --verbosity minimal
-  run_cmd dotnet-format "$DOTNET_BIN" format QuickMediaIngest-1.sln --verify-no-changes
-  run_cmd dotnet-vulnerable "$DOTNET_BIN" list QuickMediaIngest-1.sln package --vulnerable --include-transitive
   if [ -f scripts/check-license-compliance.sh ]; then
     run_cmd license bash scripts/check-license-compliance.sh
   fi

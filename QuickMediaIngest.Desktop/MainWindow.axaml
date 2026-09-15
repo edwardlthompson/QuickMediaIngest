@@ -1,0 +1,701 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:QuickMediaIngest.Core.AppModel"
+        xmlns:m="using:QuickMediaIngest.Core.Models"
+        xmlns:sys="using:System"
+        xmlns:desk="using:QuickMediaIngest.Desktop"
+        xmlns:conv="using:Avalonia.Data.Converters"
+        x:Class="QuickMediaIngest.Desktop.MainWindow"
+        x:DataType="vm:IngestBenchAppModel"
+        Title="Quick Media Ingest"
+        Icon="avares://QuickMediaIngest.Desktop/Assets/AppIcon.png"
+        Width="1100" Height="720"
+        MinWidth="900" MinHeight="300"
+        WindowStartupLocation="Manual"
+        FontSize="14">
+    <Window.Resources>
+        <desk:PathBitmapConverter x:Key="PathBitmap"/>
+        <desk:FilterFileTypeDisplayConverter x:Key="FileTypeDisplay"/>
+        <desk:ExpandedAngleConverter x:Key="ExpandedAngle"/>
+    </Window.Resources>
+    <Panel>
+        <TextBlock Name="LiveRegion" Text="{Binding AccessibilityAnnouncement}" Width="1" Height="1" Opacity="0" IsHitTestVisible="False"
+                   AutomationProperties.LiveSetting="Polite"/>
+        <Grid ColumnDefinitions="220,*">
+            <Border Classes="sidebar">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="4">
+                        <Button Name="EjectButton" Classes="navRow" Content="Eject" IsVisible="{Binding ShowEject}" Click="Eject_Click"/>
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock Name="SidebarTitle" Classes="appName" Text="Quick Media Ingest"/>
+                        <TextBlock Classes="muted" Text="{Binding AboutVersion, StringFormat='v{0}'}"/>
+                        <TextBlock Name="SidebarSources" Classes="section" Text="Sources"/>
+                        <TextBlock Name="SidebarNoCards" Classes="muted" Text="No cards yet" IsVisible="{Binding ShowWaitingForCard}"/>
+                        <ItemsControl ItemsSource="{Binding Volumes}" IsVisible="{Binding ShowShootList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VolumeChoice">
+                                    <StackPanel Margin="0,0,0,6" IsVisible="{Binding IsSelected}">
+                                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Kind}" Classes="muted"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Name="SidebarSourceCount" Classes="muted" IsVisible="{Binding ShowShootList}" Text="{Binding SourceCount, StringFormat='{}{0} connected'}"/>
+                        <TextBlock Name="DestSummaryTitle" Classes="section" Text="Save location"/>
+                        <Button Name="DestSummaryEdit" Classes="navRow" Content="Save location" Click="IngestSheet_Click"
+                                ToolTip.Tip="{Binding DestinationRoot}"
+                                AutomationProperties.Name="Save location"/>
+                        <Button Name="NotifyButton" Classes="navRow" Click="Notify_Click">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" Background="#007ACC" CornerRadius="8" Padding="6,0" Margin="8,0,0,0"
+                                        IsVisible="{Binding ShowNotifyBadge}" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding UnreadNotificationCount}" Foreground="White" FontSize="12"/>
+                                </Border>
+                                <TextBlock Name="NotifyLabel" Text="Notifications" VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Button>
+                        <TextBlock Name="SidebarSettings" Classes="section" Text="Settings"/>
+                        <Button Name="SidebarPrefs" Classes="navRow" Content="Preferences" Click="Prefs_Click"/>
+                        <Button Name="SidebarHistory" Classes="navRow" Content="History" Click="History_Click"/>
+                        <Button Name="SidebarExclusions" Classes="navRow" Content="Scan exclusions" Click="ScanExclusions_Click"/>
+                        <Button Name="SidebarFeedback" Classes="navRow" Content="Feedback" Click="Feedback_Click"/>
+                        <Button Name="AddFtpButton" Classes="navRow" Content="Add FTP" Click="AddFtp_Click"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <DockPanel Grid.Column="1">
+                <Border Classes="statusBar" DockPanel.Dock="Bottom">
+                    <StackPanel Spacing="6">
+                        <DockPanel IsVisible="{Binding ShowNotifications}">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                                <Button Name="NotifyClear" Classes="ghost" Content="Clear notifications" Click="NotifyClear_Click"/>
+                                <Button Name="NotifyClose" Classes="ghost" Content="Close" Click="NotifyClose_Click"/>
+                            </StackPanel>
+                            <ListBox ItemsSource="{Binding Notifications}" MaxHeight="140" BorderThickness="0" Background="Transparent"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <Button Name="CancelImportButton" Classes="ghost" Content="Cancel import" MinHeight="32" Margin="8,0,0,0"
+                                    DockPanel.Dock="Right" IsVisible="{Binding IsImporting}" Click="CancelImport_Click"/>
+                            <TextBlock DockPanel.Dock="Right" Classes="muted" MaxWidth="280" TextTrimming="CharacterEllipsis"
+                                       Text="{Binding SaveLocationNote}" ToolTip.Tip="{Binding DestinationRoot}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <ProgressBar Name="ActivityMeter" Width="160" Height="6" Minimum="0" Maximum="100"
+                                             Value="{Binding ImportPercent}"
+                                             IsIndeterminate="{Binding ActivityIndeterminate}"
+                                             IsVisible="{Binding ShowActivityProgress}"
+                                             VerticalAlignment="Center"
+                                             AutomationProperties.Name="Activity progress"/>
+                                <TextBlock Opacity="0.85" Text="{Binding ImportStatus}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+                <Border Classes="commandBar" DockPanel.Dock="Top">
+                    <StackPanel>
+                        <WrapPanel>
+                            <Button Name="RefreshButton" Classes="ghost" Content="Scan" MinHeight="44" Height="44" MinWidth="88" Margin="0,0,8,4"
+                                    Click="Scan_Click" ToolTip.Tip="Scan cards, folders, and phones"
+                                    AutomationProperties.Name="Scan"/>
+                            <Button Name="DestChip" Classes="ghost" Content="Save location" MinHeight="44" Height="44" MinWidth="88" Margin="0,0,8,4"
+                                    Click="IngestSheet_Click" ToolTip.Tip="{Binding DestinationRoot}"
+                                    AutomationProperties.Name="Save location"
+                                    Classes.flash="{Binding DestChipFlash}"/>
+                            <Border ToolTip.Tip="Select a shoot to import.">
+                                <Button Name="ImportButton" Classes="accent" Content="Import" MinHeight="44" Height="44" MinWidth="88" Background="#007ACC" Foreground="White" Margin="0,0,8,4"
+                                        IsEnabled="{Binding CanImport}" Click="Import_Click"
+                                        desk:MotionAssist.PressScale="True"
+                                        AutomationProperties.Name="Import"/>
+                            </Border>
+                            <Button Name="DryRunButton" Classes="ghost" Content="Dry run" MinHeight="44" Height="44" MinWidth="88" Margin="0,0,8,4"
+                                    IsVisible="{Binding !ShowShootList}" Click="DryRun_Click"/>
+                            <CheckBox Name="DeleteAfterBox" Classes="danger" IsChecked="{Binding DeleteAfterImport}" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,4" Spacing="8">
+                                <TextBlock Name="GroupByLabel" Text="Group by:" VerticalAlignment="Center"/>
+                                <Slider Name="HoursSlider" Minimum="1" Maximum="24" Width="110" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        VerticalAlignment="Center" Value="{Binding TimeBetweenShootsHours}" LostFocus="Hours_Changed"/>
+                                <Border Background="#E0E0E0" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TimeBetweenShootsHours, StringFormat='{}{0}h'}" Foreground="#1E1E1E" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,4" Spacing="8">
+                                <TextBlock Name="ThumbLabel" Text="Thumbnail size" VerticalAlignment="Center"/>
+                                <Slider Name="ThumbZoom" Minimum="50" Maximum="300" Width="120" VerticalAlignment="Center" Value="{Binding ThumbnailSize}" LostFocus="Thumb_Changed"/>
+                            </StackPanel>
+                            <Button Name="OverflowButton" Classes="ghost" Content="View" Margin="0,0,8,4" Click="Overflow_Click"/>
+                            <Button Name="RetryButton" Classes="ghost" Content="Retry Failed" MinHeight="32" Margin="0,0,8,4" IsVisible="{Binding ShowRetryFailed}" Click="Retry_Click"/>
+                            <Button Name="ResumeButton" Classes="ghost" Content="Resume Pending" MinHeight="32" Margin="0,0,8,4" IsVisible="{Binding ShowResumePending}" Click="Resume_Click"/>
+                        </WrapPanel>
+                        <ItemsControl ItemsSource="{Binding FilterChips}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:FilterChip">
+                                    <Border Classes="filterChip">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontSize="12" Margin="4,0,4,0"/>
+                                            <Button Content="✕" FontSize="12" MinWidth="24" MinHeight="24" Height="24" Padding="4,0" Click="FilterChip_Click" Tag="{Binding Id}"
+                                                    AutomationProperties.Name="Remove filter"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <Panel>
+                    <Border Classes="emptyCard" IsVisible="{Binding ShowWaitingForCard}">
+                        <StackPanel Spacing="8">
+                            <Path Data="M 8 4 H 26 C 28 4 30 6 30 8 V 34 C 30 36 28 38 26 38 H 12 L 4 30 V 8 C 4 6 6 4 8 4 Z M 10 10 H 24 V 14 H 10 Z"
+                                  Width="32" Height="40" Stretch="Uniform" Fill="#007ACC" HorizontalAlignment="Left"/>
+                            <TextBlock Name="EmptyState" Text="No sources yet" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Name="EmptyBody" TextWrapping="Wrap" Opacity="0.8"/>
+                            <TextBlock Name="EmptyLastDest" Classes="muted" Text="{Binding SaveLocationNote}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                <Button Name="EmptyRefresh" Classes="accent" Content="Scan" MinHeight="44" MinWidth="88" Background="#007ACC" Foreground="White" Click="Scan_Click"/>
+                                <Button Content="Add FTP" Classes="ghost" Click="AddFtp_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="emptyCard" IsVisible="{Binding ShowFtpFailure}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Name="FtpFailTitle" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Name="FtpFailLead" TextWrapping="Wrap"/>
+                            <TextBlock Name="FtpFailBody" TextWrapping="Wrap" Classes="muted" Text="{Binding Ftp.BrowseListing}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Name="FtpFailRefresh" Classes="accent" Content="Scan" MinHeight="44" Background="#007ACC" Foreground="White" Click="Scan_Click"/>
+                                <Button Content="Add FTP" Classes="ghost" Click="AddFtp_Click"/>
+                                <Button Name="FtpFailClose" Classes="ghost" Content="Close" Click="FtpFailClose_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <DockPanel IsVisible="{Binding ShowShootList}" Margin="20">
+                        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                            <Button Name="SelectAllButton" Classes="ghost" Content="Select All" Margin="0,0,8,6" Click="SelectAll_Click"/>
+                            <Button Name="SkipFolderButton" Classes="ghost" Content="Skip folder" Margin="0,0,8,6" Click="SkipFolder_Click"/>
+                            <Button Name="ExpandAllButton" Classes="ghost" Content="Expand all" MinHeight="32" Margin="0,0,8,6" Click="ExpandAll_Click"/>
+                            <TextBox Name="ShootFilterBox" Width="200" Margin="0,0,8,6" Text="{Binding ShootFilter}" Watermark="Search keywords" LostFocus="ShootFilter_LostFocus"/>
+                            <ComboBox Name="FileTypeBox" Width="160" Margin="0,0,8,6" ItemsSource="{Binding FileTypeChoices}" SelectedItem="{Binding FilterFileType}" SelectionChanged="FileType_Changed">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="sys:String">
+                                        <TextBlock Text="{Binding Converter={StaticResource FileTypeDisplay}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Name="PickButton" Classes="ghost" Content="Pick" MinHeight="32" Margin="0,0,8,6" IsVisible="{Binding ShowCullTools}" Click="Pick_Click"/>
+                            <Button Name="RejectButton" Classes="ghost" Content="Reject" MinHeight="32" Margin="0,0,8,6" IsVisible="{Binding ShowCullTools}" Click="Reject_Click"/>
+                            <ComboBox Name="RatingBox" Width="72" Margin="0,0,8,6" IsVisible="{Binding ShowCullTools}" ItemsSource="{Binding CullRatings}" SelectedItem="{Binding SelectedCullItem.Rating}" SelectionChanged="Rating_Changed"/>
+                            <ComboBox Name="ColorBox" Width="100" Margin="0,0,8,6" IsVisible="{Binding ShowCullTools}" ItemsSource="{Binding CullColors}" SelectedItem="{Binding SelectedCullItem.ColorLabel}" SelectionChanged="Color_Changed"/>
+                            <CheckBox Name="PreferAdbBox" IsChecked="{Binding PreferAdb}" IsVisible="{Binding AdbAvailable}" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                        </WrapPanel>
+                        <Grid Name="ShootSplitGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="360" MinWidth="200" MaxWidth="4000"/>
+                            </Grid.ColumnDefinitions>
+                            <ListBox Classes="quiet" Grid.Column="0" ItemsSource="{Binding Shoots}" SelectedItem="{Binding SelectedShoot}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="m:ItemGroup">
+                                    <Border Classes="shootCard">
+                                        <StackPanel Spacing="8">
+                                            <DockPanel>
+                                                <Button Classes="icon" DockPanel.Dock="Left" MinHeight="32" MinWidth="32" Margin="0,0,8,0"
+                                                        Click="ShootExpand_Click" ToolTip.Tip="Expand or collapse this shoot">
+                                                    <Path Data="M 2 2 L 2 12 L 10 7 Z" Width="10" Height="12" Stretch="Fill" Fill="#E0E0E0"
+                                                          RenderTransformOrigin="50%,50%">
+                                                        <Path.RenderTransform>
+                                                            <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource ExpandedAngle}}"/>
+                                                        </Path.RenderTransform>
+                                                    </Path>
+                                                </Button>
+                                                <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <Button Classes="ghost" DockPanel.Dock="Right" Content="Ignore folder" MinHeight="32" Click="ShootIgnore_Click"/>
+                                                <TextBox Text="{Binding Title}" Watermark="Shoot name" FontWeight="SemiBold" BorderThickness="0,0,0,1"/>
+                                            </DockPanel>
+                                            <TextBox Text="{Binding KeywordsText}" Watermark="Keywords" AcceptsReturn="True"/>
+                                            <TextBlock Text="{Binding FolderPath}" TextWrapping="Wrap" Opacity="0.72" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                                <TextBlock Text="{Binding TransportDisplay}" Opacity="0.7" FontSize="12"/>
+                                                <TextBlock Text="{Binding StartDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="12"/>
+                                                <TextBlock Text="{Binding EndDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="12"/>
+                                                <TextBlock Text="{Binding FileCount, StringFormat='{}{0} files'}" FontSize="12"/>
+                                            </StackPanel>
+                                            <ItemsControl IsVisible="{Binding IsExpanded}" ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="m:ImportItem">
+                                                        <StackPanel IsVisible="{Binding IsPreviewVisible}" Margin="0,0,8,8"
+                                                                    PointerPressed="ThumbTile_PointerPressed"
+                                                                    Width="{Binding $parent[ListBox].((vm:IngestBenchAppModel)DataContext).ThumbnailSize}">
+                                                            <Border Classes="thumbFrame" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Padding="2">
+                                                                <Panel>
+                                                                    <Border Background="#3F3F46" CornerRadius="2"
+                                                                            IsVisible="{Binding PreviewCachePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}"
+                                                                            desk:MotionAssist.PulseWhileEmpty="True"
+                                                                            Height="{Binding $parent[ListBox].((vm:IngestBenchAppModel)DataContext).ThumbnailSize}"/>
+                                                                    <Image Stretch="Uniform"
+                                                                           Width="{Binding $parent[ListBox].((vm:IngestBenchAppModel)DataContext).ThumbnailSize}"
+                                                                           Height="{Binding $parent[ListBox].((vm:IngestBenchAppModel)DataContext).ThumbnailSize}"
+                                                                           RenderOptions.BitmapInterpolationMode="LowQuality"
+                                                                           Source="{Binding PreviewCachePath, Converter={StaticResource PathBitmap}}"/>
+                                                                </Panel>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontSize="12" Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                            <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns"
+                                          Background="#3F3F46" HorizontalAlignment="Stretch"/>
+                            <Border Name="PreviewPane" Grid.Column="2" Background="#252526" Padding="8" SizeChanged="PreviewPane_SizeChanged">
+                                <Panel>
+                                    <TextBlock Classes="muted" Text="Select a photo" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" IsVisible="{Binding !HasPreview}"/>
+                                    <Image Name="PreviewImage" Stretch="Uniform" HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Stretch" IsVisible="{Binding HasPreview}"/>
+                                </Panel>
+                            </Border>
+                        </Grid>
+                    </DockPanel>
+                </Panel>
+            </DockPanel>
+        </Grid>
+        <Border IsVisible="{Binding ShowOverflow}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="300">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="View"/>
+                    <Button Name="OverflowDest" Classes="ghost" Content="Save location" IsVisible="{Binding CommandBarCompact}" Click="IngestSheet_Click"/>
+                    <Button Name="OverflowDryRun" Classes="ghost" Content="Dry run" IsVisible="{Binding ShowShootList}" Click="DryRun_Click"/>
+                    <Button Name="OverflowRefresh" Classes="ghost" Content="Scan" IsVisible="{Binding CommandBarCompact}" Click="Scan_Click"/>
+                    <Button Name="QueueButton" Classes="ghost" Content="Queue" MinHeight="32" Click="Queue_Click"/>
+                    <Button Name="SplitButton" Classes="ghost" Content="Split" MinHeight="32" Click="Split_Click"/>
+                    <Button Name="MergeButton" Classes="ghost" Content="Merge" MinHeight="32" Click="Merge_Click"/>
+                    <Button Name="RenameButton" Classes="ghost" Content="Rename" MinHeight="32" Click="Rename_Click"/>
+                    <Button Name="CompareButton" Classes="ghost" Content="Compare" MinHeight="32" Click="Compare_Click"/>
+                    <Button Name="PtpButton" Classes="ghost" Content="PTP" Click="Ptp_Click"/>
+                    <CheckBox Name="OverflowPreferAdb" IsChecked="{Binding PreferAdb}" IsVisible="{Binding AdbAvailable}"/>
+                    <Button Name="OverflowClose" Classes="ghost" Content="Close" Click="OverflowClose_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding IsFirstRun}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="420">
+                <StackPanel Spacing="12">
+                    <Image Name="WelcomeIcon" Width="72" Height="72" HorizontalAlignment="Center"
+                           Source="avares://QuickMediaIngest.Desktop/Assets/AppIcon.png"/>
+                    <TextBlock Name="WelcomeTitle" Classes="heading" Text="Welcome" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Name="WelcomeBody" TextWrapping="Wrap" TextAlignment="Left" FontSize="14"/>
+                    <Button Name="WelcomeGotIt" Classes="accent" Content="Got it" MinHeight="44" Background="#007ACC" Foreground="White" HorizontalAlignment="Center" Click="DismissFirstRun_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border Name="HistoryOverlay" IsVisible="False" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="520">
+                <StackPanel Spacing="12">
+                    <TextBlock Name="HistoryTitle" Text="Import history" FontSize="20"/>
+                    <TextBox Name="HistoryFilterBox" Watermark="Search" Text="{Binding HistoryFilter}" LostFocus="HistoryFilter_LostFocus"/>
+                    <ListBox ItemsSource="{Binding VisibleHistory}" MaxHeight="280">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="m:ImportHistoryRecord">
+                                <TextBlock Text="{Binding SummaryDisplay}" TextWrapping="Wrap"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="HistoryExport" Content="Export" MinHeight="44" Click="HistoryExport_Click"/>
+                        <Button Name="HistoryClear" Classes="ghost" Content="Clear" Click="HistoryClear_Click"/>
+                        <Button Name="HistoryClose" Classes="ghost" Content="Close" Click="CloseOverlay_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border Name="ScanExclusionsOverlay" IsVisible="False" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="480">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="ExclTitle" Text="Scan exclusions" FontSize="20"/>
+                    <TextBlock Name="ExclSubtitle" TextWrapping="Wrap" Opacity="0.85"/>
+                    <ListBox ItemsSource="{Binding ExcludedFolders}" SelectedItem="{Binding SelectedExclusion}" MaxHeight="220"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="ExclAdd" Content="Add folder" MinHeight="44" Click="ExclAdd_Click"/>
+                        <Button Name="ExclRemove" Classes="ghost" Content="Remove rule" Click="ExclRemove_Click"/>
+                        <Button Name="ExclClose" Classes="ghost" Content="Close" Click="CloseOverlay_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowDrivePicker}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" MaxWidth="520">
+                <StackPanel Spacing="12">
+                    <TextBlock Name="DrivePickerTitle" Text="Choose drives to scan" FontSize="20"/>
+                    <TextBlock Name="DrivePickerHint" Classes="muted" TextWrapping="Wrap"
+                               Text="Tick only the cards and disks you want. Games and other data drives stay off unless you check them. Each phone has DCIM plus a Pictures folder (off until you tick it)."/>
+                    <ListBox ItemsSource="{Binding Volumes}" MaxHeight="280">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:VolumeChoice">
+                                <DockPanel Margin="0,4">
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Kind}" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding Path=Path}" Classes="muted" FontSize="12" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="DrivePickerScan" Classes="accent" Content="Scan" MinHeight="44" Background="#007ACC" Foreground="White" Click="ConfirmDrive_Click"/>
+                        <Button Name="DrivePickerCancel" Classes="ghost" Content="Cancel" Click="CancelDrive_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowPtpPicker}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="420">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="PtpTitle" Text="PTP / USB tether" FontSize="20"/>
+                    <ListBox ItemsSource="{Binding PtpDevices}" MaxHeight="200"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="PtpScan" Content="Scan PTP" MinHeight="44" Click="PtpScan_Click"/>
+                        <Button Name="PtpCancel" Classes="ghost" Content="Cancel" Click="PtpCancel_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border Name="PrefsOverlay" IsVisible="False" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="520">
+            <ScrollViewer MaxHeight="560">
+            <StackPanel Spacing="10">
+                <TextBlock Name="PrefsTitle" Text="Settings" FontSize="20"/>
+                <TextBox Name="PrefsSearch" Watermark="Search settings" Text="{Binding Prefs.SearchQuery}" LostFocus="PrefsSearch_LostFocus"/>
+                <TextBlock Name="PrefsNoResults" Text="No matching settings" IsVisible="{Binding Prefs.ShowNoResults}"/>
+                <StackPanel IsVisible="{Binding Prefs.ShowAppearance}" Spacing="4">
+                    <TextBlock Name="PrefsAppearance" Classes="section" Text="Appearance"/>
+                    <TextBlock Name="PrefsThemeLabel" Text="Theme"/>
+                    <ComboBox Name="PrefsTheme" ItemsSource="{Binding Prefs.ThemeChoices}" SelectedItem="{Binding Prefs.Theme}" SelectionChanged="PrefsTheme_Changed"/>
+                </StackPanel>
+                <TextBlock Name="PrefsSaveLocationHint" Classes="muted" TextWrapping="Wrap"
+                           Text="Save location and file naming are on the Save location button in the top bar."/>
+                <StackPanel IsVisible="False" Spacing="6">
+                    <TextBlock Name="PrefsNaming" Classes="section" Text="Naming"/>
+                    <TextBlock Name="PrefsNamingPresetLabel" Text="Preset"/>
+                    <ComboBox Name="PrefsPreset" ItemsSource="{Binding Naming.PresetOptions}" SelectedItem="{Binding Naming.Preset}" SelectionChanged="PrefsNamingPreset_Changed"/>
+                    <WrapPanel>
+                        <CheckBox Name="PrefsIncDate" IsChecked="{Binding Naming.IncludeDate}" Click="PrefsNamingOptions_Click" Margin="0,0,12,0"/>
+                        <CheckBox Name="PrefsIncTime" IsChecked="{Binding Naming.IncludeTime}" Click="PrefsNamingOptions_Click" Margin="0,0,12,0"/>
+                        <CheckBox Name="PrefsIncSeq" IsChecked="{Binding Naming.IncludeSequence}" Click="PrefsNamingOptions_Click" Margin="0,0,12,0"/>
+                        <CheckBox Name="PrefsIncShoot" IsChecked="{Binding Naming.IncludeShootName}" Click="PrefsNamingOptions_Click" Margin="0,0,12,0"/>
+                        <CheckBox Name="PrefsIncOrig" IsChecked="{Binding Naming.IncludeOriginalName}" Click="PrefsNamingOptions_Click"/>
+                    </WrapPanel>
+                    <TextBlock Name="PrefsDateFormatLabel" Text="Date format"/>
+                    <ComboBox Name="PrefsDateFormat" ItemsSource="{Binding Naming.DateFormatOptions}" SelectedItem="{Binding Naming.DateFormat}" SelectionChanged="PrefsNamingOptions_Changed"/>
+                    <TextBlock Name="PrefsTimeFormatLabel" Text="Time format"/>
+                    <ComboBox Name="PrefsTimeFormat" ItemsSource="{Binding Naming.TimeFormatOptions}" SelectedItem="{Binding Naming.TimeFormat}" SelectionChanged="PrefsNamingOptions_Changed"/>
+                    <TextBlock Name="PrefsSeparatorLabel" Text="Separator"/>
+                    <ComboBox Name="PrefsSeparator" ItemsSource="{Binding Naming.SeparatorOptions}" SelectedItem="{Binding Naming.Separator}" SelectionChanged="PrefsNamingOptions_Changed"/>
+                    <TextBlock Name="PrefsTokensLabel" Text="Tokens"/>
+                    <ItemsControl ItemsSource="{Binding Naming.AvailableTokens}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <Button Classes="chip" Content="{Binding}" Click="NamingToken_Click" Tag="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding Naming.SelectedTokens}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <Button Classes="chip" Content="{Binding}" Click="NamingTokenRemove_Click" Tag="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox Name="PrefsNamingBox" Text="{Binding NamingTemplate}" LostFocus="Naming_LostFocus"/>
+                    <TextBox Name="PrefsShootSample" Watermark="Shoot sample" Text="{Binding Naming.ShootNameSample}" LostFocus="PrefsShootSample_LostFocus"/>
+                    <CheckBox Name="PrefsLowercase" IsChecked="{Binding Naming.Lowercase}" Click="PrefsLowercase_Click"/>
+                    <TextBlock Name="PrefsPreviewLabel" Text="Preview"/>
+                    <ItemsControl ItemsSource="{Binding Naming.PreviewExamples}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <TextBlock Text="{Binding}" Opacity="0.9" FontFamily="monospace"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Name="PrefsFolderTokensLabel" Text="Folder tokens"/>
+                    <ItemsControl ItemsSource="{Binding Naming.FolderTokenPalette}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <Button Classes="chip" Content="{Binding}" Click="FolderToken_Click" Tag="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox Name="PrefsDestFolder" Watermark="Dest folder tokens" Text="{Binding DestFolderTemplate}" LostFocus="DestFolder_LostFocus"/>
+                </StackPanel>
+                <StackPanel IsVisible="{Binding Prefs.ShowLanguage}" Spacing="4">
+                    <TextBlock Name="PrefsLanguageLabel" Classes="section" Text="Language"/>
+                    <ComboBox ItemsSource="{Binding Prefs.LanguageChoices}" SelectedItem="{Binding Prefs.Language}" SelectionChanged="PrefsLanguage_Changed"/>
+                </StackPanel>
+                <Expander Name="PrefsImportExpander" IsVisible="{Binding Prefs.ShowImport}">
+                    <Expander.Header>
+                        <TextBlock Name="PrefsImportHeader" Classes="section" Text="Import" Margin="0"/>
+                    </Expander.Header>
+                    <StackPanel Spacing="6" Margin="0,8,0,0">
+                    <TextBlock Name="PrefsDestPresetLabel" Text="Destination preset"/>
+                    <ComboBox Name="PrefsDestPreset" ItemsSource="{Binding Prefs.DestinationPresetChoices}" SelectedItem="{Binding Prefs.DestinationPreset}" SelectionChanged="PrefsDestPreset_Changed"/>
+                    <TextBlock Name="PrefsDupLabel" Text="Duplicates"/>
+                    <ComboBox Name="PrefsDup" ItemsSource="{Binding Prefs.DuplicatePolicyChoices}" SelectedItem="{Binding Prefs.DuplicatePolicy}"/>
+                    <TextBlock Name="PrefsVerifyLabel" Text="Verify copies"/>
+                    <ComboBox Name="PrefsVerify" ItemsSource="{Binding Prefs.VerificationChoices}" SelectedItem="{Binding Prefs.VerificationMode}"/>
+                    <CheckBox Name="PrefsRawJpeg" IsChecked="{Binding Prefs.GroupRawJpeg}" Content="Group RAW + JPEG"/>
+                    <CheckBox Name="PrefsExpandStack" IsChecked="{Binding Prefs.ExpandStacked}" Content="Expand stacked pairs"/>
+                    <CheckBox Name="PrefsConfirmImport" IsChecked="{Binding Prefs.ConfirmBeforeImport}" Content="Confirm before import"/>
+                    <CheckBox Name="PrefsGps" IsChecked="{Binding Prefs.StripGps}" Content="Strip GPS"/>
+                    <TextBlock Name="PrefsSecondaryLabel" Text="Second copy folder"/>
+                    <TextBox Name="PrefsSecondary" Watermark="Second copy folder" Text="{Binding Prefs.SecondaryDestination}"/>
+                    <TextBox Name="PrefsCreator" Watermark="Creator" Text="{Binding Prefs.CreatorStamp}"/>
+                    <TextBox Name="PrefsCopyright" Watermark="Copyright" Text="{Binding Prefs.CopyrightStamp}"/>
+                    <CheckBox Name="PrefsChecksum" IsChecked="{Binding Prefs.WriteChecksumManifest}" Content="SHA-256 manifest"/>
+                    <CheckBox Name="PrefsXmp" IsChecked="{Binding Prefs.WriteXmpSidecar}" Content="XMP sidecar"/>
+                    <CheckBox Name="PrefsEject" IsChecked="{Binding Prefs.EjectAfterImport}" Content="Eject after import"/>
+                    <TextBox Name="PrefsWatch" Watermark="Watch folder" Text="{Binding Prefs.WatchFolder}"/>
+                    <TextBlock Name="PrefsTimeZoneLabel" Text="Timezone"/>
+                    <ComboBox Name="PrefsTimeZone" ItemsSource="{Binding Prefs.TimeZoneChoices}" SelectedItem="{Binding Prefs.TimeZoneMode}"/>
+                    <TextBox Name="PrefsRename" Watermark="Batch rename" Text="{Binding Prefs.BatchRenameBase}"/>
+                    <TextBlock Name="PrefsIcc" Text="{Binding IccProfilePath}" TextWrapping="Wrap" Opacity="0.8"/>
+                    <Button Name="PrefsPurge" Classes="ghost" Content="Purge cache" Click="Purge_Click"/>
+                    </StackPanel>
+                </Expander>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="PrefsAbout" Classes="ghost" Content="App info" Click="PrefsAbout_Click"/>
+                    <Button Name="PrefsExport" Classes="ghost" Content="Export" Click="PrefsExport_Click"/>
+                    <Button Name="PrefsImport" Classes="ghost" Content="Import" Click="PrefsImport_Click"/>
+                    <Button Name="PrefsClose" Classes="accent" Content="Close" MinHeight="44" Background="#007ACC" Foreground="White" Click="PrefsClose_Click"/>
+                </StackPanel>
+            </StackPanel>
+            </ScrollViewer>
+            </Border>
+        </Border>
+        <Border Name="AboutOverlay" IsVisible="False" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="440">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="AboutTitle" Text="About" FontSize="20"/>
+                    <TextBlock Name="AboutBody" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Name="AboutVersionLabel" Text="Version:"/>
+                        <TextBlock Text="{Binding AboutVersion}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding AboutUpdateStatus}" TextWrapping="Wrap" Opacity="0.85"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="AboutDonate" Content="Donate" MinHeight="44" Click="AboutDonate_Click"/>
+                        <Button Name="AboutCheck" Classes="ghost" Content="Check updates" Click="AboutCheck_Click"/>
+                        <Button Name="AboutClose" Classes="ghost" Content="Close" Click="CloseOverlay_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border Name="FeedbackOverlay" IsVisible="False" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="520">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="FeedbackHeading" Text="{Binding FeedbackTitle}" FontSize="20"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="FeedbackBug" Classes="ghost" Content="Bug" Click="FeedbackBug_Click"/>
+                        <Button Name="FeedbackFeature" Classes="ghost" Content="Feature" Click="FeedbackFeature_Click"/>
+                    </StackPanel>
+                    <TextBox Name="FeedbackBody" AcceptsReturn="True" Height="90" TextWrapping="Wrap" Text="{Binding FeedbackDescription}" LostFocus="FeedbackBody_LostFocus"/>
+                    <TextBlock Name="FeedbackPreviewLabel" Text="Preview"/>
+                    <TextBox Text="{Binding FeedbackPreview}" IsReadOnly="True" Height="100" TextWrapping="Wrap"/>
+                    <ListBox ItemsSource="{Binding FeedbackDuplicates}" MaxHeight="80"/>
+                    <TextBlock Text="{Binding FeedbackGitHubReason}" TextWrapping="Wrap" Opacity="0.8"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Name="FeedbackCopy" Classes="ghost" Content="Copy" Click="FeedbackCopy_Click"/>
+                        <Button Name="FeedbackGitHub" Content="Open GitHub" MinHeight="44" IsEnabled="{Binding FeedbackCanOpenGitHub}" Click="FeedbackGitHub_Click"/>
+                        <Button Name="FeedbackDiscard" Classes="ghost" Content="Discard" Click="FeedbackDiscard_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowFtpEditor}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="420">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="FtpTitle" Text="Add FTP Source" FontSize="20"/>
+                    <TextBlock Name="FtpHostLabel" Text="Host"/>
+                    <TextBox Text="{Binding Ftp.Host}"/>
+                    <TextBlock Name="FtpPortLabel" Text="Port"/>
+                    <TextBox Text="{Binding Ftp.PortText}"/>
+                    <TextBlock Name="FtpUserLabel" Text="User"/>
+                    <TextBox Text="{Binding Ftp.User}"/>
+                    <TextBlock Name="FtpPasswordLabel" Text="Password"/>
+                    <TextBox Text="{Binding Ftp.Password}" PasswordChar="●"/>
+                    <TextBlock Name="FtpFolderLabel" Text="Remote Folder"/>
+                    <ComboBox ItemsSource="{Binding CameraWifiNames}" SelectedItem="{Binding Ftp.WifiBrand}"/>
+                    <Button Name="FtpWifiPreset" Classes="ghost" Content="Wi-Fi preset" Click="FtpWifi_Click"/>
+                    <TextBox Text="{Binding Ftp.RemoteFolder}"/>
+                    <TextBlock Text="{Binding Ftp.BrowseListing}" TextWrapping="Wrap" MaxHeight="80"/>
+                    <TextBlock Text="{Binding Ftp.Status}" Opacity="0.8"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="FtpTest" Classes="ghost" Content="Test" Click="FtpTest_Click"/>
+                        <Button Name="FtpBrowse" Classes="ghost" Content="Browse" Click="FtpBrowse_Click"/>
+                        <Button Name="FtpSave" Classes="accent" Content="Save" MinHeight="44" Background="#007ACC" Foreground="White" Click="FtpSave_Click"/>
+                        <Button Name="FtpThrottle" Classes="ghost" Content="Limit" Click="FtpThrottle_Click"/>
+                        <Button Name="FtpCancel" Classes="ghost" Content="Cancel" Click="FtpCancel_Click"/>
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding FtpSources}" MaxHeight="100"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowFtpThrottle}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="360">
+                <StackPanel Spacing="8">
+                    <TextBlock Name="FtpThrottleTitle" Text="Bandwidth limit (KB/s, 0 = off)" FontSize="20" TextWrapping="Wrap"/>
+                    <TextBox Text="{Binding Ftp.ThrottleKbpsText}"/>
+                    <Button Name="FtpThrottleClose" Classes="ghost" Content="Close" Click="FtpThrottleClose_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowCrashOverlay}" Classes="overlayScrim" IsHitTestVisible="{Binding ShowCrashOverlay}">
+            <Border Classes="overlayCard">
+                <StackPanel Spacing="12">
+                    <TextBlock Name="CrashTitle" Text="Something went wrong" FontSize="20"/>
+                    <TextBlock Text="{Binding CrashOverlayText}" TextWrapping="Wrap" MaxWidth="480"/>
+                    <Button Name="CrashClose" Classes="ghost" Content="Close" Click="DismissCrash_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowUserPrompt}" Classes="overlayScrim" IsHitTestVisible="{Binding ShowUserPrompt}">
+            <Border Classes="overlayCard" MaxWidth="480">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{Binding UserPromptTitle}" FontSize="20" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding UserPromptBody}" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <Button Name="PromptOk" Classes="accent" Content="OK" MinHeight="44" Background="#007ACC" Foreground="White" Click="PromptOk_Click"/>
+                        <Button Name="PromptCancel" Classes="ghost" Content="Cancel" MinHeight="32" IsVisible="{Binding UserPromptIsConfirm}" Click="PromptCancel_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowCompare}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Image Name="CompareLeft" Width="240" Height="240" Stretch="Uniform"/>
+                        <Image Name="CompareRight" Width="240" Height="240" Stretch="Uniform"/>
+                    </StackPanel>
+                    <Button Name="CompareClose" Classes="ghost" Content="Close" Click="CompareClose_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowAfterglow}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="24,36,24,24">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding AfterglowText}" FontSize="16" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="AfterglowOpen" Classes="accent" Content="Open folder" MinHeight="44" Background="#007ACC" Foreground="White" Click="AfterglowOpen_Click"/>
+                        <Button Name="AfterglowDismiss" Classes="ghost" Content="Close" Click="AfterglowDismiss_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowShortcuts}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="420">
+                <StackPanel Spacing="12">
+                    <TextBlock Name="ShortcutsTitle" Text="Keyboard shortcuts" FontSize="20"/>
+                    <TextBlock Name="ShortcutsBody" TextWrapping="Wrap"/>
+                    <Button Name="ShortcutsClose" Classes="ghost" Content="Close" Click="ShortcutsClose_Click"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border IsVisible="{Binding ShowIngestSheet}" Classes="overlayScrim" desk:MotionAssist.FadeOnVisible="True" IsHitTestVisible="True">
+            <Border Classes="overlayCard" Width="520" MaxHeight="640">
+                <ScrollViewer>
+                <StackPanel Spacing="10">
+                    <TextBlock Name="IngestSheetTitle" Classes="heading" Text="Save location &amp; file naming"/>
+                    <TextBlock Name="IngestSheetDestLabel" Text="Save location"/>
+                    <DockPanel>
+                        <Button Name="IngestSheetBrowse" Classes="ghost" DockPanel.Dock="Right" Content="Browse" Click="BrowseDest_Click"/>
+                        <TextBox Text="{Binding DestinationRoot}" IsReadOnly="True"/>
+                    </DockPanel>
+                    <TextBlock Name="IngestSheetNote" Classes="muted" Text="{Binding SaveLocationNote}" TextWrapping="Wrap"/>
+                    <TextBlock Name="IngestSheetPresetLabel" Text="Preset"/>
+                    <ComboBox ItemsSource="{Binding Naming.PresetOptions}" SelectedItem="{Binding Naming.Preset}" SelectionChanged="PrefsNamingPreset_Changed"/>
+                    <TextBlock Name="IngestSheetNamingLabel" Text="File name"/>
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="Tick parts in the order you want them in the file name."/>
+                    <WrapPanel>
+                        <CheckBox Name="IngestIncDate" Tag="Date" Content="Date taken" IsChecked="{Binding Naming.IncludeDate}" Click="PrefsNamingOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestIncTime" Tag="Time" Content="Time taken" IsChecked="{Binding Naming.IncludeTime}" Click="PrefsNamingOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestIncSeq" Tag="Sequence" Content="Sequence" IsChecked="{Binding Naming.IncludeSequence}" Click="PrefsNamingOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestIncShoot" Tag="Shoot" Content="Shoot name" IsChecked="{Binding Naming.IncludeShootName}" Click="PrefsNamingOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestIncOrig" Tag="Original" Content="Original filename" IsChecked="{Binding Naming.IncludeOriginalName}" Click="PrefsNamingOptions_Click" Margin="0,0,12,4"/>
+                    </WrapPanel>
+                    <Grid ColumnDefinitions="*,8,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Date format" Classes="muted"/>
+                        <ComboBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Naming.DateFormatOptions}" SelectedItem="{Binding Naming.DateFormat}" SelectionChanged="PrefsNamingOptions_Changed"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Time format" Classes="muted"/>
+                        <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Naming.TimeFormatOptions}" SelectedItem="{Binding Naming.TimeFormat}" SelectionChanged="PrefsNamingOptions_Changed"/>
+                    </Grid>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="Join with" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox Width="72" ItemsSource="{Binding Naming.SeparatorOptions}" SelectedItem="{Binding Naming.Separator}" SelectionChanged="PrefsNamingOptions_Changed" HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <TextBox Text="{Binding NamingTemplate}" LostFocus="Naming_LostFocus" Watermark="Pattern"/>
+                    <TextBlock Classes="muted" Text="Looks like"/>
+                    <ItemsControl ItemsSource="{Binding Naming.PreviewExamples}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <TextBlock Text="{Binding}" FontFamily="monospace" FontSize="12"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Name="IngestSheetFolderLabel" Text="Folder name"/>
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="Optional subfolder under the save location. Tick parts in the order you want them. Leave all off to save files directly in the save location."/>
+                    <WrapPanel>
+                        <CheckBox Name="IngestFolderShoot" Tag="[ShootTitle]" Content="Shoot title" IsChecked="{Binding Naming.IncludeFolderShoot}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderDate" Tag="[Date]" Content="Date" IsChecked="{Binding Naming.IncludeFolderDate}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderYear" Tag="[YYYY]" Content="Year" IsChecked="{Binding Naming.IncludeFolderYear}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderMonth" Tag="[MM]" Content="Month" IsChecked="{Binding Naming.IncludeFolderMonth}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderDay" Tag="[DD]" Content="Day" IsChecked="{Binding Naming.IncludeFolderDay}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderJob" Tag="[Job]" Content="Job" IsChecked="{Binding Naming.IncludeFolderJob}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderClient" Tag="[Client]" Content="Client" IsChecked="{Binding Naming.IncludeFolderClient}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                        <CheckBox Name="IngestFolderCamera" Tag="[Camera]" Content="Camera" IsChecked="{Binding Naming.IncludeFolderCamera}" Click="PrefsFolderOptions_Click" Margin="0,0,12,4"/>
+                    </WrapPanel>
+                    <TextBox Text="{Binding DestFolderTemplate}" LostFocus="DestFolder_LostFocus" Watermark="Folder pattern"/>
+                    <ItemsControl ItemsSource="{Binding Naming.FolderPreview}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                                <TextBlock Text="{Binding}" FontFamily="monospace" FontSize="12" Classes="muted"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Name="IngestSheetClose" Classes="accent" Content="Done" MinHeight="44" Background="#007ACC" Foreground="White" HorizontalAlignment="Right" Click="IngestSheetClose_Click"/>
+                </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Border>
+    </Panel>
+</Window>

@@ -117,7 +117,8 @@ namespace QuickMediaIngest.Core
         private static int GetThumbnailPriority(FtpThumbnailWorkItem item)
         {
             string ext = Path.GetExtension(item.FileName).ToLowerInvariant();
-            if (ext is ".heic" or ".heif" or ".jpg" or ".jpeg" or ".png")
+            if (MediaExtensions.IsJpegFamily(ext) || MediaExtensions.IsHeifFamily(ext)
+                || ext is ".png" or ".webp" or ".jxl")
             {
                 return 0;
             }

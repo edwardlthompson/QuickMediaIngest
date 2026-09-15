@@ -102,15 +102,20 @@ def backtick_paths(task: str) -> list[str]:
     paths: list[str] = []
     for raw in _BACKTICK.findall(task):
         text = raw.strip()
-        token = text.split()[0] if text else ""
-        if _is_slash_command(token):
+        if _is_slash_command(text.split()[0] if text else ""):
             continue
-        # Host paths are not repo docs probes (e.g. `~/.local/bin`, absolute SDK trees).
-        if token.startswith("~") or token.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", token):
-            continue
-        # "no `foo`" / "without `foo`" means absence is the requirement.
         if re.search(rf"\b(?:no|without|forbid(?:den)?)\s+`{re.escape(raw)}`", task, re.I):
             continue
-        if "/" in text or token.endswith((".md", ".json", ".yml", ".yaml", ".html")):
+        token = ""
+        for part in text.replace(",", " ").split():
+            cleaned = part.strip("`")
+            if cleaned.startswith(("~", "/", "$")) or "*" in cleaned or "|" in cleaned:
+                continue
+            if re.match(r"^[A-Za-z]:[\\/]", cleaned):
+                continue
+            if "/" in cleaned or cleaned.endswith((".md", ".json", ".yml", ".yaml", ".html", ".sh", ".cs", ".mdc")):
+                token = cleaned
+                break
+        if token:
             paths.append(token)
     return paths

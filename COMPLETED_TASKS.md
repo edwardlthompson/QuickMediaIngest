@@ -4,6 +4,177 @@
 
 ---
 
+## Remembered window + preview pane (2026-09-15)
+
+- Avalonia restores size/position/maximized and a splitter-resized right preview of the selected file (1600-edge cache)
+
+## Pipelined import verify (2026-09-15)
+
+- ✅ [AGENT] Pipelined import verify: copy/delete and SHA-256 catalog overlap; status shows Copy n/N and Verify m/N; files leave the shoot list as each dest hashes; no second dest-tree walk
+
+## Linux UX polish (named UX) (2026-09-15)
+
+- ✅ [AGENT] UX-onboard Linux welcome: bind `Onboarding_Body` + app icon; heading 20px (not 24); Got it dismisses to empty card
+- ✅ [AGENT] UX-type-scale Enforce ingest-chrome type 12/14/16/20 on Desktop (no 24px headings)
+- ✅ [AGENT] UX-copy-empty Empty CTA “Scan for cards”; sources “No cards yet”; rewrite `Toolbar_RefreshTooltip` (drop “unified”)
+- ✅ [AGENT] UX-empty-icon Empty-state SD Path that reads as a card (or remove the fake rectangle)
+- ✅ [AGENT] UX-disclose Hide Group-by hours + thumbnail sliders until `ShowShootList` (nothing to group/zoom)
+- ✅ [AGENT] UX-view-label Rename command-bar `…` to **View** (`Toolbar_ViewSection` + tooltip)
+- ✅ [AGENT] UX-ptp PTP label “USB camera (PTP)”; off first paint — View/overflow only
+- ✅ [AGENT] UX-dup-ftp Single Add FTP on the empty card; do not also show it as a first-paint sidebar peer
+- ✅ [AGENT] UX-sidebar Rail = Sources + Notifications + Settings expander (Preferences, History, exclusions, Feedback, Add FTP); Eject only when a mount exists; primary nav rows 44px if they stay primary
+- ✅ [AGENT] UX-import-enable Disable Import until a shoot is selected; tooltip “Select a shoot to import.”
+- ✅ [AGENT] UX-delete-copy Label “Delete originals after import”; danger outline `#F44336`; keep the existing confirm
+- ✅ [AGENT] UX-progress-cancel Cancel on the import progress overlay → existing cancel-import confirm (Linux overlay has none today)
+- ✅ [AGENT] UX-prefs-labels Label every Settings ComboBox (theme, preset, date/time/separator, dest preset, duplicate, verify, timezone)
+- ✅ [AGENT] UX-prefs-json Rename Settings footer Import → “Import settings file” (does not collide with ingest Import)
+- ✅ [AGENT] UX-prefs-321 Second-copy field label “Second copy folder” (not watermark “3-2-1 destination”)
+- ✅ [AGENT] UX-prefs-expand Settings import block → Expander (match WPF Appearance / Naming / Import)
+- ✅ [AGENT] UX-ftp-copy FTP failure copy: lead with “Can’t reach the camera folder. Try /DCIM.”; keep long body as secondary
+- ✅ [AGENT] UX-filetype File-type combo uses display names (WPF `FilterFileTypeToDisplayConverter`), not raw `All`/`Images`/`Videos`
+- ✅ [AGENT] UX-hit-test `IsHitTestVisible=True` on every overlay scrim (first-run and peers; crash/prompt already lock)
+- ✅ [AGENT] UX-live Live region: `AutomationProperties.LiveSetting=Polite` + `A11y_StatusAnnouncements` (Desktop 1×1 Opacity-0 host is unnamed)
+- ✅ [AGENT] UX-a11y-names `AutomationProperties.Name` on dest chip, filter-chip ✕ (`A11y_RemoveFilterChip`), sidebar rows, empty Scan/Refresh
+- ✅ [AGENT] UX-muted Caption/muted 12px opacity ≥ 0.78 (AA); do not drop tertiary text further
+- ✅ [AGENT] UX-aaa-focus Visible focus rings on Fluent dark chrome (AAA opportunity from the audit)
+- ✅ [AGENT] UX-aaa-44 44px min-height on Dry run and Refresh (AAA; Import already 44×88)
+- ✅ [AGENT] UX-motion-overlay Overlay enter opacity 0→1, 180ms cubic-out; honor `ReducedMotion` (Desktop currently discards the duration)
+- ✅ [AGENT] UX-motion-press Import press scale 1→0.96→1, 90ms (Windows `MotionAssist`)
+- ✅ [AGENT] UX-motion-chevron Shoot expand chevron rotate 0°→90°, 120ms
+- ✅ [AGENT] UX-motion-rows Shoot-card fade-in 160ms, stagger 30ms/card, cap 5
+- ✅ [AGENT] UX-motion-skel Thumbnail skeleton pulse 900ms while Magick runs, then swap
+- ✅ [AGENT] UX-motion-afterglow Afterglow card rise 12px / 180ms
+- ✅ [AGENT] UX-motion-chip Filter-chip remove collapse width+opacity, 140ms
+- ✅ [AGENT] UX-motion-dest Dest-chip accent-border flash 220ms after folder pick
+- ✅ [AGENT] UX-blur Wire `OverlayBlurRadius` on Linux scrims or delete the unused property
+- ✅ [AGENT] UX-notify-count Notification unread count on the Notifications row (not a plain text button)
+- ✅ [AGENT] UX-status Status line always shows last scan/import sentence (never a blank bar)
+- ✅ [AGENT] UX-sources-rail After scan, source rows in the rail (path leaf + transport), like Windows Sources list
+- ✅ [AGENT] UX-ftp-empty Bind FTP-failure empty panel on Linux (`Empty_FtpFailureTitle` / Body + Refresh / Add FTP / Close)
+- ✅ [AGENT] UX-last-dest Empty state remembers last destination (Rapid Photo Downloader: looks ready to run)
+- ✅ [AGENT] UX-three-zone When a card is mounted: rail sources, shoot grid, dest summary; command bar shrinks to Import + dest + delete-after (Lightroom Import three-column, Fluent)
+- ✅ [AGENT] UX-ingest-sheet Dest chip opens dest+naming ingest sheet (Photo Mechanic ingest sheet; reuse `FileNamingBuilder`; not the full Settings wall)
+- ✅ [HUMAN] Mint glance: first-run shows body + empty card; no sliders/PTP dump; Import disabled until a shoot is selected
+
+## Linux ingest-bench depth (named LD) (2026-09-15)
+
+- ✅ [AGENT] LD-naming File-naming builder: token chips `[Date]`/`[Original]`/…, presets, Date/Time/Sequence toggles, format/separator, live preview
+- ✅ [AGENT] LD-shoot-card Shoot card: expand, editable title, keywords, folder path, start/end, file count, ignore-folder
+- ✅ [AGENT] LD-thumbs-grid Per-shoot thumbnail wrap-grid + zoom (no WIC)
+- ✅ [AGENT] LD-filters Group-by hours, file-type filter, keyword filter chips, expand-all
+- ✅ [AGENT] LD-prefs-import Import Settings depth: dest presets, duplicate policy, verification, RAW+JPEG stack, confirm-before-import
+
+## Linux ingest-bench parity (named LP) (2026-09-15)
+
+- ✅ [AGENT] LP-host Desktop composition: `XdgAppPaths`, persist first-run, Avalonia `IUserPrompt` host, load crash store into AppModel; no `System.Windows` in Desktop
+- ✅ [AGENT] LP-scan Local + `/media`/`/run/media` removable scan, Refresh, drive-select overlay, waiting-for-card empty state
+- ✅ [AGENT] LP-dest Browse destination (Avalonia folder picker), naming template, dest chip
+- ✅ [AGENT] LP-import Real Import + Dry run + delete-after + free-space + collisions + `gio trash` (both heads via Core)
+- ✅ [AGENT] LP-shoots Shoot groups, select all, skip folder, keyword filter, transport badge
+- ✅ [AGENT] LP-ftp Add/test/browse FTP + libsecret + bandwidth throttle overlay
+- ✅ [AGENT] LP-adb Prefer-ADB when `adb` on PATH + dual-FTP alias de-dupe
+- ✅ [AGENT] LP-thumbs Magick/Vips preview grid + thumbnail cache cap (no WIC)
+- ✅ [AGENT] LP-scene Full-bleed import progress + afterglow + Open folder (`xdg-open`)
+- ✅ [AGENT] LP-crash Crash overlay wired to pending-crash store + discarded fingerprints
+- ✅ [AUTO] LP-v1-smoke `pack-deb.sh` + `--smoke-native` after Wave A
+- ✅ [AGENT] LP-chrome Command bar overflow, notifications flyout, 14px/`#007ACC`, Import 44×88
+- ✅ [AGENT] LP-history Import history search/filter/export CSV (replace stub overlay)
+- ✅ [AGENT] LP-excl Scan exclusions editor (replace stub overlay)
+- ✅ [AGENT] LP-feedback Feedback composer + GitHub duplicate search + Esc/Ctrl+Enter
+- ✅ [AGENT] LP-prefs Preferences: theme, language, naming, GPS strip, settings search, JSON import/export
+- ✅ [AGENT] LP-about About + donate + filename-version GitHub updates
+- ✅ [AGENT] LP-prompt Non-destructive confirms via `IUserPrompt` (delete-after stays destructive)
+- ✅ [AGENT] LP-queue Queue import, retry failed, resume pending plan
+- ✅ [AGENT] LP-cull Pick/reject, stars, color labels, persist cull across rescan
+- ✅ [AGENT] LP-post SHA-256 manifest, 3-2-1 second dest, XMP/copyright, already-imported hash catalog
+- ✅ [AGENT] LP-watch Watch-folder, shoot split/merge, timezone, batch rename, dest template tokens
+- ✅ [AGENT] LP-media HEIC via vips, video first-frame/proxy, optional ffmpeg, compare view, ICC, cache purge
+- ✅ [AGENT] LP-wifi Camera Wi-Fi FTP folder presets (Sony/Canon/Nikon/Fuji/Panasonic)
+- ✅ [AGENT] LP-ptp PTP/USB tether browse via libusb (not WPD)
+- ✅ [AGENT] LP-a11y High-contrast, reduced motion, RTL `FlowDirection`, F1 shortcuts, live regions
+- ✅ [AGENT] LP-eject Linux unmount (`gio mount -u` / udisks) + leftover-files reminder after delete-after
+- ✅ [AUTO] LP-parity-pack `pack-deb.sh` + `--smoke-native` after Wave C
+- ✅ [HUMAN] Mint visual glance of ingest-bench (Import/Dry run/empty/overlays; optional)
+
+---
+
+## Two heads — Windows WPF + Linux Mint .deb (named LX) (2026-09-14)
+
+- ✅ [AGENT] LX-L1 Extract `QuickMediaIngest.Core` + `QuickMediaIngest.Localization` (`net8.0`); Windows adapters for WMI, Credential Manager, Registry theme, `IAppPaths`; Core.Tests run on Linux; WPF Windows CI still green
+- ✅ [AGENT] LX-L1b Shared IngestBench AppModel (`net8.0`); `MainViewModel` forwards import/scan/empty-state/first-run/dry-run/delete-after; Desktop binds the same type; no second Import ViewModel
+- ✅ [AGENT] LX-L2 Linux adapters: XDG paths, inotify+500ms debounce+3s poll, 0600 FTP secrets, `ITrashService` (`gio trash` then unlink), `xdg-open`, refuse uid 0, `NetVips.Native.linux-x64`
+- ✅ [AGENT] LX-L3 Avalonia ingest-bench binds AppModel (Import / Dry run / Refresh, empty state, first-run, crash overlay; AXAML ≤800)
+- ✅ [AGENT] LX-L4 `packaging/debian` + `scripts/pack-deb.sh` on ubuntu-latest only (self-contained untrimmed ReadyToRun multi-file); AppStream + `.desktop`; `lintian` errors fail; stamp AGENT.md / `branding/product.json` stacks — do not overwrite Sacred spec/plan
+- ✅ [AUTO] LX-L5 `scripts/smoke-deb.sh` after L4 (dpkg-deb, lintian if present, refuse uid 0); `--card` lists mounts when present
+- ✅ [AGENT] LX-libsecret FTP passwords via Secret Service (v1 ships 0600 file + mode test)
+- ✅ [AGENT] LX-trim `PublishTrimmed` after Magick/SQLite/NetVips smoke
+- ✅ [AGENT] LX-luks Destination encryption detector on Linux
+- ✅ [AGENT] LX-overlays History, scan exclusions, feedback parity through AppModel/Core
+- ✅ [AUTO] Merge Dependabot [#24](https://github.com/edwardlthompson/QuickMediaIngest/pull/24) (nuget-dependencies group)
+- ✅ [AUTO] Merge Dependabot [#21](https://github.com/edwardlthompson/QuickMediaIngest/pull/21) (github-actions group)
+- ✅ [AUTO] Close superseded Dependabot [#14](https://github.com/edwardlthompson/QuickMediaIngest/pull/14) (Magick.NET 14.14.0 → 14.15.0; main already 14.16.0, #24 → 14.17.1)
+
+---
+
+## Ingest-bench UX M7–RTL (2026-09-14)
+
+- ✅ [AGENT] UX-M7 Replace non-destructive MessageBoxes with overlay/status via shared `IUserPrompt` (keep delete-after and other destructive confirms; both heads)
+- ✅ [AGENT] UX-M4b Preferences search-in-settings
+- ✅ [AGENT] UX-D8 Live “Imported n files → folder” with Open folder (Hedge afterglow)
+- ✅ [AGENT] UX-B1 Destination summary chip in the main column (Capture One “place”, not a buried path)
+- ✅ [AGENT] UX-B2 Import as a full-bleed progress scene (Hedge): list dims, big file/group progress, Open destination on done
+- ✅ [AGENT] UX-B3 CommandBar overflow at narrow widths (View docks / “…”) — MinWidth 900 already shipped
+- ✅ [AGENT] UX-HC High-contrast token wiring (`SystemParameters.HighContrast`)
+- ✅ [AGENT] UX-AAA Import hit target 44×44 (WCAG 2.5.5)
+- ✅ [AGENT] UX-RTL `FlowDirection` when an RTL locale ships (ja/de/es/fr only for now)
+
+## Template catch-up v1.0.0 → v1.5.0 (named 1–14) (2026-09-14)
+
+- ✅ [AGENT] T1 Fetch `edwardlthompson/agent-project-bootstrap` tag `v1.5.0`; snapshot child-only scripts; sacred denylist
+- ✅ [AGENT] T2 Canon 1: copy `.cursor/commands/` including `resume.md` with `docs/BATCH_COMMANDS.md` + `docs/help/BATCH_COMMANDS.md`
+- ✅ [AGENT] T3 Canon 2–3: copy `.cursor/rules/` including `product-brief.mdc` (keep `wpf-mvvm.mdc`); copy `docs/CURSOR_MODES.md` + `docs/help/`
+- ✅ [AGENT] T4 Canon 4–5: additive template scripts + example stubs; merge (do not replace) `feature-gate.sh`, `validate-bootstrap.sh`, `check-license-compliance.sh`, `watch-agent-gates.sh`; keep WPF 800/400/200
+- ✅ [AGENT] T5 Mixed 7–12: workflows additive only (no Pages/release-please; open-PR sync as workflow-example); union `.gitignore`; merge `bootstrap.config.json`, `TEMPLATE_INDEX.json` keys, `.env.example`, `PROJECT_CHECKLIST.md`
+- ✅ [AGENT] T6 Mixed 13: stamp `AGENT.md` + `BUILD_PLAN` `product-brief-sync` from `branding/product.json` (not the template About stub)
+- ✅ [AGENT] T7 Canon 6: `bash scripts/bootstrap-lifecycle.sh --sync-adapters`; empty diff on Sacred + `QuickMediaIngest/`
+- ✅ [AUTO] T8 `validate-bootstrap --quick` then stamp `.template-version` / `TEMPLATE_INDEX` / `.template-update.json` to `1.5.0`
+- ✅ [AUTO] T9 `feature-gate --stack dotnet-wpf` Linux subset (hygiene + license; skip WPF STA); Windows `dotnet` job in `ci.yml` unchanged
+- ✅ [AUTO] T10 Trivy stays the required Security Scan bar; gitleaks/semgrep stay advisory (`continue-on-error`); `check-security-scan-policy.sh` + local config gates
+
+## Unblock Linux host gates (named UNB) (2026-09-14)
+
+- ✅ [AGENT] UNB-SDK Add `scripts/install-dotnet-sdk-linux.sh` (official `dotnet-install.sh`, channel 8.0, `$HOME/.dotnet`, no sudo) and run it on this machine
+- ✅ [AGENT] UNB-PATH Teach `feature-gate.sh` to try `DOTNET_ROOT`, `$HOME/.dotnet/dotnet`, and WSL `dotnet.exe` before `block_env`
+- ✅ [AGENT] UNB-GATE On non-Windows, do not environment-block the whole `dotnet-wpf` stack: run hygiene + `dotnet test` of `net8.0` Core.Tests when that project exists (after LX-L1); skip WPF STA tests; full sln stays Windows CI
+- ✅ [AUTO] UNB-SDK-SYS Canonical Linux SDK is user-local `$HOME/.dotnet` (10a); no apt/sudo
+- ✅ [AUTO] UNB-T9 Re-run `feature-gate --stack dotnet-wpf` after UNB-SDK/PATH (Linux subset after UNB-GATE); flip T9 ❌ → ✅ on pass
+- ✅ [AGENT] UNB-PRS Managed Open PRs sync block on `BUILD_PLAN.md` (`open-prs-sync` begin/end)
+- ✅ [AGENT] UNB-DOCS Add `docs/LINUX_DEV.md` + README: SDK install, why WPF tests stay on Windows, how Linux `/build` uses Core.Tests
+- ✅ [AUTO] UNB-CI ubuntu-latest job `dotnet test` Core.Tests after LX-L1 (does not replace windows-latest WPF job)
+
+## Golden Path 15–19 (named) (2026-09-14)
+
+- ✅ [AGENT] GP-15 Register `dotnet-wpf` detect globs in `schemas/golden-path/feature-catalog.json` for shipped Core/overlay paths
+- ✅ [AGENT] GP-19 Teach `scripts/lib/gate_scope.py` and `local_resources.py` about `QuickMediaIngest/` / `dotnet-wpf`
+- ✅ [AGENT] GP-18 Rewrite `docs/features/*.md` container maps from `examples/web|android` to `QuickMediaIngest/`
+- ✅ [AGENT] GP-16 Settings-chrome: Settings is the sidebar chrome entry; Theme/About/donate live in Preferences (`docs/features/settings-chrome.md`)
+- ✅ [AGENT] GP-17 Overlay nav stack in Core (push/pop Settings → About → Feedback); thin ViewModel wiring
+
+## Ingest-bench UX Q1–M6 (2026-09-14)
+
+- ✅ [AGENT] UX-Q1 Cut dead chrome (PillToggle, leftover Theme/About strings); collapsed bell opens the notifications flyout
+- ✅ [AGENT] UX-Q2 First-run onboarding (`IsFirstRun`) + empty-state title/body + Refresh beside Add FTP
+- ✅ [AGENT] UX-Q3 Progressive toolbar: hide Retry/Resume/Queue/Rebuild until relevant; keep Import, Dry run, Refresh
+- ✅ [AGENT] UX-Q4 Copy pack (EN + fr/es; ja/de keys) — no “small utility” / “blacklist” / “Unexpected Error”
+- ✅ [AGENT] UX-Q5 AA targets: chip 24px, primary 40×32, slider names, reduced-motion blur/nudge skip
+- ✅ [AGENT] UX-M Command bar + View overflow, notifications flyout, About split, 14px tokens
+- ✅ [AGENT] THEME_QA via `scripts/check-theme-qa.sh` (14px body, `#007ACC`, Blue primary, 24px chip, 40px Import, first-run, command bar)
+- ✅ [AGENT] UX-M6 Motion + skeletons: overlay 180ms enter, chevron 120ms, Import press scale, row fade-in, scan/thumbnail skeletons, success flash, chip collapse, sidebar 260→64; skip all if reduced motion
+
+## LX-deb-sign v1 unsigned (2026-09-14)
+
+- ✅ [AUTO] LX-deb-sign v1 unsigned GitHub `.deb`; `scripts/sign-deb.sh` no-ops without `DEB_GPG_KEY`
+
 ## Live Smoke & Sacred Specs Automation (2026-08-30)
 
 - ✅ [HUMAN] Live OP13 smoke: PreferAdb browse/previews/transfer (USB debugging)

@@ -16,7 +16,7 @@ Catch-up from process `1.0.0` to upstream release **v1.5.0**:
 - Merged Mixed: `bootstrap.config.json` (`crash_inbox`), `.gitignore`, `.env.example`, `TEMPLATE_INDEX.json` project card, `PROJECT_CHECKLIST.md`, `validate-bootstrap.sh` (still skips web-only artifacts; restored child template-index/hygiene/large-file WPF skips)
 - Stamped `AGENT.md` + BUILD_PLAN `product-brief-sync` from `branding/product.json` (not the template About stub)
 - Synced adapters via `bootstrap-lifecycle.sh --sync-adapters` (did not rewrite Sacred `AGENTS.md`)
-- Security: Trivy stays required; gitleaks/semgrep added as `continue-on-error` (HUMAN T10)
+- Security: Trivy stays required; gitleaks/semgrep stay advisory (`continue-on-error`); policy encoded in `check-security-scan-policy.sh` (former HUMAN T10)
 - Skipped: `examples/**`, Pages/release-please as active CI, `docs/spec.md` / `docs/plan.md` stubs, product app under `QuickMediaIngest/`
 
 ## 1.0.0 sync (2026-08-30)
@@ -54,7 +54,6 @@ Skipped: `examples/**` npm security (no examples tree), release-please/Pages, en
 | Scripts | ~45 WPF-aware gates | ~90+ (parallel, cursor, purge-ephemeral, …) | Allowlist cherry-pick |
 | CI | `build.yml` + ci/codeql/security/scorecard/dependency-review | + release-please, pages, stale, weekly-health, automerge | Keep WPF release; **no new workflows** |
 | Broken refs | Cited `REPO_HYGIENE.md`, `purge-ephemeral.sh`, maintainer docs | Present upstream | Restore or drop citations |
-
 ### Already matches
 
 Core agent router, most slash commands, security docs, Dependabot, CodeQL/Scorecard/security workflows, pre-commit, template update checker, encoding/hygiene philosophy, FOSS/MIT.
@@ -86,7 +85,6 @@ Active: **dotnet-wpf only**. Do not copy inactive `modules/*` or `examples/*`.
 | Broken doc links | Link audit; restore REPO_HYGIENE; drop unused maintainer citations |
 | File-limit regression | Preserve 800/400/200 |
 | Premature version bump | Bump `.template-version` only after S5 green |
-
 ---
 
 ## Migration notes
@@ -107,8 +105,7 @@ Active: **dotnet-wpf only**. Do not copy inactive `modules/*` or `examples/*`.
 | Item | Reason |
 |------|--------|
 | `gh auth refresh -s security_events` | One-time browser OAuth for local Dependabot alert API |
-| WPF UI sign-off | Product release glance via `run-human-signoffs.ps1` |
-
+| WPF UI sign-off | Optional glance; tokens gated by `check-theme-qa.sh` |
 ### Automated from former HUMAN_BACKLOG (2026-07-22)
 
 | Item | Resolution |
@@ -118,7 +115,6 @@ Active: **dotnet-wpf only**. Do not copy inactive `modules/*` or `examples/*`.
 | weekly-health-check.yml | Enabled (WPF-adapted) |
 | dependabot-automerge.yml + AUTOMERGE_TOKEN | Enabled + secret set |
 | Re-run helper | `.\scripts\automate-human-backlog.ps1` |
-
 ### Do not expect
 
 - Upstream `modules/dotnet-wpf` (does not exist).

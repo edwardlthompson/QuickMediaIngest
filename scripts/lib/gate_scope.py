@@ -8,8 +8,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-STACKS = ("android", "blender", "go", "lightroom", "node", "python", "rust", "web")
-HINTS = tuple((f"examples/{s}/", (s,)) for s in STACKS) + (
+STACKS = ("android", "blender", "dotnet-wpf", "go", "lightroom", "node", "python", "rust", "web")
+HINTS = tuple((f"examples/{s}/", (s,)) for s in STACKS if s != "dotnet-wpf") + (
+    ("QuickMediaIngest/", ("dotnet-wpf",)),
+    ("QuickMediaIngest.Core/", ("dotnet-wpf",)),
+    ("QuickMediaIngest.Desktop/", ("dotnet-wpf",)),
+    ("QuickMediaIngest.Localization/", ("dotnet-wpf",)),
+    ("QuickMediaIngest.Tests/", ("dotnet-wpf",)),
+    ("modules/dotnet-wpf/", ("dotnet-wpf",)),
     ("design-tokens/", ("web", "android")),
     ("branding/", ("web", "android")),
 )

@@ -48,6 +48,11 @@ namespace QuickMediaIngest.Core
             }
 
             bool installer = string.Equals(packageType, "Installer", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(packageType, "Deb", StringComparison.OrdinalIgnoreCase))
+            {
+                return fileName.EndsWith(".deb", StringComparison.OrdinalIgnoreCase);
+            }
+
             bool setup = fileName.Contains("setup", StringComparison.OrdinalIgnoreCase);
             bool exe = fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
             bool msi = fileName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);

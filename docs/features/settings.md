@@ -9,6 +9,7 @@
 - ✅ Optional **Save crash details for me to review** toggle (default off); see `docs/features/feedback.md` and `docs/features/crash-capture.md`
 - ✅ Daily GitHub installer checks are not gated here (see `docs/features/donations-updates.md`)
 - ✅ Offline: settings load last persisted values; no network required for display
+- ✅ Filter Preferences with a search box (hides unmatched sections)
 - ✅ i18n: all user-visible strings under `settings.*` keys
 
 ## Smoke scenario
@@ -19,20 +20,20 @@
 
 ## Container map
 
-| Layer | Web | Android |
-|-------|-----|---------|
-| Logic | `examples/web/src/settings/` | `examples/android/.../settings/` |
-| View | `examples/web/src/components/SettingsPanel.ts` | `examples/android/.../ui/settings/` |
-| Tests | `settings/*.test.ts` | `src/test/.../settings/` |
-| Wiring | `appBootstrap.ts` + `AppShell.ts` | `GoldenPathApp.kt` (composition root) |
+| Layer | Path |
+|-------|------|
+| Logic | `QuickMediaIngest/ViewModels/MainViewModel.Config*.partial.cs`, `AppConfig` |
+| View | `QuickMediaIngest/Controls/PreferencesOverlay/` |
+| Tests | `QuickMediaIngest.Tests/SettingsJsonExportImportTests.cs`, `GoldenPathAutomationSmokeTests.GP3_*`, `QuickMediaIngest.Tests/SettingsSearchTests.cs` |
+| Wiring | `MainViewModel` ToggleSettings (≤10 lines) |
 ## Tests
 
-- Automated: yes — `examples/web/src/settings/` and Android `src/test/.../settings/`
+- Automated: yes — `QuickMediaIngest.Tests/SettingsJsonExportImportTests.cs`, `GoldenPathAutomationSmokeTests.GP3_*`
 
 ## Fallback validation
 
 - Why tests are not feasible: N/A (automated tests exist)
-- Command: `python3 scripts/agent-run.py feature-gate --stack <active>`
+- Command: `python3 scripts/agent-run.py feature-gate --stack dotnet-wpf`
 
 ## Out of scope (Sprint 2)
 
@@ -41,5 +42,5 @@
 
 ## Notes
 
-- Reuse `ThemePreferences` patterns from `examples/android/.../ui/theme/` where applicable
+- Reuse `AppThemeMode` / `IsDarkTheme` in Core; Appearance lives under Preferences (`docs/features/settings-chrome.md`)
 - Gate after each AGENT BUILD_PLAN step: `bash scripts/watch-agent-gates.sh --once --autofix --step <scaffold|tests|wire>`

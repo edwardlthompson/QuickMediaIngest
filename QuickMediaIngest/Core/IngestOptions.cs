@@ -30,6 +30,7 @@ namespace QuickMediaIngest.Core
         public bool WriteXmpSidecarsOnly { get; set; }
         /// <summary>Optional secondary destination root for 3-2-1 dual-copy backups.</summary>
         public string? SecondaryDestinationRoot { get; set; }
+        public string? DestinationFolderTemplate { get; set; }
         public int MaxConcurrentFileCopies { get; set; }
         public int DelayBetweenFilesMilliseconds { get; set; }
         public ImportByteProgressTracker? ByteProgressTracker { get; set; }

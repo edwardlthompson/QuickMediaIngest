@@ -9,7 +9,6 @@ using Point = System.Windows.Point;
 using System.Windows.Input;
 using System.Windows.Media;
 using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
 using TextBox = System.Windows.Controls.TextBox;
 using DataObject = System.Windows.DataObject;
 using DragDropEffects = System.Windows.DragDropEffects;
@@ -51,22 +50,10 @@ namespace QuickMediaIngest
             DataContext = viewModel;
             viewModel.GroupsListRebuildStarting += ViewModel_GroupsListRebuildStarting;
             viewModel.GroupsListRebuildCompleted += ViewModel_GroupsListRebuildCompleted;
+            viewModel.ImportCompletedFlash += ViewModel_ImportCompletedFlash;
             Closed += MainWindow_OnClosed;
             _logger = logger;
             _logger.LogInformation("Main window initialized.");
-
-            // Initialize theme toggle state
-            try
-            {
-                if (ThemeToggle != null)
-                {
-                    ThemeToggle.IsChecked = App.CurrentIsDarkTheme;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Could not sync theme toggle at startup.");
-            }
         }
 
         private void MainWindow_OnClosed(object? sender, EventArgs e)
@@ -77,6 +64,7 @@ namespace QuickMediaIngest
                 {
                     vm.GroupsListRebuildStarting -= ViewModel_GroupsListRebuildStarting;
                     vm.GroupsListRebuildCompleted -= ViewModel_GroupsListRebuildCompleted;
+                    vm.ImportCompletedFlash -= ViewModel_ImportCompletedFlash;
                 }
             }
             catch (Exception ex)
@@ -196,11 +184,6 @@ namespace QuickMediaIngest
                     AutomationProperties.SetName(LiveAnnouncementHost, AppLocalizer.Get("A11y_StatusAnnouncements"));
                 }
 
-                if (ThemeToggle != null)
-                {
-                    AutomationProperties.SetName(ThemeToggle, AppLocalizer.Get("A11y_ThemeToggle"));
-                }
-
                 if (SidebarCollapseToggle != null)
                 {
                     AutomationProperties.SetName(SidebarCollapseToggle, AppLocalizer.Get("A11y_SidebarCollapse"));
@@ -215,7 +198,31 @@ namespace QuickMediaIngest
             if (DataContext is MainViewModel loadedVm)
             {
                 loadedVm.OfferPendingCrashReview();
+                TryShowFirstRunOnboarding(loadedVm);
             }
+        }
+
+        private void TryShowFirstRunOnboarding(MainViewModel vm)
+        {
+            if (!vm.IsFirstRun)
+            {
+                return;
+            }
+
+            if (string.Equals(Environment.GetEnvironmentVariable("QMI_SKIP_ONBOARDING"), "1", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (vm.IsFirstRun && IsVisible)
+                    {
+                        vm.ShowOnboarding(this);
+                    }
+                }),
+                DispatcherPriority.ApplicationIdle);
         }
 
         public void ApplyWindowStateFromViewModel()
@@ -340,6 +347,10 @@ namespace QuickMediaIngest
                 RibbonTilePanel?.InvalidateMeasure();
                 RibbonTilePanel?.InvalidateArrange();
                 RibbonTilePanel?.UpdateLayout();
+                if (DataContext is MainViewModel layoutVm)
+                {
+                    layoutVm.ApplyWindowWidth(ActualWidth);
+                }
             }), DispatcherPriority.Render);
         }
 

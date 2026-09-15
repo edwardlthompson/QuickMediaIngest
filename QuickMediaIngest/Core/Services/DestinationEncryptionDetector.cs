@@ -11,6 +11,7 @@ namespace QuickMediaIngest.Core.Services
         NotEncrypted = 1,
         BitLockerEncrypted = 2,
         VeraCryptDetected = 3,
+        LuksEncrypted = 4,
     }
 
     /// <summary>
@@ -44,6 +45,11 @@ namespace QuickMediaIngest.Core.Services
                     {
                         return bitlockerStatus;
                     }
+                }
+
+                if (OperatingSystem.IsLinux() && CheckLuks(folderPath))
+                {
+                    return VolumeEncryptionStatus.LuksEncrypted;
                 }
 
                 // 2. VeraCrypt / TrueCrypt heuristic (volume format label / process or VeraCrypt device)
@@ -124,6 +130,41 @@ namespace QuickMediaIngest.Core.Services
             }
 
             return false;
+        }
+
+        internal static bool CheckLuks(string folderPath)
+        {
+            try
+            {
+                using var proc = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "findmnt",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                    },
+                };
+                proc.StartInfo.ArgumentList.Add("-n");
+                proc.StartInfo.ArgumentList.Add("-o");
+                proc.StartInfo.ArgumentList.Add("FSTYPE,SOURCE");
+                proc.StartInfo.ArgumentList.Add("-T");
+                proc.StartInfo.ArgumentList.Add(folderPath);
+                if (!proc.Start() || !proc.WaitForExit(1000))
+                {
+                    try { proc.Kill(); } catch { /* ignore */ }
+                    return false;
+                }
+
+                string output = proc.StandardOutput.ReadToEnd();
+                return output.Contains("crypto_LUKS", StringComparison.OrdinalIgnoreCase)
+                    || output.Contains("/dev/mapper/", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

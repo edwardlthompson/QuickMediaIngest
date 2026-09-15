@@ -1,0 +1,11 @@
+Source: quick-media-ingest
+Section: graphics
+Priority: optional
+Maintainer: Edward Thompson <noreply@users.noreply.github.com>
+Homepage: https://github.com/edwardlthompson/QuickMediaIngest
+Package: quick-media-ingest
+Architecture: amd64
+Depends: libc6
+Description: Ingest photos and videos into dated, shoot-based folders
+ FOSS ingest bench (Avalonia) for SD cards, local drives, and FTP.
+ Windows users should keep using the WPF portable EXE / MSI.

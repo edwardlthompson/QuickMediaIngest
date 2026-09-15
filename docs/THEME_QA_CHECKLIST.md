@@ -2,6 +2,8 @@
 
 Use this checklist before merging UI changes to keep light/dark mode consistent and avoid text-contrast regressions.
 
+**Automated gate (required):** `bash scripts/check-theme-qa.sh` — 14px body, `#007ACC` accent, Material Blue primary, 24×24 chip remove, 44px Import, first-run onboarding, Import/Dry run/Refresh command bar. A Windows visual glance is optional once that script passes.
+
 ## Test Setup
 
 - Build and run the latest local app build.
@@ -14,16 +16,18 @@ Use this checklist before merging UI changes to keep light/dark mode consistent 
 
 ## Global Theme Checks
 
-- Toggle between dark and light themes in Settings.
-- Confirm no text becomes unreadable in either theme.
+- Toggle between dark and light themes in Preferences → Appearance.
+- Confirm no Excel-yellow primary on chrome (accent is `#007ACC`; yellow is warning-only).
+- Confirm body text is at least 14px and captions at least 12px.
+- Confirm filter-chip remove is at least 24×24 and Import is at least 44px tall.
 - Confirm no controls keep stale colors after toggling.
 - Confirm tooltips remain readable in both themes.
 
 ## Main Window Checks
 
-- Top toolbar:
-  - section headers are readable
-  - button, checkbox, and slider labels use consistent text styling
+- Top command bar:
+  - Import is the filled primary; Dry run and Refresh stay visible
+  - View overflow holds select-all, grouping, zoom, filter, rebuild
   - hover/focus states are visible in both themes
 - Group cards:
   - shoot titles, metadata labels, and folder paths are readable
@@ -35,8 +39,8 @@ Use this checklist before merging UI changes to keep light/dark mode consistent 
 
 - Expanded mode:
   - section icons and labels are left-aligned and consistent
-  - Notifications and Notification Feed text are readable
-  - Settings rows (including Theme row) are aligned and readable
+  - Notifications bell opens the feed flyout; status bar keeps the live line
+  - Settings rows are aligned and readable
 - Collapsed mode:
   - collapse/expand trigger remains obvious and clickable
   - icon rail spacing/alignment is stable (no vertical jump)
@@ -44,7 +48,7 @@ Use this checklist before merging UI changes to keep light/dark mode consistent 
 
 ## Overlay/Dialog Checks
 
-- Scan/import overlays keep the underlying theme visible (translucent backdrop).
+- User prompt overlay (OK / Cancel) uses the same paper/backdrop tokens as other dialogs.
 - Add FTP dialog text and labels remain readable in both themes.
 - About/Settings dialogs keep heading/body contrast consistent.
 
@@ -58,11 +62,11 @@ Use this checklist before merging UI changes to keep light/dark mode consistent 
 ## Regression Sweep
 
 - Resize window from narrow to wide:
-  - top toolbar blocks wrap cleanly
+  - command bar wraps; View stays in overflow
   - sidebar remains usable in both expanded/collapsed modes
 - Navigate key flows:
   - scan source
-  - preflight
+  - dry run
   - import
   - retry/rebuild previews
 - Verify no clipped text, overlapping controls, or invisible icons.
@@ -72,6 +76,6 @@ Use this checklist before merging UI changes to keep light/dark mode consistent 
 Do not ship if any item below is true:
 
 - unreadable text in any theme
-- missing/low-contrast critical controls (expanders, import actions, theme toggle)
+- missing/low-contrast critical controls (expanders, import actions, Appearance dropdown)
 - inconsistent control typography between similar controls
 - broken expand/collapse behavior

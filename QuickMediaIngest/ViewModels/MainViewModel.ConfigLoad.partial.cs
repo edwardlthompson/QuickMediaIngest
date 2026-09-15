@@ -256,6 +256,7 @@ namespace QuickMediaIngest.ViewModels
                 }
 
                 RefreshDestinationPresetLabels();
+                RefreshThemeModeLabels();
                 RestoreFtpSourcesFromConfig(config.SavedFtpSources);
             }
             finally

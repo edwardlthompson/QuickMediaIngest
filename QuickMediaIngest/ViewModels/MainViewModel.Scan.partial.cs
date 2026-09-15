@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.Models;
 using QuickMediaIngest.Localization;
+using QuickMediaIngest.Core.Nav;
 using QuickMediaIngest.Core.Services;
 using QuickMediaIngest.Data;
 using QuickMediaIngest.Services;
@@ -138,7 +139,16 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand] private void SavePreset() => SaveCurrentPreset();
         [RelayCommand] private void LoadPreset() => LoadLatestPreset();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
-        [RelayCommand] private void ToggleAbout() => ShowAboutDialog = !ShowAboutDialog;
+        [RelayCommand] private void ToggleAbout()
+        {
+            if (_overlayNav.IsVisible(OverlayId.About))
+            {
+                PopOverlay();
+                return;
+            }
+
+            PushOverlay(OverlayId.About);
+        }
 
         [RelayCommand]
         private void OpenLogsFolder()
@@ -154,11 +164,9 @@ namespace QuickMediaIngest.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open logs folder.");
-                MessageBox.Show(
-                    AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message),
+                NotifyUser(
                     AppLocalizer.Get("Msg_Error_Title"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    AppLocalizer.Format("Msg_OpenLogsFailed_Body", ex.Message));
             }
         }
 

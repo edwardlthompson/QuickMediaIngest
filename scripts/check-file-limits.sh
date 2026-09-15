@@ -42,7 +42,10 @@ check_file() {
   fi
 }
 
-echo "Checking .xaml file limits (max $XAML_LIMIT lines)..."
+echo "Checking .axaml file limits (max $XAML_LIMIT lines)..."
+while IFS= read -r -d '' file; do
+  check_file "$file" "$XAML_LIMIT" "axaml"
+done < <(find "$ROOT" -type f -name "*.axaml" ! -path "*/bin/*" ! -path "*/obj/*" -print0 2>/dev/null)
 while IFS= read -r -d '' file; do
   check_file "$file" "$XAML_LIMIT" "xaml"
 done < <(find "$ROOT/QuickMediaIngest" -type f -name "*.xaml" ! -path "*/bin/*" ! -path "*/obj/*" -print0 2>/dev/null)
@@ -58,9 +61,13 @@ while IFS= read -r -d '' file; do
 done < <(find "$ROOT/QuickMediaIngest" -type f -name "*.xaml.cs" ! -path "*/bin/*" ! -path "*/obj/*" -print0 2>/dev/null)
 
 echo "Checking Core/**/*.cs limits (max $CORE_LIMIT lines)..."
-while IFS= read -r -d '' file; do
-  check_file "$file" "$CORE_LIMIT" "core"
-done < <(find "$ROOT/QuickMediaIngest/Core" -type f -name "*.cs" ! -path "*/bin/*" ! -path "*/obj/*" -print0 2>/dev/null)
+for dir in "$ROOT/QuickMediaIngest/Core" "$ROOT/QuickMediaIngest.Core"; do
+  if [ -d "$dir" ]; then
+    while IFS= read -r -d '' file; do
+      check_file "$file" "$CORE_LIMIT" "core"
+    done < <(find "$dir" -type f -name "*.cs" ! -path "*/bin/*" ! -path "*/obj/*" -print0 2>/dev/null)
+  fi
+done
 
 if [ "$ERRORS" -gt 0 ]; then
   echo "$ERRORS file(s) exceed line limits"

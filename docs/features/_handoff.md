@@ -14,7 +14,7 @@
 
 ## Scope prefix
 
-- Isolated path: `examples/{stack}/src/{feature}/` (must match `.cursor/parallel-scope-lock.json`)
+- Isolated path: `QuickMediaIngest/` (must match `.cursor/parallel-scope-lock.json`)
 - Forbidden: `BUILD_PLAN.md`, `COMPLETED_TASKS.md`, composition roots (`appBootstrap.ts`, `GoldenPathApp.kt`, `main.ts`)
 
 ## Acceptance
