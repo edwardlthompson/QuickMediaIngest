@@ -13,9 +13,9 @@
     <ProjectReference Include="..\QuickMediaIngest.Localization\QuickMediaIngest.Localization.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.22" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="..\QuickMediaIngest\Assets\AppIcon.png" Link="Assets/AppIcon.png" />
