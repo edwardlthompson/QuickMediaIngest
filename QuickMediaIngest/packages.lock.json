@@ -10,17 +10,17 @@
       },
       "FluentFTP": {
         "type": "Direct",
-        "requested": "[54.2.1, )",
-        "resolved": "54.2.1",
-        "contentHash": "Rv7MWPUR8orjoSHoDgH2Yp8JC7on6T4dh6+l76lvplu8p4nGmI+tl97hsiERy06HqigxCdhAccuZAv978d7aeQ=="
+        "requested": "[55.0.0, )",
+        "resolved": "55.0.0",
+        "contentHash": "5ufTSEjrItvSsPWz5IZ7OTilYu42YM9fGQbogrJZsvCrKat/tz+sWHCDt0/izVvi8ZYfy3G9bZR8D9goyJ9BuA=="
       },
       "Magick.NET-Q16-AnyCPU": {
         "type": "Direct",
-        "requested": "[14.17.1, )",
-        "resolved": "14.17.1",
-        "contentHash": "m7NksccmpXQiQoSsDyBpXkOFC3XV9/cM3chZp2bHPdi1QPTzSicljNwrKmGZiQnQUyOBznvzv+A3ROT3/eIqUg==",
+        "requested": "[14.17.2, )",
+        "resolved": "14.17.2",
+        "contentHash": "LpptGd6eztEClO8eMHXiLf/XhYF37BJdreGIo+QZSzAjYkb6MkKcO888/zjKSbVHHk5M3BPSjICznZTTiYLO5w==",
         "dependencies": {
-          "Magick.NET.Core": "14.17.1"
+          "Magick.NET.Core": "14.17.2"
         }
       },
       "MaterialDesignThemes": {
@@ -76,9 +76,9 @@
       },
       "NetVips.Native.win-x64": {
         "type": "Direct",
-        "requested": "[8.18.6, )",
-        "resolved": "8.18.6",
-        "contentHash": "izOIx9qkOqBLXbfr9jCgu0lzYPp3S+EP1TyUlK26akefr2Xpr7IgZZCho7CTlmtG483jocyZmVM3rvwd5o9H2Q=="
+        "requested": "[8.18.7, )",
+        "resolved": "8.18.7",
+        "contentHash": "xmJCf4GoVHOSB7nED+/JxP6nxx+a/JZTqv3VQ8ni1LdZb3dewcMwSJPjEItdzNMpKLJL/40HZG42/dP05ifEJA=="
       },
       "System.Data.SQLite.Core": {
         "type": "Direct",
@@ -100,8 +100,8 @@
       },
       "Magick.NET.Core": {
         "type": "Transitive",
-        "resolved": "14.17.1",
-        "contentHash": "4BBbU5l5DmdT9isSNGrIE/0VwAh29SoKMSDMiIvFBDqz6vQfG6EYBFJQOemdCH3xkMfesSzImOVPjnyMf/PIqA=="
+        "resolved": "14.17.2",
+        "contentHash": "KKvR6eBUcfgkZpfHfN/UKRcK/FjHW6NXXoRRf5HJdhFk5bYLEEFuKu6op0zfNo6Msah51Yw42p599pz3A0CDQQ=="
       },
       "MaterialDesignColors": {
         "type": "Transitive",
@@ -143,8 +143,8 @@
       },
       "NetVips.Native.linux-x64": {
         "type": "Transitive",
-        "resolved": "8.18.6",
-        "contentHash": "D5/wO3dQwGRDi00gA7igHMuDdkwDtajWi8bunNXflS1QDftSsEa4pVv5FpA+N7oyzRoWZ9/5rUYkAeu4E12nwQ=="
+        "resolved": "8.18.7",
+        "contentHash": "Ao/eWVNRZRM8/j8Dhp62XARwPzrTGMl4nheNQlQvp8P2Ybpdzj1+SeXRBlUCaH8phlCrEUSabz/5lpmnw3Wmig=="
       },
       "Stub.System.Data.SQLite.Core.NetStandard": {
         "type": "Transitive",
@@ -170,12 +170,12 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.Mvvm": "[8.4.2, )",
-          "FluentFTP": "[54.2.1, )",
-          "Magick.NET-Q16-AnyCPU": "[14.17.1, )",
+          "FluentFTP": "[55.0.0, )",
+          "Magick.NET-Q16-AnyCPU": "[14.17.2, )",
           "MetadataExtractor": "[2.9.3, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.12, )",
           "NetVips": "[3.2.0, )",
-          "NetVips.Native.linux-x64": "[8.18.6, )"
+          "NetVips.Native.linux-x64": "[8.18.7, )"
         }
       },
       "quickmediaingest.localization": {
