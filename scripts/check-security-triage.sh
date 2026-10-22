@@ -63,7 +63,8 @@ fi
 
 echo ""
 echo "=== OpenSSF Scorecard (latest run) ==="
-SCORECARD_CONC="$(gh run list --repo "$REPO" --workflow "OpenSSF Scorecard" --limit 1 \
+# Workflow file name is scorecard.yml; display name is "Scorecard" (job is OpenSSF Scorecard).
+SCORECARD_CONC="$(gh run list --repo "$REPO" --workflow scorecard.yml --limit 1 \
   --json conclusion -q '.[0].conclusion' 2>/dev/null || echo "")"
 if [ -z "$SCORECARD_CONC" ] || [ "$SCORECARD_CONC" = "null" ]; then
   if [ "$STRICT" = true ]; then

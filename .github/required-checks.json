@@ -1,0 +1,15 @@
+{
+  "required_status_checks": [
+    "File Encoding (UTF-8)",
+    "File Size Budgets",
+    "Validate Template Index",
+    "Validate Bootstrap Artifacts",
+    ".NET \u2014 Build & Test"
+  ],
+  "informational_status_checks": [
+    "CI",
+    "Security Scan",
+    "CodeQL"
+  ],
+  "map_doc": "docs/REPO_HYGIENE.md"
+}
