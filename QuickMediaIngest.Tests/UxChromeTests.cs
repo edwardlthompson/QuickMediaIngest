@@ -61,7 +61,9 @@ public sealed class UxChromeTests
         {
             AppLocalizer.SetCulture("en");
             Assert.Equal("No sources yet", AppLocalizer.Get("Empty_NoSourcesTitle"));
-            Assert.Equal("Plug in an SD card or add a camera FTP share.", AppLocalizer.Get("Empty_NoSourcesBody"));
+            Assert.Equal(
+                "Plug in an SD card, connect a phone with USB debugging, or add a camera FTP share.",
+                AppLocalizer.Get("Empty_NoSourcesBody"));
             Assert.Equal("Dry run", AppLocalizer.Get("Toolbar_Preflight"));
             Assert.Equal("Delete originals after import", AppLocalizer.Get("Toolbar_DeleteAfterImport"));
             Assert.Equal("Select a shoot to import.", AppLocalizer.Get("Toolbar_ImportDisabledTooltip"));

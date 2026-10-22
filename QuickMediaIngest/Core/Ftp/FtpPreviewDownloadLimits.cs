@@ -12,14 +12,21 @@ namespace QuickMediaIngest.Core
         public const long Tier64K = 64 * 1024;
         public const long Tier256K = 256 * 1024;
         public const long Tier512K = 512 * 1024;
-        public const long ImageBytes = 512 * 1024;
+        public const long Tier1M = 1024 * 1024;
+        public const long Tier2M = 2 * 1024 * 1024;
+        public const long Tier4M = 4 * 1024 * 1024;
+        /// <summary>JPEG/PNG preview budget — large enough for typical camera stills to fetch complete (EOI).</summary>
+        public const long ImageBytes = 8 * 1024 * 1024;
         public const long HeicBytes = 12 * 1024 * 1024;
         public const long VideoBytes = 8 * 1024 * 1024;
         /// <summary>Max full-file pull for video grid thumbs when device JPEG thumb is unavailable.</summary>
         public const long VideoCompleteFallbackBytes = 256L * 1024 * 1024;
         public const long RawBytes = 2 * 1024 * 1024;
 
-        private static readonly long[] BaseTiers = { Tier64K, Tier256K, Tier512K };
+        private static readonly long[] BaseTiers =
+        {
+            Tier64K, Tier256K, Tier512K, Tier1M, Tier2M, Tier4M, ImageBytes,
+        };
 
         public static long GetMaxPreviewBytes(string fileName)
         {

@@ -190,50 +190,27 @@ namespace QuickMediaIngest.ViewModels
         {
             foreach (var item in items)
             {
-                item.IsPreviewVisible = true;
-                item.IsStackRepresentative = true;
-                item.StackKey = item.SourcePath;
                 item.PreviewLabel = item.FileName;
             }
+
+            PreviewStackApplier.Apply(items, groupRawAndRenderedPairs, expandPreviewStacks);
 
             if (!groupRawAndRenderedPairs)
             {
                 return;
             }
 
-            var imageItems = items.Where(i => !i.IsVideo).ToList();
-            var groups = imageItems.GroupBy(i => Path.GetFileNameWithoutExtension(i.FileName), StringComparer.OrdinalIgnoreCase);
-            foreach (var group in groups)
+            foreach (IGrouping<string, ImportItem> stack in items
+                         .Where(i => i.IsStackRepresentative)
+                         .GroupBy(i => i.StackKey, StringComparer.OrdinalIgnoreCase))
             {
-                var members = group.ToList();
-                if (members.Count <= 1)
+                int hiddenCount = items.Count(i =>
+                    string.Equals(i.StackKey, stack.Key, StringComparison.OrdinalIgnoreCase) && !i.IsStackRepresentative);
+                foreach (ImportItem leader in stack)
                 {
-                    continue;
-                }
-
-                var rendered = members.Where(m => RenderedPreviewExtensions.Contains(Path.GetExtension(m.FileName))).ToList();
-                var raws = members.Where(m => RawPreviewExtensions.Contains(Path.GetExtension(m.FileName))).ToList();
-                if (rendered.Count == 0 || raws.Count == 0)
-                {
-                    continue;
-                }
-
-                var representative = rendered
-                    .OrderBy(m => Path.GetExtension(m.FileName).Equals(".jpg", StringComparison.OrdinalIgnoreCase) ? 0 :
-                                  Path.GetExtension(m.FileName).Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ? 1 :
-                                  Path.GetExtension(m.FileName).Equals(".heic", StringComparison.OrdinalIgnoreCase) ? 2 : 3)
-                    .First();
-
-                string stackKey = group.Key;
-                int hiddenCount = members.Count - 1;
-                foreach (var member in members)
-                {
-                    member.StackKey = stackKey;
-                    member.IsStackRepresentative = ReferenceEquals(member, representative);
-                    member.IsPreviewVisible = expandPreviewStacks || member.IsStackRepresentative;
-                    member.PreviewLabel = member.IsStackRepresentative && hiddenCount > 0
-                        ? $"{member.FileName} (+{hiddenCount})"
-                        : member.FileName;
+                    leader.PreviewLabel = hiddenCount > 0
+                        ? $"{leader.FileName} (+{hiddenCount})"
+                        : leader.FileName;
                 }
             }
         }

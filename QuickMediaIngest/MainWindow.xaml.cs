@@ -51,9 +51,15 @@ namespace QuickMediaIngest
             viewModel.GroupsListRebuildStarting += ViewModel_GroupsListRebuildStarting;
             viewModel.GroupsListRebuildCompleted += ViewModel_GroupsListRebuildCompleted;
             viewModel.ImportCompletedFlash += ViewModel_ImportCompletedFlash;
+            viewModel.Sources.CollectionChanged += Sources_CollectionChanged;
             Closed += MainWindow_OnClosed;
             _logger = logger;
             _logger.LogInformation("Main window initialized.");
+        }
+
+        private void Sources_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(UpdateSidebarPartitionHeights, DispatcherPriority.Loaded);
         }
 
         private void MainWindow_OnClosed(object? sender, EventArgs e)
@@ -65,6 +71,7 @@ namespace QuickMediaIngest
                     vm.GroupsListRebuildStarting -= ViewModel_GroupsListRebuildStarting;
                     vm.GroupsListRebuildCompleted -= ViewModel_GroupsListRebuildCompleted;
                     vm.ImportCompletedFlash -= ViewModel_ImportCompletedFlash;
+                    vm.Sources.CollectionChanged -= Sources_CollectionChanged;
                 }
             }
             catch (Exception ex)
@@ -175,6 +182,8 @@ namespace QuickMediaIngest
             {
                 // Ignore sidebar chrome timing during startup.
             }
+
+            Dispatcher.BeginInvoke(UpdateSidebarPartitionHeights, DispatcherPriority.Loaded);
 
             try
             {
@@ -347,6 +356,7 @@ namespace QuickMediaIngest
                 RibbonTilePanel?.InvalidateMeasure();
                 RibbonTilePanel?.InvalidateArrange();
                 RibbonTilePanel?.UpdateLayout();
+                UpdateSidebarPartitionHeights();
                 if (DataContext is MainViewModel layoutVm)
                 {
                     layoutVm.ApplyWindowWidth(ActualWidth);

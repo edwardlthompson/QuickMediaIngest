@@ -17,6 +17,12 @@ namespace QuickMediaIngest.Core
             try
             {
                 string ext = Path.GetExtension(filePath);
+                // Incomplete JPEG sources Magick-fill unread MCUs with gray — refuse them here.
+                if (MediaExtensions.IsJpegFamily(ext) && !JpegFileLooksComplete(filePath))
+                {
+                    return null;
+                }
+
                 MagickImage image = MediaExtensions.IsHeifFamily(ext)
                     ? OpenHeifPreferringThumbnail(filePath, ext)
                     : MediaExtensions.IsRawExtension(ext)
@@ -37,7 +43,15 @@ namespace QuickMediaIngest.Core
                         return null;
                     }
 
-                    return new DecodedThumbnail(jpegBytes, (int)image.Width, (int)image.Height);
+                    var decoded = new DecodedThumbnail(jpegBytes, (int)image.Width, (int)image.Height);
+                    // RAW Magick can invent green/magenta MCU fills; complete JPEGs are gated above.
+                    if (MediaExtensions.IsRawExtension(ext)
+                        && !ThumbnailPreviewValidator.IsAcceptable(decoded))
+                    {
+                        return null;
+                    }
+
+                    return decoded;
                 }
             }
             catch
@@ -72,6 +86,49 @@ namespace QuickMediaIngest.Core
             catch
             {
                 return thumb;
+            }
+        }
+
+        internal static bool JpegFileLooksComplete(string filePath)
+        {
+            try
+            {
+                var info = new FileInfo(filePath);
+                if (!info.Exists || info.Length < 4)
+                {
+                    return false;
+                }
+
+                // Read head + tail only — avoid loading multi-MB previews twice.
+                int tailLen = (int)Math.Min(info.Length, 64 * 1024);
+                byte[] buf = new byte[Math.Min(info.Length, 4 + tailLen)];
+                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                _ = fs.Read(buf, 0, 4);
+                if (buf[0] != 0xFF || buf[1] != 0xD8)
+                {
+                    return false;
+                }
+
+                if (info.Length <= buf.Length)
+                {
+                    fs.Position = 0;
+                    _ = fs.Read(buf, 0, (int)info.Length);
+                    return ThumbnailPreviewValidator.HasJpegStartAndEndMarkers(buf[..(int)info.Length]);
+                }
+
+                byte[] tail = new byte[tailLen];
+                fs.Position = info.Length - tailLen;
+                _ = fs.Read(tail, 0, tailLen);
+                // Synthesize SOI + tail so the shared EOI scanner can run.
+                byte[] probe = new byte[2 + tailLen];
+                probe[0] = 0xFF;
+                probe[1] = 0xD8;
+                Buffer.BlockCopy(tail, 0, probe, 2, tailLen);
+                return ThumbnailPreviewValidator.HasJpegStartAndEndMarkers(probe);
+            }
+            catch
+            {
+                return false;
             }
         }
 

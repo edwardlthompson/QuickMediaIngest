@@ -58,7 +58,7 @@ public sealed class IngestBenchImportTests
     }
 
     [Fact]
-    public async Task DeleteAfter_TrashesSource()
+    public async Task DeleteAfter_PermanentlyDeletesSource()
     {
         string src = Path.Combine(Path.GetTempPath(), "qmi-del-src-" + Path.GetRandomFileName());
         string dest = Path.Combine(Path.GetTempPath(), "qmi-del-dst-" + Path.GetRandomFileName());
@@ -76,6 +76,8 @@ public sealed class IngestBenchImportTests
             Assert.True(await host.RunImportAsync(dryRun: false, IngestBenchCopy.Neutral));
             Assert.False(File.Exists(photo));
             Assert.NotEmpty(Directory.EnumerateFiles(dest, "*.jpg", SearchOption.AllDirectories));
+            // Must be permanent unlink — not left under a volume trash folder.
+            Assert.Empty(Directory.EnumerateFiles(src, "*", SearchOption.AllDirectories));
         }
         finally
         {
@@ -163,7 +165,7 @@ public sealed class IngestBenchImportTests
         Assert.Equal(3, parts.Count);
         Assert.Contains(parts, p => p.Items.Count == 1 && p.Items[0].FileName == "a.jpg");
         Assert.IsType<AdbFileProvider>(IngestBenchImportCopy.Create("adb:ABC123"));
-        Assert.IsType<TrashingFileProvider>(IngestBenchImportCopy.Create("local"));
+        Assert.IsType<LocalFileProvider>(IngestBenchImportCopy.Create("local"));
     }
 
     [Fact]

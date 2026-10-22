@@ -26,10 +26,11 @@ namespace QuickMediaIngest.Tests
         [Fact]
         public void IsAcceptable_AcceptsValidPayload()
         {
-            // Non-JPEG stub: chroma heuristics skipped when SOI missing.
-            byte[] stub = new byte[32];
-            stub[0] = 0x00;
-            Assert.True(ThumbnailPreviewValidator.IsAcceptable(new DecodedThumbnail(stub, 64, 48)));
+            // Minimal SOI…EOI JPEG (non-glitch blue-gray) — EOI gate + chroma heuristics.
+            using var image = new ImageMagick.MagickImage(new ImageMagick.MagickColor("#6680A0"), 64, 48);
+            using var ms = new System.IO.MemoryStream();
+            image.Write(ms, ImageMagick.MagickFormat.Jpeg);
+            Assert.True(ThumbnailPreviewValidator.IsAcceptable(new DecodedThumbnail(ms.ToArray(), 64, 48)));
         }
 
         [Fact]

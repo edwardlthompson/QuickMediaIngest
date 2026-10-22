@@ -57,20 +57,49 @@ namespace QuickMediaIngest.Core
         }
 
         /// <summary>
-        /// Deletes a local file at the specified path.
+        /// Permanently deletes a local file (unlink). Clears ReadOnly first (common on FAT/SD).
         /// </summary>
         /// <param name="srcPath">Source file path.</param>
         /// <param name="token">Cancellation token.</param>
         public Task DeleteAsync(string srcPath, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
+            if (!File.Exists(srcPath))
+            {
+                return Task.CompletedTask;
+            }
+
+            _logger.LogInformation("Permanently deleting local source file {SourcePath}.", LogPathSanitizer.Local(srcPath));
+            TryClearReadOnly(srcPath);
+            File.Delete(srcPath);
             if (File.Exists(srcPath))
             {
-                _logger.LogInformation("Deleting local source file {SourcePath}.", LogPathSanitizer.Local(srcPath));
+                TryClearReadOnly(srcPath);
                 File.Delete(srcPath);
             }
 
+            if (File.Exists(srcPath))
+            {
+                throw new IOException($"Failed to permanently delete source file: {srcPath}");
+            }
+
             return Task.CompletedTask;
+        }
+
+        private static void TryClearReadOnly(string path)
+        {
+            try
+            {
+                var attrs = File.GetAttributes(path);
+                if ((attrs & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(path, attrs & ~FileAttributes.ReadOnly);
+                }
+            }
+            catch
+            {
+                // Best-effort; Delete will surface the real failure.
+            }
         }
     }
 }

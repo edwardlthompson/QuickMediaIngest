@@ -139,7 +139,8 @@ namespace QuickMediaIngest.ViewModels
         [RelayCommand] private void SavePreset() => SaveCurrentPreset();
         [RelayCommand] private void LoadPreset() => LoadLatestPreset();
         [RelayCommand] private void DownloadUpdate() => ExecuteDownloadUpdate();
-        [RelayCommand] private void ToggleAbout()
+        [RelayCommand]
+        private void ToggleAbout()
         {
             if (_overlayNav.IsVisible(OverlayId.About))
             {

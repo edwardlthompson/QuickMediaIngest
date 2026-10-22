@@ -38,15 +38,10 @@ namespace QuickMediaIngest.Core
                     continue;
                 }
 
-                bool hasRendered = members.Any(m => Rendered.Contains(Path.GetExtension(m.FileName)));
-                bool hasRaw = members.Any(m => MediaExtensions.IsRawExtension(Path.GetExtension(m.FileName)));
-                if (!hasRendered || !hasRaw)
-                {
-                    continue;
-                }
-
+                // Same stem, multiple extensions (RAW+JPEG, HEIC+JPG+HEIF phantoms, etc.) → one tile.
                 ImportItem representative = members
                     .OrderBy(m => Rank(Path.GetExtension(m.FileName)))
+                    .ThenByDescending(m => m.FileSize)
                     .First();
                 foreach (ImportItem member in members)
                 {

@@ -59,7 +59,8 @@ namespace QuickMediaIngest.Tests
         public void SaveAndCloseSettings_ClosesDialog()
         {
             var vm = CreateViewModel();
-            vm.ShowSettingsDialog = true;
+            vm.ToggleSettingsCommand.Execute(null);
+            Assert.True(vm.ShowSettingsDialog);
 
             vm.SaveAndCloseSettingsCommand.Execute(null);
 

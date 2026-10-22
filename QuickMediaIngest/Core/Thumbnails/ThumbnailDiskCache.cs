@@ -8,7 +8,7 @@ namespace QuickMediaIngest.Core
 {
     internal static class ThumbnailDiskCache
     {
-        private const string FtpCacheVersion = "ftp-thumb-v4";
+        private const string FtpCacheVersion = "ftp-thumb-v6";
 
         public static string GetCacheDirectory()
         {
@@ -38,7 +38,11 @@ namespace QuickMediaIngest.Core
                 byte[] bytes = File.ReadAllBytes(cachePath);
                 if (bytes.Length == 0 || !JpegSofDimensionParser.TryGetDimensions(bytes, out int width, out int height))
                     return null;
-                return new DecodedThumbnail(bytes, width, height);
+                var thumb = new DecodedThumbnail(bytes, width, height);
+                if (ThumbnailPreviewValidator.IsAcceptable(thumb))
+                    return thumb;
+                try { File.Delete(cachePath); } catch { }
+                return null;
             }
             catch { return null; }
         }
@@ -53,7 +57,11 @@ namespace QuickMediaIngest.Core
             return null;
         }
 
-        public static void TrySave(DecodedThumbnail thumb, string cachePath) => File.WriteAllBytes(cachePath, thumb.JpegBytes);
+        public static void TrySave(DecodedThumbnail thumb, string cachePath)
+        {
+            if (!ThumbnailPreviewValidator.IsAcceptable(thumb)) return;
+            File.WriteAllBytes(cachePath, thumb.JpegBytes);
+        }
         public static void TrySave(byte[] jpegBytes, string cachePath) => File.WriteAllBytes(cachePath, jpegBytes);
 
         public static void TrySaveFtp(DecodedThumbnail thumb, string host, int port, string remotePath, long fileSize)
@@ -106,7 +114,7 @@ namespace QuickMediaIngest.Core
 
         private static string GetCacheKey(string filePath)
         {
-            const string cacheVersion = "thumb-v4";
+            const string cacheVersion = "thumb-v6";
             string input = cacheVersion + "|" + filePath + "|" + File.GetLastWriteTimeUtc(filePath).Ticks.ToString();
             using var sha1 = SHA1.Create();
             byte[] hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));

@@ -23,24 +23,18 @@ namespace QuickMediaIngest.Core.AppModel
 
         public static bool IsSafeUnmountTarget(string? mount)
         {
-            if (string.IsNullOrWhiteSpace(mount))
-            {
-                return false;
-            }
-
-            string full = Path.GetFullPath(mount).Replace('\\', '/').TrimEnd('/');
-            if (full.Length == 0 || full == "/")
-            {
-                return false;
-            }
-
+            if (string.IsNullOrWhiteSpace(mount)) return false;
+            // POSIX roots stay as-is — Path.GetFullPath("/media/…") → C:\media\… on Windows.
+            string trimmed = mount.Replace('\\', '/').Trim();
+            string full = trimmed.StartsWith('/')
+                ? trimmed.TrimEnd('/')
+                : Path.GetFullPath(mount).Replace('\\', '/').TrimEnd('/');
+            if (full.Length == 0) full = "/";
+            if (full == "/") return false;
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (!string.IsNullOrWhiteSpace(home)
                 && string.Equals(full, Path.GetFullPath(home).Replace('\\', '/').TrimEnd('/'), StringComparison.Ordinal))
-            {
                 return false;
-            }
-
             return full == "/media" || full.StartsWith("/media/", StringComparison.Ordinal)
                 || full == "/run/media" || full.StartsWith("/run/media/", StringComparison.Ordinal)
                 || full == "/mnt" || full.StartsWith("/mnt/", StringComparison.Ordinal);

@@ -55,6 +55,7 @@ Quick Media Ingest imports photos and videos from SD cards, local drives, and FT
 
 | Date | Milestone | What worked | What to improve |
 |------|-----------|-------------|-----------------|
+| 2026-10-22 | /ship thumbs+delete+sidebar | Local pre-release 25 stages; EOI Magick gate + permanent delete | Confirm FTP thumbs on real camera stills; Mint delete-after glance |
 | 2026-09-15 | Release v1.5.0 | Linux Avalonia ingest-bench + Core extract; local pre-release gate 23 stages | Windows CI still owns WPF STA; optional Mint glance |
 | 2026-09-15 | Window + preview pane | prefs.json bounds; GridSplitter 1600-edge preview | Off-screen clamp on multi-monitor Mint |
 | 2026-09-15 | Overall import meter | Done/total + elapsed/ETA; single SHA-256 pass with catalog meter; DropImported after catalog | Large dest-disk SHA-256 of 1500 RAW files still takes minutes — meter must stay visible |

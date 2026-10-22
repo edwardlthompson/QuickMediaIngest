@@ -2,6 +2,20 @@
 
 > Append-only register of major technical trade-offs. Past entries are immutable.
 
+## 2026-10-22 — Ship: thumbnails, permanent delete, sidebar notifications
+
+**Status:** Accepted
+**Context:** Partial/gray FTP thumbs, Linux trash-vs-delete after import, duplicate same-stem previews, and sidebar notifications layout needed a trunk ship on main after v1.5.0.
+
+**Decision:**
+- Gate Magick JPEG decode on SOI/EOI completeness; raise FTP image caps; bump thumb cache to v6.
+- Permanent File.Delete for delete-after-import (clear ReadOnly); keep safety messaging.
+- Stack same-stem multi-ext pairs; inline notification feed under Sources with * leftover height.
+- Prefer Program Files SDK on Windows in `dotnet_host.py`; SKIP missing libvips on Windows Core.Tests smoke.
+
+**Validation:** `pre-release-gate.sh --local` 25 stages; upd audit 0 vulns; Core + WPF tests.
+
+---
 ## 2026-09-15 — Release v1.5.0 (Linux Avalonia ingest-bench)
 
 **Status:** Accepted

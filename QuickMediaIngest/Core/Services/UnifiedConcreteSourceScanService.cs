@@ -82,9 +82,12 @@ namespace QuickMediaIngest.Core.Services
             List<ImportItem>[] parallelResults =
                 await Task.WhenAll(concreteSources.Select(src => ScanOneWithProgressAsync(src))).ConfigureAwait(false);
 
+            List<ImportItem> merged = FtpAdbAliasFilter.DeduplicateDualFtpAliases(
+                parallelResults.SelectMany(r => r));
+
             return new UnifiedScanMergeResult
             {
-                UnifiedItems = parallelResults.SelectMany(r => r).ToList(),
+                UnifiedItems = merged,
                 FtpListingFailures = new HashSet<string>(ftpListingFailures, StringComparer.OrdinalIgnoreCase)
             };
         }

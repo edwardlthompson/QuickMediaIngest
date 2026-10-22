@@ -10,9 +10,10 @@ namespace QuickMediaIngest.Tests
         {
             var tiers = FtpPreviewDownloadLimits.GetPreviewByteTiers("photo.jpg");
 
-            Assert.Equal(3, tiers.Count);
+            Assert.Equal(7, tiers.Count);
             Assert.Equal(FtpPreviewDownloadLimits.Tier64K, tiers[0]);
             Assert.Equal(FtpPreviewDownloadLimits.ImageBytes, tiers[^1]);
+            Assert.Equal(8 * 1024 * 1024, tiers[^1]);
         }
 
         [Fact]

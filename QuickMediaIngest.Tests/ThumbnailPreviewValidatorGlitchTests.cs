@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+using System.IO;
 using ImageMagick;
 using QuickMediaIngest.Core;
 using Xunit;
@@ -48,6 +50,33 @@ namespace QuickMediaIngest.Tests
             junk[^1] = 0xD9;
             var thumb = new DecodedThumbnail(junk, 64, 64);
             Assert.False(ThumbnailPreviewValidator.IsAcceptable(thumb));
+        }
+
+        [Fact]
+        public void IsAcceptable_RejectsMissingEoi()
+        {
+            byte[] jpeg = CreateSolidJpeg(64, 64, "#6680A0");
+            // Strip trailing EOI so the buffer looks truncated.
+            byte[] truncated = jpeg[..^2];
+            var thumb = new DecodedThumbnail(truncated, 64, 64);
+            Assert.False(ThumbnailPreviewValidator.IsAcceptable(thumb));
+        }
+
+        [Fact]
+        public void MagickDecoder_RejectsIncompleteJpegSource()
+        {
+            byte[] complete = CreateSolidJpeg(64, 64, "#4477AA");
+            byte[] truncated = complete[..Math.Max(32, complete.Length / 3)];
+            string path = Path.Combine(Path.GetTempPath(), "qmi-trunc-" + Guid.NewGuid().ToString("N") + ".jpg");
+            try
+            {
+                File.WriteAllBytes(path, truncated);
+                Assert.Null(MagickThumbnailDecoder.TryGetThumbnail(path, 120));
+            }
+            finally
+            {
+                try { File.Delete(path); } catch { /* temp */ }
+            }
         }
 
         private static byte[] CreateSolidJpeg(int w, int h, string hex)

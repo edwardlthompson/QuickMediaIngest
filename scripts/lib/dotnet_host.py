@@ -25,6 +25,9 @@ def find_dotnet(home: Path | None = None) -> str | None:
     root = os.environ.get("DOTNET_ROOT", "").strip()
     if root:
         ordered.extend(Path(root) / name for name in names)
+    # Windows: prefer machine SDK (Program Files) over a stale user-local ~/.dotnet pin.
+    if is_windows_host():
+        ordered.append(Path(r"C:\Program Files\dotnet\dotnet.exe"))
     ordered.extend(home / ".dotnet" / name for name in names)
     path_env = os.environ.get("PATH", "")
     for folder in path_env.split(os.pathsep):

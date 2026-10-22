@@ -144,7 +144,7 @@ namespace QuickMediaIngest.ViewModels
         public string VerificationMode { get; set; } = "Fast";
         public string DuplicatePolicy { get; set; } = "Suffix";
         public string ThumbnailPerformanceMode { get; set; } = "Balanced";
-        public bool GroupRawAndRenderedPairs { get; set; } = false;
+        public bool GroupRawAndRenderedPairs { get; set; } = true;
         public bool ExpandPreviewStacks { get; set; } = false;
         public bool EmbedKeywordsOnImport { get; set; }
         public bool ConfirmBeforeImport { get; set; }

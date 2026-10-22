@@ -38,7 +38,6 @@ A row is not done if only WPF gained a control. AXAML ≤800; Core files ≤200;
 | Safe unmount + leftover reminder | Present (LP-eject) |
 | Magick + libvips `--smoke-native` | Present |
 | `.deb` install, uid-0 refuse | Present — visible `.desktop` files claim `x-content/image-dcf` (no `NoDisplay`) so Cinnamon/Nemo’s import AppChooser lists this app |
-
 ## Gap list
 
 ### Port (same behavior, Avalonia view)
@@ -48,7 +47,7 @@ A row is not done if only WPF gained a control. AXAML ≤800; Core files ≤200;
 | G-scan | Local + removable scan, Refresh, drive picker | LP-scan: mounts + overlay + inotify on first selected root |
 | G-empty | Waiting-for-card + Refresh + Add FTP | Add FTP opens editor |
 | G-dest | Browse destination, naming template, dest chip | LP-dest dest chip; **LD-naming** chips/presets/preview |
-| G-import | Copy ingest, dry-run plan, delete-after, free-space, collisions | LP-import: Core `IngestEngine` + `gio trash` |
+| G-import | Copy ingest, dry-run plan, delete-after, free-space, collisions | LP-import: Core `IngestEngine` + permanent `File.Delete` (not `gio trash`) |
 | G-shoots | Shoot groups, select all, skip folder, keyword filter, transport badge | LP-shoots: `ItemGroup` list after scan |
 | G-ftp | Add/test/browse FTP, password store, throttle | LP-ftp: overlay + libsecret/0600 + KB/s cap |
 | G-adb | Prefer-ADB when `adb` on PATH | LP-adb: `AdbDeviceProbe` + alias de-dupe |
@@ -72,7 +71,6 @@ A row is not done if only WPF gained a control. AXAML ≤800; Core files ≤200;
 | G-eject | Safe unmount + leftover-files reminder | LP-eject: `gio mount -u` / `udisksctl unmount` + leftover Notify |
 | G-ptp | PTP/USB tether (FOSS libusb) | LP-ptp: gvfs gphoto2 mounts + `gphoto2 --auto-detect` |
 | G-onboard | Persist `IsFirstRun` | LP-host: `onboarding.json` |
-
 ### Adapt (Linux equivalent, not a clone)
 
 | Windows | Linux |
@@ -82,12 +80,11 @@ A row is not done if only WPF gained a control. AXAML ≤800; Core files ≤200;
 | Credential Manager | `secret-tool` + 0600 file (shipped) |
 | BitLocker hint | LUKS via `findmnt` (shipped) |
 | `%AppData%` | `XdgAppPaths` (exists; Desktop still constructs a bare AppModel) |
-| Recycle Bin | `gio trash` |
+| Recycle Bin | Permanent unlink for delete-after-import; `gio trash` retained only as unused helper |
 | `SystemParameters.HighContrast` | `GTK_THEME` / `org.gnome.desktop.a11y.interface` high-contrast |
 | Windows system theme | `color-scheme` / Fluent `RequestedThemeVariant` |
 | WiX MSI | `.deb` (shipped) |
 | SQLite VACUUM | JSON stores; skip SQLite on Desktop |
-
 ### Won’t port (stay Windows)
 
 | Function | Why |
@@ -98,7 +95,6 @@ A row is not done if only WPF gained a control. AXAML ≤800; Core files ≤200;
 | Exact MaterialDesign pixel chrome | Fluent is the Linux look |
 | WiX / portable EXE smoke | Windows distribution |
 | `System.Data.SQLite` maintenance DB | WPF-only |
-
 Native AOT stays out of v1 (trim already on).
 
 ## Remaining after LP (2026-09-15 Mint glance)
@@ -130,7 +126,6 @@ Linux: Save location sheet uses always-visible **checkboxes** for file-name part
 | Group-by hours slider, file-type filter, keyword **filter chips** | Present (LD-filters) |
 | Expand all groups, rebuild previews | Expand-all present; rebuild still Magick purge |
 | RAW+JPEG stack grouping | Present (LD-prefs-import) |
-
 ### Preferences wall (still thin on Linux)
 
 Windows Import Settings still has: embed keywords, open destination when done, disk-space summary modal, confirm-cancel, single-thread import, file cooldown, thumbnail performance, FTP thumb cap, Prefer-ADB hint copy, save/load preset. Linux now also has dest presets, duplicate policy, verification, RAW+JPEG stack, and confirm-before-import (LD-prefs-import).
@@ -138,7 +133,7 @@ Windows Import Settings still has: embed keywords, open destination when done, d
 ### Adapt / later (not a clone)
 
 - Sidebar sources rail (Fluent, not MaterialDesign) — present; UX polish (UX-1–41) archived in `COMPLETED_TASKS.md`.
-- Post-delete Recycle Bin recovery banner (`gio trash` analog)
+- Post-delete permanent-delete confirmation banner (no Recycle Bin / `gio trash` recovery)
 - Per-source naming map
 
 ## Plan (BUILD_PLAN **43–71**, named LP)
@@ -150,7 +145,7 @@ Sequential. One feature row per agent task. Extract to Core first when logic sti
 1. **LP-host** — Composition: `XdgAppPaths`, persist first-run, Avalonia `IUserPrompt` stub host, load crash store into AppModel
 2. **LP-scan** — Local + `/media`/`/run/media` removable, Refresh, drive-select overlay
 3. **LP-dest** — Folder picker, naming template, dest chip
-4. **LP-import** — Real Import + Dry run + delete-after + free-space + collisions + `gio trash`
+4. **LP-import** — Real Import + Dry run + delete-after + free-space + collisions + permanent source delete
 5. **LP-shoots** — Shoot list, select, skip folder, keyword filter, transport badge
 6. **LP-ftp** — Add/test/browse + libsecret + throttle
 7. **LP-adb** — Prefer-ADB if `adb` on PATH + dual-FTP de-dupe
@@ -199,7 +194,6 @@ Wave A is Sequential until Import/Dry run/scan public API is locked on AppModel.
 | AXAML file limit | Split overlays into `QuickMediaIngest.Desktop/Views/`; `check-file-limits.sh` already scans `*.axaml` |
 | WPD/iPhone expected by photographers | Documented Won’t port; Prefer-ADB + FTP + local cover Mint phones; no AGENT row that cannot compile on Linux |
 | Scope explosion | One BUILD_PLAN row per slice; `/feature` does not batch Wave B+C |
-
 ## Acceptance criteria
 
 - 🔲 User can scan a local folder or SD mount, pick dest, Dry run, then Import into dated shoot folders
@@ -223,7 +217,6 @@ Wave A is Sequential until Import/Dry run/scan public API is locked on AppModel.
 | View | `QuickMediaIngest.Desktop/` (`*.axaml` ≤800) |
 | Tests | `QuickMediaIngest.Core.Tests/`, `scripts/lib/test_linux_parity.py` |
 | Wiring | `QuickMediaIngest.Desktop/App.axaml.cs` ≤10 lines per feature |
-
 ## Tests
 
 - Automated: yes — Core.Tests per slice + `scripts/lib/test_linux_parity.py` (Desktop must not reference `System.Windows`)

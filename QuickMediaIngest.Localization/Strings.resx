@@ -432,7 +432,7 @@
   <data name="Empty_NoFilesTitle" xml:space="preserve"><value>No shoots loaded. Refresh sources or pick a different folder.</value></data>
   <data name="Empty_FtpFailureTitle" xml:space="preserve"><value>Couldn’t list that FTP folder</value></data>
   <data name="Empty_FtpFailureBody" xml:space="preserve"><value>The app could not read one or more FTP folders. Check Wi‑Fi sharing on the camera or phone, credentials, and the remote path (try /DCIM or /DCIM/Camera).</value></data>
-  <data name="Banner_PostDeleteRecovery" xml:space="preserve"><value>Originals were removed after import where possible. Local deletes may appear in the Recycle Bin; FTP sources are deleted on the server and cannot be recovered from this PC.</value></data>
+  <data name="Banner_PostDeleteRecovery" xml:space="preserve"><value>Originals were permanently deleted after a verified import where possible. They are not sent to the Recycle Bin or trash. FTP sources are deleted on the server and cannot be recovered from this PC.</value></data>
   <data name="Btn_OpenRecycleBin" xml:space="preserve"><value>Open Recycle Bin</value></data>
 
   <data name="Notify_FlyoutTitle" xml:space="preserve"><value>Notifications</value></data>

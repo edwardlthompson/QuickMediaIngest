@@ -17,7 +17,7 @@ def main() -> int:
         "return TimeSpan.Zero",
     ):
         assert needle in text, needle
-    print("OK: MotionTimings overlay 180 / chevron 120 / sidebar 260→64 / reduced-motion zero")
+    print("OK: MotionTimings overlay 180 / chevron 120 / sidebar 260->64 / reduced-motion zero")
     return 0
 
 

@@ -26,7 +26,34 @@ namespace QuickMediaIngest.Core
                 return false;
             }
 
+            if (!HasJpegStartAndEndMarkers(thumb.JpegBytes))
+            {
+                return false;
+            }
+
             return !LooksGlitchy(thumb.JpegBytes, thumb.Width, thumb.Height);
+        }
+
+        /// <summary>Requires SOI and a trailing EOI so truncated JPEG payloads are rejected.</summary>
+        internal static bool HasJpegStartAndEndMarkers(byte[] jpegBytes)
+        {
+            if (jpegBytes.Length < 4 || jpegBytes[0] != 0xFF || jpegBytes[1] != 0xD8)
+            {
+                return false;
+            }
+
+            // Search back for EOI. Allow trailing padding after EOI (some cameras/ADB pulls).
+            // Truncated caps almost never contain a real EOI in this window.
+            int start = Math.Max(2, jpegBytes.Length - (64 * 1024));
+            for (int i = jpegBytes.Length - 2; i >= start; i--)
+            {
+                if (jpegBytes[i] == 0xFF && jpegBytes[i + 1] == 0xD9)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

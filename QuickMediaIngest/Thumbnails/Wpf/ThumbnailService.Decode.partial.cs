@@ -83,7 +83,8 @@ namespace QuickMediaIngest.Thumbnails.Wpf
                 try
                 {
                     using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnLoad);
+                    // Avoid DelayCreation — lazy frames can JPEG-reencode as half-gray previews.
+                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     if (decoder.Frames.Count > 0)
                     {
                         thumb = EncodeToDecodedThumbnail(CreateResizedThumbnail(decoder.Frames[0], 240));
@@ -99,11 +100,13 @@ namespace QuickMediaIngest.Thumbnails.Wpf
             {
                 try
                 {
+                    // Prefer a full shell extract — ThumbnailOnly often returns incomplete gray placeholders.
                     BitmapSource? shell = ShellThumbnailInterop.TryGetShellImage(
-                        filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
-                    if (shell == null && isVideo && !isPartial)
+                        filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: false);
+                    if (shell == null && !isPartial)
                     {
-                        shell = ShellThumbnailInterop.TryGetShellImage(filePath, 512, thumbnailOnly: false);
+                        shell = ShellThumbnailInterop.TryGetShellImage(
+                            filePath, isRaw || isVideo ? 512 : 240, thumbnailOnly: true);
                     }
 
                     thumb = EncodeToDecodedThumbnail(shell);

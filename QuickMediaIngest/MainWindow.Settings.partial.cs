@@ -207,5 +207,41 @@ namespace QuickMediaIngest
 
             vm.SelectedSource = element.Tag;
         }
+
+        private void SidebarExpandedContent_SizeChanged(object sender, SizeChangedEventArgs e) =>
+            UpdateSidebarPartitionHeights();
+
+        /// <summary>
+        /// Sources size to their item count; notifications ListBox (star row) keeps the leftover window height.
+        /// </summary>
+        private void UpdateSidebarPartitionHeights()
+        {
+            if (SidebarExpandedContent == null || SidebarSourcesList == null)
+            {
+                return;
+            }
+
+            double available = SidebarExpandedContent.ActualHeight;
+            if (available <= 0)
+            {
+                return;
+            }
+
+            double reserved =
+                (SidebarSourcesHeaderPanel?.ActualHeight ?? 0) +
+                (SidebarNotificationsHeaderPanel?.ActualHeight ?? 0) +
+                16;
+            const double minNotifications = 40;
+            double maxSources = Math.Max(48, available - reserved - minNotifications);
+
+            int count = SidebarSourcesList.Items?.Count ?? 0;
+            const double rowHeight = 30;
+            double needed = count <= 0 ? rowHeight : (count * rowHeight) + 6;
+            double height = Math.Min(needed, maxSources);
+            if (Math.Abs(SidebarSourcesList.Height - height) > 0.5)
+            {
+                SidebarSourcesList.Height = height;
+            }
+        }
     }
 }

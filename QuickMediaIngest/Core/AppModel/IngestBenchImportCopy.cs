@@ -31,9 +31,8 @@ namespace QuickMediaIngest.Core.AppModel
                 return new AdbFileProvider(sourceKey[4..], NullLogger<AdbFileProvider>.Instance);
             }
 
-            return new TrashingFileProvider(
-                new LocalFileProvider(NullLogger<LocalFileProvider>.Instance),
-                new GioTrashService());
+            // Permanent unlink for delete-after-import (not gio trash / volume .Trash-*).
+            return new LocalFileProvider(NullLogger<LocalFileProvider>.Instance);
         }
 
         public static List<ItemGroup> SplitBySource(ItemGroup group)

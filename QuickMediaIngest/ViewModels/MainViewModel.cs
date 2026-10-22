@@ -347,7 +347,7 @@ namespace QuickMediaIngest.ViewModels
         [ObservableProperty] private int queuedImportCount = 0;
         [ObservableProperty] private int timeBetweenShootsHours = 4;
         [ObservableProperty] private bool expandPreviewStacks = false;
-        [ObservableProperty] private bool groupRawAndRenderedPairs = false;
+        [ObservableProperty] private bool groupRawAndRenderedPairs = true;
         [ObservableProperty] private string uiLanguage = string.Empty;
         [ObservableProperty] private bool embedKeywordsOnImport = false;
         [ObservableProperty] private bool stripGpsAndPiiOnEmbed = false;

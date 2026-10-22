@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using QuickMediaIngest.Core;
 using QuickMediaIngest.Core.AppModel;
 using QuickMediaIngest.Core.Models;
@@ -35,6 +36,21 @@ public sealed class IngestBenchDepthTests
         PreviewStackApplier.Apply(items, groupPairs: true, expandStacks: false);
         Assert.True(items[1].IsPreviewVisible);
         Assert.False(items[0].IsPreviewVisible);
+    }
+
+    [Fact]
+    public void PreviewStack_CollapsesHeicJpegHeifPhantomsToOneTile()
+    {
+        var items = new List<ImportItem>
+        {
+            new() { FileName = "shot.heic", SourcePath = "/DCIM/shot.heic", FileSize = 3_000_000 },
+            new() { FileName = "shot.jpg", SourcePath = "/DCIM/shot.jpg", FileSize = 2_000_000 },
+            new() { FileName = "shot.heif", SourcePath = "/DCIM/shot.heif", FileSize = 0 },
+            new() { FileName = "shot.dng", SourcePath = "/DCIM/shot.dng", FileSize = 20_000_000 },
+        };
+        PreviewStackApplier.Apply(items, groupPairs: true, expandStacks: false);
+        Assert.Equal(1, items.Count(i => i.IsPreviewVisible));
+        Assert.Contains(items, i => i.IsPreviewVisible && i.FileName.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

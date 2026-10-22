@@ -71,7 +71,13 @@ namespace QuickMediaIngest.Core
 
             if (mode == FtpPreviewDecodeMode.TieredFinalCap)
             {
-                // JPEG/PNG and similar stills only.
+                // Truncated JPEG caps Magick-decode as top-strip + gray fill, then re-encode with
+                // a real EOI — validator must never see that. Require a complete source first.
+                if (MediaExtensions.IsJpegFamily(ext) && !IsCompleteJpegOnDisk(tempPath))
+                {
+                    return null;
+                }
+
                 return Accept(MagickThumbnailDecoder.TryGetThumbnail(tempPath, 240));
             }
 
@@ -131,5 +137,8 @@ namespace QuickMediaIngest.Core
 
         private static DecodedThumbnail? Accept(DecodedThumbnail? thumb) =>
             ThumbnailPreviewValidator.IsAcceptable(thumb) ? thumb : null;
+
+        private static bool IsCompleteJpegOnDisk(string path) =>
+            MagickThumbnailDecoder.JpegFileLooksComplete(path);
     }
 }
