@@ -67,3 +67,19 @@ Custom destination/naming in `%AppData%\QuickMediaIngest\config.json` can appear
 
 **Fix (v1.3.22):** Skip naming rebuild while `_loadingConfig`; coerce preset to Custom when template diverges; re-assign destination preset after options rebuild. Checkbox edits that diverge from a named preset set Custom immediately.
 
+## Magick incomplete JPEG gray-fill (2026-10-22)
+
+Magick fills truncated JPEG MCUs with gray. Gate decode with SOI/EOI; apply full `IsAcceptable` glitch checks to RAW Magick output only. Raise FTP image preview tiers so camera stills finish EOI before Magick.
+
+## OverlayPrompt WPF test race (2026-10-22)
+
+`ConfirmAsync` marshals to `Application.Current.Dispatcher`. Asserting `ShowUserPromptDialog` off the UI thread races. Run setup/accept/cancel inside `WpfTestHost.RunOnUiThread`.
+
+## Scorecard triage workflow name (2026-10-22)
+
+`check-security-triage.sh` must query `--workflow scorecard.yml`. Looking up display title "OpenSSF Scorecard" returns no runs.
+
+## upd codeql-action pin (2026-10-22)
+
+Do not accept `github/codeql-action@vcodeql-bundle-*` from upd — restore `@v4` / `@v3`. Bundle tags are not valid action refs.
+
