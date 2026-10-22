@@ -95,21 +95,29 @@ public sealed class UxChromeTests
     public async Task OverlayPrompt_Accept_CompletesTrue()
     {
         MainViewModel vm = MainViewModelProofTests.CreateViewModel();
-        Task<bool> pending = vm.ConfirmAsync("Title", "Body");
-        Assert.True(vm.ShowUserPromptDialog);
-        Assert.True(vm.UserPromptIsConfirm);
-        Assert.Equal("Title", vm.UserPromptTitle);
-        vm.AcceptUserPromptCommand.Execute(null);
+        Task<bool> pending = null!;
+        WpfTestHost.RunOnUiThread(() =>
+        {
+            pending = vm.ConfirmAsync("Title", "Body");
+            Assert.True(vm.ShowUserPromptDialog);
+            Assert.True(vm.UserPromptIsConfirm);
+            Assert.Equal("Title", vm.UserPromptTitle);
+            vm.AcceptUserPromptCommand.Execute(null);
+            Assert.False(vm.ShowUserPromptDialog);
+        });
         Assert.True(await pending);
-        Assert.False(vm.ShowUserPromptDialog);
     }
 
     [Fact]
     public async Task OverlayPrompt_Cancel_CompletesFalse()
     {
         MainViewModel vm = MainViewModelProofTests.CreateViewModel();
-        Task<bool> pending = vm.ConfirmAsync("Title", "Body");
-        vm.CancelUserPromptCommand.Execute(null);
+        Task<bool> pending = null!;
+        WpfTestHost.RunOnUiThread(() =>
+        {
+            pending = vm.ConfirmAsync("Title", "Body");
+            vm.CancelUserPromptCommand.Execute(null);
+        });
         Assert.False(await pending);
     }
 
