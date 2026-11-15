@@ -67,3 +67,7 @@ Finished work lives in [COMPLETED_TASKS.md](COMPLETED_TASKS.md). Do not keep com
 <!-- open-prs-sync:begin -->
 _No open Dependabot or Release Please PRs._
 <!-- open-prs-sync:end -->
+
+## News inbox (synced)
+
+- 🔲 [AGENT] Rebuild on .NET 8.0.34 SDK/runtime — scope: global.json,Directory.Build.props (news P1, 2026-11-13) https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-november-2026-servicing-updates/
