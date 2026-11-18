@@ -67,3 +67,27 @@ Finished work lives in [COMPLETED_TASKS.md](COMPLETED_TASKS.md). Do not keep com
 <!-- open-prs-sync:begin -->
 _No open Dependabot or Release Please PRs._
 <!-- open-prs-sync:end -->
+### Local agent (This Computer)
+
+Standing queue for This Computer. Rows: `🔲 [AGENT][LOCAL] … — scope: path`.
+
+<!-- local-agent-lane:begin -->
+- 🔲 [AGENT][LOCAL] Rebuild on .NET 8.0.34 SDK/runtime — scope: global.json,Directory.Build.props (news P1, 2026-11-13) https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-november-2026-servicing-updates/
+<!-- local-agent-lane:end -->
+
+### Cloud agent (Cursor Cloud)
+
+Standing queue for Cursor Cloud. Rows: `🔲 [AGENT][CLOUD] … — scope: path`.
+
+<!-- cloud-agent-lane:begin -->
+_No cloud agent items._
+<!-- cloud-agent-lane:end -->
+
+### Template gaps (synced)
+
+> Auto-managed. Do not hand-edit inside the markers.
+
+<!-- template-gaps-sync:begin -->
+_No template gaps._
+<!-- template-gaps-sync:end -->
+
