@@ -17,3 +17,9 @@ A Cursor planning agent should review these items and fold the useful ones into 
 - [x] Rebuild on .NET 8.0.34 SDK/runtime — Ships the November security fixes to users of the WPF app. Label: `[AGENT]` · Priority: P1 · https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-november-2026-servicing-updates/ (synced to BUILD_PLAN)
 - [ ] Plan a .NET 11 target migration — A newer runtime keeps the app on a supported, current line. Label: `[AGENT]` · Priority: P3 · https://devblogs.microsoft.com/dotnet/announcing-dotnet-11/
 - [ ] Borrow LrC 16 import filters (file type, rating, label) — Feature ideas for faster, filtered ingest. Label: `[AGENT]` · Priority: P3 · https://helpx.adobe.com/lightroom-classic/desktop/introduction-to-lightroom-classic/release-notes.html
+
+## 2026-11-25
+
+**News and updates**
+
+- Socket found 13 malicious NuGet packages (Nov 23) that pose as WinUI 3 and WPF button controls in fake 'home assessment' job projects for Windows .NET developers; building or running them pulled a further payload and staged a DLL side-loading pair. No action unless someone installs an unsolicited assessment zip; do not add those packages. [Socket](https://socket.dev/blog/malicious-nuget-packages-fake-job-assessments)
